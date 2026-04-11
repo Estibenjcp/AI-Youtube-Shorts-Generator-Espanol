@@ -22,6 +22,56 @@ st.set_page_config(
     layout="wide",
 )
 
+# ── Autenticación ─────────────────────────────────────────────────────────────
+
+def _check_auth() -> bool:
+    """Bloquea la app con contraseña. Contraseña guardada en st.secrets o .env."""
+    app_password = (
+        st.secrets.get("APP_PASSWORD", None)
+        if hasattr(st, "secrets")
+        else None
+    ) or os.getenv("APP_PASSWORD", "")
+
+    if not app_password:
+        return True  # Sin contraseña configurada = acceso libre
+
+    if st.session_state.get("authenticated"):
+        return True
+
+    st.markdown(
+        """
+        <style>
+        .login-box {
+            max-width: 380px;
+            margin: 10vh auto;
+            padding: 2.5rem;
+            border-radius: 12px;
+            background: #1e1e2e;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+            text-align: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container():
+        col_l, col_c, col_r = st.columns([1, 2, 1])
+        with col_c:
+            st.markdown("## 🎬 AutoShorts AI")
+            st.markdown("Ingresa la contraseña para continuar.")
+            pwd = st.text_input("Contraseña / Password", type="password", key="pwd_input")
+            if st.button("Entrar", use_container_width=True, type="primary"):
+                if pwd == app_password:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Contraseña incorrecta.")
+
+    st.stop()
+
+_check_auth()
+
 # ── Constants ────────────────────────────────────────────────────────────────
 
 ENV_PATH         = os.path.join(os.path.dirname(__file__), ".env")
