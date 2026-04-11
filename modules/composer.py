@@ -86,8 +86,8 @@ class Composer:
                     .trim(duration=total_duration + 0.5)
                     .setpts('PTS-STARTPTS')
                     .filter('crop', 'iw', 'ih-150', 0, 0)
-                    .filter('scale', 1080, 1920, force_original_aspect_ratio='increase')
-                    .filter('crop', 1080, 1920)
+                    .filter('scale', 720, 1280, force_original_aspect_ratio='increase')
+                    .filter('crop', 720, 1280)
                     .filter('fps', fps=30, round='up')
                 )
             else:
@@ -100,16 +100,16 @@ class Composer:
                     ffmpeg.input(path_a, stream_loop=-1)
                     .trim(duration=duration_a)
                     .setpts('PTS-STARTPTS')
-                    .filter('scale', 1080, 1920)
-                    .filter('crop', 1080, 1920)
+                    .filter('scale', 720, 1280)
+                    .filter('crop', 720, 1280)
                     .filter('fps', fps=30, round='up')
                 )
                 stream_b = (
                     ffmpeg.input(path_b, stream_loop=-1)
                     .trim(duration=duration_b)
                     .setpts('PTS-STARTPTS')
-                    .filter('scale', 1080, 1920)
-                    .filter('crop', 1080, 1920)
+                    .filter('scale', 720, 1280)
+                    .filter('crop', 720, 1280)
                     .filter('fps', fps=30, round='up')
                 )
                 video_stream = ffmpeg.concat(stream_a, stream_b, v=1, a=0)
@@ -121,6 +121,9 @@ class Composer:
                 vcodec='libx264',
                 acodec='aac',
                 pix_fmt='yuv420p',
+                preset='ultrafast',
+                crf=26,
+                threads=1,
                 shortest=None,
             ).run(overwrite_output=True, quiet=True)
 
@@ -196,8 +199,8 @@ class Composer:
 
                 video_in = (
                     ffmpeg.input(self.outro_path)
-                    .filter('scale', 1080, 1920, force_original_aspect_ratio='increase')
-                    .filter('crop', 1080, 1920)
+                    .filter('scale', 720, 1280, force_original_aspect_ratio='increase')
+                    .filter('crop', 720, 1280)
                     .filter('fps', fps=30, round='up')
                 )
 
@@ -275,7 +278,9 @@ class Composer:
                 acodec='aac',
                 pix_fmt='yuv420p',
                 movflags='faststart',
-                preset='medium',
+                preset='ultrafast',
+                crf=26,
+                threads=1,
             ).run(overwrite_output=True, quiet=False)
 
             print(f"✅ FINAL VIDEO SAVED: {output_path}")
