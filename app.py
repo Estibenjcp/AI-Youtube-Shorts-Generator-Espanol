@@ -11,7 +11,7 @@ import shutil
 import io
 
 from modules.config import load_config, check_config, PROVIDER_DEFAULTS
-from modules.brain import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN
+from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN
 from dotenv import set_key, load_dotenv
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -465,7 +465,7 @@ with col_clear:
 
 if suggest_clicked and selected_category:
     with st.spinner(f"{T['suggest_spinner']} '{selected_category}'..."):
-        from modules.brain import ContentBrain as _BrainSuggest
+        from modules.brain import ContentBrain as _BrainSuggest  # noqa: PLC0415
         _brain_suggest = _BrainSuggest()
         suggestions = _brain_suggest.get_topic_suggestions(selected_category, n=6, lang=lang_option)
         st.session_state.topic_suggestions = suggestions

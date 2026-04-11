@@ -4,79 +4,39 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_provider = os.getenv("AI_PROVIDER", "gemini").lower()
-_api_key  = os.getenv("AI_API_KEY", "")
-_model    = os.getenv("AI_MODEL", "")
+from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, TOPIC_CATEGORIES
 
-if _provider == "openrouter":
-    from openai import OpenAI
-    _client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=_api_key,
-    )
-    _default_model = "google/gemini-flash-1.5"
-else:
-    from google import genai
-    _client = genai.Client(api_key=_api_key)
-    _default_model = "gemini-2.0-flash-exp"
 
-_model = _model or _default_model
+def _get_client():
+    """Inicializa el cliente de IA solo cuando se necesita (lazy init)."""
+    provider  = os.getenv("AI_PROVIDER", "gemini").lower()
+    api_key   = os.getenv("AI_API_KEY", "")
+    model     = os.getenv("AI_MODEL", "")
 
-# ── Categorías por idioma ────────────────────────────────────────────────────
+    if provider == "openrouter":
+        from openai import OpenAI
+        client        = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+        default_model = "google/gemini-flash-1.5"
+    else:
+        from google import genai
+        client        = genai.Client(api_key=api_key)
+        default_model = "gemini-2.0-flash-exp"
 
-TOPIC_CATEGORIES_ES = [
-    "Misterios del Universo y Astronomía",
-    "Historia Antigua y Civilizaciones Perdidas",
-    "Fenómenos Naturales Extremos",
-    "Psicología Humana y Experimentos Mentales",
-    "Secretos del Océano Profundo",
-    "Misterios Históricos Sin Resolver",
-    "Proyectos Gubernamentales Secretos",
-    "Ciencia Extraña y Física Cuántica",
-    "Animales Extraordinarios y Evolución",
-    "Inventos Olvidados que Cambiaron el Mundo",
-    "Anomalías Médicas y Biología Humana",
-    "Colapsos Económicos y Escándalos Financieros",
-    "Desastres Legendarios y Eventos Catastróficos",
-    "Lugares Ocultos y Sociedades Secretas",
-    "Supervivencia Extrema y Hazañas Imposibles",
-]
-
-TOPIC_CATEGORIES_EN = [
-    "Ancient Civilizations and Lost History",
-    "Bizarre Natural Phenomena and Earth Science",
-    "Space Exploration and Cosmic Mysteries",
-    "Human Psychology and Mind Experiments",
-    "Deep Ocean Discoveries and Marine Biology",
-    "Unsolved Historical Mysteries and Cold Cases",
-    "Extreme Survival and Record-Breaking Feats",
-    "Secret Government Projects and Declassified Events",
-    "Strange Animal Behaviors and Evolution",
-    "Forgotten Inventions That Changed the World",
-    "Medical Anomalies and Body Science",
-    "Economic Collapses and Financial Scandals",
-    "Legendary Disasters and Near-Extinction Events",
-    "Underground Societies and Hidden Places",
-    "Time, Physics, and Reality-Bending Science",
-]
-
-TOPIC_CATEGORIES = {
-    "es": TOPIC_CATEGORIES_ES,
-    "en": TOPIC_CATEGORIES_EN,
-}
+    return client, provider, model or default_model
 
 
 class ContentBrain:
 
     def _generate(self, prompt: str) -> str:
-        if _provider == "openrouter":
-            response = _client.chat.completions.create(
-                model=_model,
+        client, provider, model = _get_client()
+        if provider == "openrouter":
+            response = client.chat.completions.create(
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
             )
             return response.choices[0].message.content
         else:
-            response = _client.models.generate_content(model=_model, contents=prompt)
+            response = client.models.generate_content(model=model, contents=prompt)
             return response.text
 
     def get_trending_topic(self, manual_topic: str = "", lang: str = "es") -> str:
@@ -115,7 +75,6 @@ class ContentBrain:
         return topic
 
     def get_topic_suggestions(self, category: str, n: int = 6, lang: str = "es") -> list:
-        """Genera n sugerencias de temas virales para la categoría dada."""
         label = "Generando sugerencias para" if lang == "es" else "Generating suggestions for"
         print(f"💡 {label}: {category}...")
 
@@ -171,7 +130,6 @@ OUTPUT FORMAT (strict JSON, no markdown):
                 return [s.strip() for s in suggestions if isinstance(s, str)][:n]
         except (json.JSONDecodeError, Exception):
             pass
-        # Fallback: parseo línea por línea
         lines = [
             l.strip().strip('"').strip("'").strip('-').strip()
             for l in clean.splitlines() if l.strip()
@@ -181,7 +139,7 @@ OUTPUT FORMAT (strict JSON, no markdown):
 
     def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es") -> list:
         label = "Escribiendo guion" if lang == "es" else "Writing script"
-        print(f"📝 {label}: {topic} ({num_scenes} escenas)...")
+        print(f"📝 {label}: {topic} ({num_scenes} scenes)...")
 
         if lang == "es":
             prompt = f"""Eres el guionista principal de un canal viral de YouTube Shorts en español latino llamado "Mentes Curiosas".
@@ -343,9 +301,6 @@ Genera copy optimizado para cada plataforma en español latino.
 - LÍNEA 3: CTA — invita a comentar o compartir.
 - HASHTAGS: EXACTAMENTE 3 hashtags en español.
 
-### HASHTAGS disponibles:
-#ciencia #historia #misterio #naturaleza #espacio #oceano #psicologia #datos #viral #sabíasque
-
 ### SALIDA (JSON estricto, sin markdown). Usa \\n para saltos de línea:
 {{
   "youtube_title": "...",
@@ -386,9 +341,6 @@ Generate platform-optimized copy for YouTube Shorts, TikTok, and Facebook Reels.
 - LINE 2: 1 natural conversational sentence adding context.
 - LINE 3: CTA — invites comment or share.
 - HASHTAGS: EXACTLY 3 hashtags.
-
-### HASHTAG POOL:
-#science #history #mystery #nature #space #ocean #psychology #facts #viral #didyouknow
 
 ### OUTPUT (strict JSON, no markdown). Use \\n for line breaks:
 {{
