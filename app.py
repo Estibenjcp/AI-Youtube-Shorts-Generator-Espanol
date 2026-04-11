@@ -693,7 +693,7 @@ if st.session_state.status in ("running", "done", "error"):
                if not any(l.startswith(p) for p in ("STAGE:", "COPY:", "THUMB:", "SCRIPT:"))
                and l != "DONE" and not l.startswith("ERROR:")]
     with st.expander("📋 " + T["log_area"], expanded=st.session_state.running):
-        st.text_area("", value="\n".join(visible), height=180, disabled=True, label_visibility="collapsed")
+        st.text_area("log", value="\n".join(visible), height=180, disabled=True, label_visibility="collapsed")
 
     if st.session_state.running:
         time.sleep(0.5)
@@ -755,7 +755,7 @@ if st.session_state.status == "done":
         script = st.session_state.get("script_data")
         if script:
             full_script = "\n\n".join(f"[{s['id']}] {s['text']}" for s in script)
-            st.text_area("", value=full_script, height=400, label_visibility="collapsed")
+            st.text_area("script", value=full_script, height=400, label_visibility="collapsed")
             st.markdown(f"**{T['visuals_header']}**")
             for scene in script:
                 st.caption(f"**{scene['id']}** · A: `{scene.get('visual_1','')}` · B: `{scene.get('visual_2','')}`")
@@ -788,7 +788,7 @@ if st.session_state.status == "done":
         thumb = st.session_state.get("thumb_prompt")
         if thumb:
             st.caption("Midjourney · DALL·E · Ideogram · Flux")
-            st.text_area("", value=thumb, height=320, label_visibility="collapsed")
+            st.text_area("thumb", value=thumb, height=320, label_visibility="collapsed")
             st.button("📋 Copiar", key="copy_thumb", use_container_width=True)
         else:
             st.info("No disponible.")
