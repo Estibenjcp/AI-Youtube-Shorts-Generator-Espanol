@@ -1,10 +1,10 @@
 import asyncio
-from modules.brain import ContentBrain
-from modules.asset_manager import AssetManager
-from modules.audio import AudioEngine
-from modules.composer import Composer
 import os
+import sys
 import shutil
+from modules.config import run_setup, check_config
+
+
 def clean_cache():
     """
     Safely deletes temporary files.
@@ -87,4 +87,17 @@ async def main():
         print("❌ Failed to generate any scenes.")
 
 if __name__ == "__main__":
+    if "--config" in sys.argv:
+        run_setup()
+        sys.exit(0)
+
+    if not check_config():
+        print("⚠️  No API configuration found. Starting setup...\n")
+        run_setup()
+
+    from modules.brain import ContentBrain
+    from modules.asset_manager import AssetManager
+    from modules.audio import AudioEngine
+    from modules.composer import Composer
+
     asyncio.run(main())

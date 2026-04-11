@@ -1,0 +1,113 @@
+import os
+from dotenv import load_dotenv, set_key
+
+ENV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+
+PROVIDER_DEFAULTS = {
+    "gemini": {
+        "label": "Google Gemini",
+        "model": "gemini-2.0-flash-exp",
+    },
+    "openrouter": {
+        "label": "OpenRouter",
+        "model": "google/gemini-flash-1.5",
+    },
+}
+
+
+def load_config():
+    load_dotenv(ENV_PATH, override=True)
+    return {
+        "AI_PROVIDER":   os.getenv("AI_PROVIDER", ""),
+        "AI_API_KEY":    os.getenv("AI_API_KEY", ""),
+        "AI_MODEL":      os.getenv("AI_MODEL", ""),
+        "PEXELS_API_KEY": os.getenv("PEXELS_API_KEY", ""),
+    }
+
+
+def _save(key, value):
+    set_key(ENV_PATH, key, value)
+
+
+def _mask(value):
+    if not value:
+        return "(not set)"
+    return f"...{value[-6:]}" if len(value) > 6 else "***"
+
+
+def run_setup():
+    print()
+    print("=" * 52)
+    print("   ⚙️   AutoShorts AI — API Configuration")
+    print("=" * 52)
+
+    current = load_config()
+
+    # ── 1. AI Provider ──────────────────────────────────
+    print()
+    print("📡  AI Provider")
+    print("    [1] Google Gemini  (direct API)")
+    print("    [2] OpenRouter     (supports many models)")
+    current_provider = current["AI_PROVIDER"] or "gemini"
+    current_label = PROVIDER_DEFAULTS.get(current_provider, {}).get("label", current_provider)
+    print(f"    Current: {current_label}")
+
+    choice = input("    Select provider (1/2, blank = keep): ").strip()
+    if choice == "2":
+        provider = "openrouter"
+    elif choice == "1":
+        provider = "gemini"
+    else:
+        provider = current_provider
+
+    info = PROVIDER_DEFAULTS[provider]
+
+    # ── 2. API Key ───────────────────────────────────────
+    print()
+    print(f"🔑  {info['label']} API Key")
+    print(f"    Current: {_mask(current['AI_API_KEY'])}")
+    api_key = input("    Enter API key (blank = keep current): ").strip()
+    if not api_key:
+        api_key = current["AI_API_KEY"]
+
+    # ── 3. Model ─────────────────────────────────────────
+    print()
+    print("🤖  Model")
+    print(f"    Default for {info['label']}: {info['model']}")
+    current_model = current["AI_MODEL"] or info["model"]
+    print(f"    Current: {current_model}")
+    model = input("    Enter model name (blank = keep current): ").strip()
+    if not model:
+        model = current_model
+
+    # ── 4. Pexels API Key ────────────────────────────────
+    print()
+    print("🎥  Pexels API Key")
+    print(f"    Current: {_mask(current['PEXELS_API_KEY'])}")
+    pexels_key = input("    Enter Pexels API key (blank = keep current): ").strip()
+    if not pexels_key:
+        pexels_key = current["PEXELS_API_KEY"]
+
+    # ── Save ─────────────────────────────────────────────
+    _save("AI_PROVIDER",   provider)
+    _save("AI_API_KEY",    api_key)
+    _save("AI_MODEL",      model)
+    _save("PEXELS_API_KEY", pexels_key)
+
+    print()
+    print("✅  Configuration saved to .env")
+    print("=" * 52)
+    print()
+
+    return load_config()
+
+
+def check_config():
+    """Returns True if all required keys are present."""
+    cfg = load_config()
+    return bool(cfg["AI_PROVIDER"] and cfg["AI_API_KEY"] and cfg["PEXELS_API_KEY"])
+
+
+# Run as standalone: python -m modules.config
+if __name__ == "__main__":
+    run_setup()
