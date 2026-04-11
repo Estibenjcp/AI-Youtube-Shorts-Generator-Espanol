@@ -10,19 +10,36 @@ PROVIDER_DEFAULTS = {
     },
     "openrouter": {
         "label": "OpenRouter",
-        "model": "google/gemini-flash-1.5",
+        "model": "google/gemini-2.0-flash-exp:free",
     },
 }
 
 
+def _streamlit_secrets() -> dict:
+    """Lee st.secrets si estamos en Streamlit Cloud."""
+    try:
+        import streamlit as st
+        return {
+            "AI_PROVIDER":    st.secrets.get("AI_PROVIDER", ""),
+            "AI_API_KEY":     st.secrets.get("AI_API_KEY", ""),
+            "AI_MODEL":       st.secrets.get("AI_MODEL", ""),
+            "PEXELS_API_KEY": st.secrets.get("PEXELS_API_KEY", ""),
+        }
+    except Exception:
+        return {}
+
+
 def load_config():
-    load_dotenv(ENV_PATH, override=True)
-    return {
-        "AI_PROVIDER":   os.getenv("AI_PROVIDER", ""),
-        "AI_API_KEY":    os.getenv("AI_API_KEY", ""),
-        "AI_MODEL":      os.getenv("AI_MODEL", ""),
+    load_dotenv(ENV_PATH)  # sin override=True para no pisar st.secrets
+    env_cfg = {
+        "AI_PROVIDER":    os.getenv("AI_PROVIDER", ""),
+        "AI_API_KEY":     os.getenv("AI_API_KEY", ""),
+        "AI_MODEL":       os.getenv("AI_MODEL", ""),
         "PEXELS_API_KEY": os.getenv("PEXELS_API_KEY", ""),
     }
+    # Prioridad: .env local → st.secrets (Streamlit Cloud)
+    st_cfg = _streamlit_secrets()
+    return {k: env_cfg[k] or st_cfg.get(k, "") for k in env_cfg}
 
 
 def _save(key, value):

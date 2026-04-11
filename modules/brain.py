@@ -7,11 +7,23 @@ load_dotenv()
 from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, TOPIC_CATEGORIES
 
 
+def _get_secret(key: str, default: str = "") -> str:
+    """Lee una clave de st.secrets (Streamlit Cloud) o de os.environ."""
+    val = os.getenv(key, "")
+    if val:
+        return val
+    try:
+        import streamlit as st
+        return st.secrets.get(key, default)
+    except Exception:
+        return default
+
+
 def _get_client():
     """Inicializa el cliente de IA solo cuando se necesita (lazy init)."""
-    provider  = os.getenv("AI_PROVIDER", "gemini").lower()
-    api_key   = os.getenv("AI_API_KEY", "")
-    model     = os.getenv("AI_MODEL", "")
+    provider  = _get_secret("AI_PROVIDER", "gemini").lower()
+    api_key   = _get_secret("AI_API_KEY", "")
+    model     = _get_secret("AI_MODEL", "")
 
     if provider == "openrouter":
         from openai import OpenAI
