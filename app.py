@@ -22,126 +22,346 @@ st.set_page_config(
     layout="centered",
 )
 
-# ── CSS Mobile-first ──────────────────────────────────────────────────────────
+# ── CSS ───────────────────────────────────────────────────────────────────────
 
 st.markdown("""
 <style>
-/* ── Fuente y base ── */
-html, body, [class*="css"] {
-    font-family: 'Inter', 'Segoe UI', sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ═══════════════════════════ BASE ═══════════════════════════ */
+html, body, [class*="css"], .stApp {
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
 }
 
-/* ── Título principal ── */
-h1 { font-size: clamp(1.4rem, 5vw, 2.2rem) !important; }
-h2 { font-size: clamp(1.1rem, 4vw, 1.6rem) !important; }
-h3 { font-size: clamp(1rem, 3.5vw, 1.3rem) !important; }
+/* Fondo principal con gradiente sutil */
+.stApp {
+    background: linear-gradient(160deg, #0f0f1a 0%, #13111e 60%, #0f0f1a 100%) !important;
+}
 
-/* ── Botones grandes táctiles ── */
+/* Fondo del sidebar */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #141128 0%, #1a1632 100%) !important;
+    border-right: 1px solid #ffffff12 !important;
+}
+
+/* ═══════════════════════════ TIPOGRAFÍA ═══════════════════════════ */
+h1 { font-size: clamp(1.6rem, 5vw, 2.4rem) !important; font-weight: 800 !important; letter-spacing: -0.5px !important; }
+h2 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; font-weight: 700 !important; }
+h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important; }
+
+/* ═══════════════════════════ HERO HEADER ═══════════════════════════ */
+.hero-title {
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #818cf8, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+.hero-sub {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-top: 0;
+}
+
+/* ═══════════════════════════ SELECTOR DE MODO ═══════════════════════════ */
+[data-testid="stRadio"] {
+    background: #1e1b33 !important;
+    border-radius: 14px !important;
+    padding: 5px !important;
+    border: 1px solid #2d2a4a !important;
+}
+[data-testid="stRadio"] > div {
+    gap: 4px !important;
+    flex-direction: row !important;
+}
+[data-testid="stRadio"] label {
+    background: transparent !important;
+    border-radius: 10px !important;
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    flex: 1 !important;
+    text-align: center !important;
+    color: #9ca3af !important;
+}
+[data-testid="stRadio"] label:has(input:checked) {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+    color: white !important;
+    box-shadow: 0 2px 12px rgba(124,58,237,0.5) !important;
+}
+[data-testid="stRadio"] input { display: none !important; }
+
+/* ═══════════════════════════ SEPARADORES DE PASOS ═══════════════════════════ */
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, #1e1b3380, #1e1b3310);
+    border: 1px solid #7c3aed40;
+    border-left: 3px solid #7c3aed;
+    padding: 12px 16px;
+    border-radius: 0 12px 12px 0;
+    margin: 20px 0 10px 0;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #c4b5fd;
+}
+
+/* ═══════════════════════════ INFO BOX MODO AUTO ═══════════════════════════ */
+.auto-info {
+    background: linear-gradient(90deg, #1e3a5f30, #1e3a5f10);
+    border: 1px solid #3b82f640;
+    border-left: 3px solid #3b82f6;
+    padding: 14px 18px;
+    border-radius: 0 12px 12px 0;
+    color: #93c5fd;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+}
+
+/* ═══════════════════════════ BOTONES ═══════════════════════════ */
 .stButton > button {
     min-height: 52px !important;
-    font-size: 1rem !important;
-    border-radius: 10px !important;
+    font-size: 0.95rem !important;
+    border-radius: 12px !important;
     font-weight: 600 !important;
-    transition: transform 0.1s ease;
+    transition: all 0.2s ease !important;
+    border: 1px solid #ffffff18 !important;
 }
-.stButton > button:active { transform: scale(0.97); }
+.stButton > button:active { transform: scale(0.97) !important; }
 
-/* ── Botón primario con gradiente ── */
+/* Botón primario — púrpura brillante */
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
     border: none !important;
     color: white !important;
-    box-shadow: 0 4px 15px rgba(124,58,237,0.4) !important;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.45) !important;
+    letter-spacing: 0.3px !important;
 }
 .stButton > button[kind="primary"]:hover {
-    box-shadow: 0 6px 20px rgba(124,58,237,0.6) !important;
+    box-shadow: 0 6px 28px rgba(124,58,237,0.65) !important;
+    transform: translateY(-1px) !important;
 }
 
-/* ── Inputs y selects ── */
-.stTextInput > div > div > input,
-.stSelectbox > div > div {
-    min-height: 48px !important;
-    font-size: 1rem !important;
-    border-radius: 8px !important;
+/* Botón secundario — sutil */
+.stButton > button[kind="secondary"] {
+    background: #1e1b33 !important;
+    color: #d1d5db !important;
+    border: 1px solid #2d2a4a !important;
+}
+.stButton > button[kind="secondary"]:hover {
+    border-color: #7c3aed80 !important;
+    color: #c4b5fd !important;
 }
 
-/* ── Tarjetas de sugerencias ── */
+/* ═══════════════════════════ TARJETAS DE SUGERENCIAS ═══════════════════════════ */
 .suggestion-card .stButton > button {
     white-space: normal !important;
     height: auto !important;
-    min-height: 64px !important;
-    padding: 12px 16px !important;
+    min-height: 70px !important;
+    padding: 14px 16px !important;
     text-align: left !important;
-    line-height: 1.4 !important;
-    font-size: 0.9rem !important;
+    line-height: 1.45 !important;
+    font-size: 0.88rem !important;
     font-weight: 500 !important;
+    background: #1a1730 !important;
+    border: 1px solid #2d2a4a !important;
+    color: #d1d5db !important;
+    border-radius: 12px !important;
+}
+.suggestion-card .stButton > button:hover {
+    border-color: #7c3aed80 !important;
+    background: #231f3d !important;
+    color: #e9d5ff !important;
+}
+.suggestion-card .stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #4c1d9520, #3730a320) !important;
+    border: 1px solid #7c3aed !important;
+    color: #c4b5fd !important;
+    box-shadow: 0 0 16px rgba(124,58,237,0.2) !important;
 }
 
-/* ── Progress stages ── */
-.stage-box {
-    border-radius: 8px;
-    padding: 8px 4px;
-    text-align: center;
-    font-size: 0.8rem;
+/* ═══════════════════════════ INPUTS ═══════════════════════════ */
+.stTextInput > div > div > input {
+    min-height: 50px !important;
+    font-size: 1rem !important;
+    border-radius: 12px !important;
+    background: #1a1730 !important;
+    border: 1px solid #2d2a4a !important;
+    color: #e5e7eb !important;
+    padding: 12px 16px !important;
+}
+.stTextInput > div > div > input:focus {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.2) !important;
+}
+.stTextInput > div > div > input::placeholder { color: #4b5563 !important; }
+
+.stSelectbox > div > div {
+    min-height: 50px !important;
+    border-radius: 12px !important;
+    background: #1a1730 !important;
+    border: 1px solid #2d2a4a !important;
 }
 
-/* ── Tabs ── */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
+/* ═══════════════════════════ SLIDER ═══════════════════════════ */
+.stSlider [data-baseweb="slider"] div[role="slider"] {
+    background: #7c3aed !important;
+    box-shadow: 0 0 8px rgba(124,58,237,0.6) !important;
 }
-.stTabs [data-baseweb="tab"] {
-    font-size: 0.9rem !important;
-    padding: 8px 12px !important;
-    border-radius: 8px 8px 0 0 !important;
+.stSlider [data-baseweb="slider"] div[data-testid="stThumbValue"] {
+    color: #c4b5fd !important;
 }
 
-/* ── Download button grande ── */
+/* ═══════════════════════════ BOTÓN GENERAR ═══════════════════════════ */
+.generate-btn .stButton > button {
+    min-height: 64px !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+    box-shadow: 0 6px 30px rgba(124,58,237,0.5) !important;
+}
+.generate-btn .stButton > button:hover {
+    box-shadow: 0 8px 40px rgba(124,58,237,0.7) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* ═══════════════════════════ DOWNLOAD ═══════════════════════════ */
 .stDownloadButton > button {
     width: 100% !important;
-    min-height: 56px !important;
+    min-height: 58px !important;
     font-size: 1.05rem !important;
     font-weight: 700 !important;
-    border-radius: 12px !important;
+    border-radius: 14px !important;
     background: linear-gradient(135deg, #059669, #047857) !important;
     color: white !important;
     border: none !important;
-    box-shadow: 0 4px 15px rgba(5,150,105,0.4) !important;
+    box-shadow: 0 4px 20px rgba(5,150,105,0.45) !important;
+    letter-spacing: 0.3px !important;
+}
+.stDownloadButton > button:hover {
+    box-shadow: 0 6px 28px rgba(5,150,105,0.65) !important;
+    transform: translateY(-1px) !important;
 }
 
-/* ── Log area ── */
+/* ═══════════════════════════ PROGRESS ═══════════════════════════ */
+.stProgress > div > div {
+    background: linear-gradient(90deg, #7c3aed, #818cf8) !important;
+    border-radius: 99px !important;
+}
+.stProgress > div {
+    background: #1e1b33 !important;
+    border-radius: 99px !important;
+    height: 8px !important;
+}
+
+/* ═══════════════════════════ TABS ═══════════════════════════ */
+.stTabs [data-baseweb="tab-list"] {
+    background: #1a1730 !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 4px 4px 0 4px !important;
+    gap: 2px !important;
+    border-bottom: 1px solid #2d2a4a !important;
+}
+.stTabs [data-baseweb="tab"] {
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    padding: 10px 14px !important;
+    border-radius: 8px 8px 0 0 !important;
+    color: #6b7280 !important;
+    border: none !important;
+    background: transparent !important;
+}
+.stTabs [aria-selected="true"] {
+    background: #231f3d !important;
+    color: #c4b5fd !important;
+    border-bottom: 2px solid #7c3aed !important;
+}
+.stTabs [data-baseweb="tab-panel"] {
+    background: #141128 !important;
+    border: 1px solid #2d2a4a !important;
+    border-top: none !important;
+    border-radius: 0 0 12px 12px !important;
+    padding: 16px !important;
+}
+
+/* ═══════════════════════════ LOG ═══════════════════════════ */
 .stTextArea textarea {
     font-size: 0.78rem !important;
     font-family: 'Courier New', monospace !important;
+    background: #0d0b1a !important;
+    border: 1px solid #1e1b33 !important;
+    color: #6ee7b7 !important;
+    border-radius: 8px !important;
 }
 
-/* ── Sidebar táctil ── */
-[data-testid="stSidebar"] .stButton > button {
-    min-height: 44px !important;
+/* ═══════════════════════════ EXPANDER ═══════════════════════════ */
+.stExpander {
+    border: 1px solid #1e1b33 !important;
+    border-radius: 12px !important;
+    background: #13111e !important;
+}
+.stExpander summary {
+    font-weight: 600 !important;
+    color: #6b7280 !important;
 }
 
-/* ── Code blocks en móvil ── */
-.stCode {
-    font-size: 0.8rem !important;
-    overflow-x: auto !important;
+/* ═══════════════════════════ ALERTS ═══════════════════════════ */
+.stSuccess {
+    background: #052e1630 !important;
+    border: 1px solid #10b98150 !important;
+    border-radius: 10px !important;
+    color: #6ee7b7 !important;
+}
+.stInfo {
+    background: #1e3a5f30 !important;
+    border: 1px solid #3b82f650 !important;
+    border-radius: 10px !important;
+}
+.stWarning {
+    background: #78350f30 !important;
+    border: 1px solid #f59e0b50 !important;
+    border-radius: 10px !important;
+}
+.stError {
+    background: #7f1d1d30 !important;
+    border: 1px solid #ef444450 !important;
+    border-radius: 10px !important;
 }
 
-/* ── Separador de pasos ── */
-.step-header {
-    background: linear-gradient(90deg, #7c3aed22, transparent);
-    border-left: 3px solid #7c3aed;
-    padding: 8px 14px;
-    border-radius: 0 8px 8px 0;
-    margin: 16px 0 8px 0;
-    font-weight: 700;
-    font-size: 1rem;
+/* ═══════════════════════════ DIVIDER ═══════════════════════════ */
+hr {
+    border-color: #1e1b33 !important;
+    margin: 20px 0 !important;
 }
 
-/* ── Responsive: móvil ── */
+/* ═══════════════════════════ CODE BLOCKS ═══════════════════════════ */
+.stCode, pre {
+    background: #0d0b1a !important;
+    border: 1px solid #1e1b33 !important;
+    border-radius: 10px !important;
+    font-size: 0.82rem !important;
+}
+
+/* ═══════════════════════════ SIDEBAR ═══════════════════════════ */
+[data-testid="stSidebar"] .stButton > button { min-height: 44px !important; }
+[data-testid="stSidebar"] .stTextInput > div > div > input { min-height: 44px !important; }
+[data-testid="stSidebar"] hr { border-color: #ffffff0d !important; }
+
+/* ═══════════════════════════ MOBILE ═══════════════════════════ */
 @media (max-width: 640px) {
-    .stButton > button { min-height: 56px !important; font-size: 0.95rem !important; }
-    h1 { font-size: 1.3rem !important; }
-    .stTabs [data-baseweb="tab"] { font-size: 0.8rem !important; padding: 6px 8px !important; }
+    .stButton > button { min-height: 56px !important; }
+    h1 { font-size: 1.4rem !important; }
+    .stTabs [data-baseweb="tab"] { font-size: 0.78rem !important; padding: 8px 8px !important; }
     [data-testid="stSidebar"] { min-width: 280px !important; }
+    .step-header { font-size: 0.9rem !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -542,8 +762,11 @@ with st.sidebar:
 
 # ── Main area ─────────────────────────────────────────────────────────────────
 
-st.markdown(f"# {T['page_title']}")
-st.caption(T["page_caption"])
+st.markdown(
+    f"<div class='hero-title'>{T['page_title']}</div>"
+    f"<p class='hero-sub'>{T['page_caption']}</p>",
+    unsafe_allow_html=True,
+)
 
 config_ok  = check_config()
 CATEGORIES = TOPIC_CATEGORIES_ES if lang_option == "es" else TOPIC_CATEGORIES_EN
@@ -582,7 +805,7 @@ if mode == "auto":
         if lang_option == "es"
         else "The AI picks a category and viral topic automatically. Just press Generate."
     )
-    st.info(f"✨ {auto_hint}")
+    st.markdown(f"<div class='auto-info'>✨ {auto_hint}</div>", unsafe_allow_html=True)
 
     manual_topic_auto = st.text_input(
         "Tema opcional" if lang_option == "es" else "Optional topic",
@@ -678,9 +901,11 @@ else:
 # ── Generar ───────────────────────────────────────────────────────────────────
 
 st.markdown("---")
+st.markdown("<div class='generate-btn'>", unsafe_allow_html=True)
 generate_clicked = st.button(T["generate_btn"],
     disabled=st.session_state.running or not config_ok,
     type="primary", use_container_width=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
 if not config_ok:
     st.info(T["config_info"])
