@@ -464,31 +464,28 @@ Categoría: {category}
 
 Devuelve exclusivamente el texto narrado de corrido, sin títulos de sección, sin formato Markdown, sin etiquetas de tiempo. Solo las palabras que deben ser pronunciadas."""
         else:
-            script_prompt = f"""You are the best educational content creator for YouTube Shorts. Your specialty is summarizing books in a way that makes people want to read them immediately.
+            script_prompt = f"""Act as an expert storyteller and literary analyst with a minimalist, deep and mysterious style, similar to the best content curators on TikTok. Your goal is not to summarize a book, but to reveal its essence in a way that feels like a necessary discovery for the viewer.
 
-Create a 60-second Short that:
-1. Presents the book and its core idea in an impactful way.
-2. Shares 2-3 practical lessons or real-life applications.
-3. Ends with a phrase so powerful the viewer wants to read the book NOW.
+Script Structure (55-65 seconds / 150-170 words):
 
-MANDATORY RULES:
-- NO emojis. Pure narration text only.
-- LANGUAGE: ENGLISH ONLY. Every single word must be in English.
-- Duration: 55-65 seconds (maximum 150-170 words).
-- Tone: Inspiring, direct, curious. Like talking to a smart friend.
-- Perspective: 2nd person ("Imagine that...", "What would you do if..."). Involve the viewer.
-- EXACT structure:
-  1. HOOK (first 5 sec): A powerful question or statement related to the problem the book solves.
-  2. THE BOOK (5 sec): Introduce the book and author in 1 sentence. Never say "today I'm going to talk about".
-  3. LESSON 1 (10-15 sec): The most powerful idea with a real practical application.
-  4. LESSON 2 (10-15 sec): Second key idea — surprising or counterintuitive.
-  5. LESSON 3 (10 sec): Third perspective-shifting idea.
-  6. CLOSE + CTA (10 sec): Inspiring final quote from the book + "Comment READ if you've read it or WANT if you're going to read it".
+1. THE MYSTERY (5 sec): Don't start with a self-help question. Start with a counterintuitive observation or an uncomfortable truth the book addresses. E.g.: "Almost no one realizes it, but we live in a world where..."
+2. THE REVELATION (5 sec): Introduce the title and author as if it were the missing piece of the puzzle. No unnecessary introductions.
+3. THE DISCOVERY (15 sec): Explain the core premise not as a lesson, but as a "rule of the game" the author uncovered. Use phrases like "The author raises something fascinating..." or "What this book proposes is that...".
+4. THE TWIST (15 sec): Present the most surprising or radical idea in the book. The one that makes you stop scrolling. It must sound deep and analytical.
+5. THE INVISIBLE APPLICATION (10 sec): How this book changes the way the viewer will see the world tomorrow morning.
+6. THE FINAL IMPACT (10 sec): A closing line that leaves a reflective silence. The CTA must be minimalist, never salesy.
+
+CRITICAL RULES:
+- FORBIDDEN: Emojis, opening greetings, generic farewells or salesy language.
+- LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
+- PERSPECTIVE: Constant 2nd person. Speak directly to the viewer's mind.
+- TONE: Cinematic, unhurried, intellectual yet accessible. Like an intelligent whisper in the middle of noise.
+- LANGUAGE STYLE: Neutral, elegant and precise English. Avoid common words; seek words that evoke images.
 
 Book: {book}
 Category: {category}
 
-Return ONLY the complete narrated text, straight through, no emojis. No JSON, no section titles, no markdown."""
+Return exclusively the narrated text straight through, no section titles, no Markdown formatting, no time labels. Only the words that must be spoken."""
 
         full_script = self._generate(script_prompt).strip()
         print(f"📜 Book summary: {len(full_script.split())} words")
