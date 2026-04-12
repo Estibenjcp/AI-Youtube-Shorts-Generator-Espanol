@@ -290,9 +290,10 @@ Rules:
 - Maximum 10 scenes
 - visual_1 and visual_2 MUST be in ENGLISH, 2-4 words, suitable for Pexels search
 - Visuals must match the content of each sentence
+- CRITICAL: The "text" field for each scene must be copied VERBATIM from the script above. Do NOT modify, paraphrase, summarize, shorten or alter any word. Copy the exact original words.
 
 Return STRICT JSON array only, no markdown:
-[{{"id":1,"text":"sentence","visual_1":"term","visual_2":"term","mood":"dramatic"}}]"""
+[{{"id":1,"text":"exact sentence from script","visual_1":"term","visual_2":"term","mood":"dramatic"}}]"""
 
         raw = self._generate(visual_prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()
@@ -405,9 +406,10 @@ Rules:
 - ALL THREE visuals MUST be in ENGLISH, 2-4 words, suitable for dark/atmospheric Pexels search
 - Visuals must be dark, mysterious, atmospheric (dark forest, candles, shadows, fog, etc.)
 - visual_1: matches start of sentence, visual_2: matches end/context, visual_3: extra atmospheric b-roll
+- CRITICAL: The "text" field for each scene must be copied VERBATIM from the script above. Do NOT modify, paraphrase, summarize, shorten or alter any word. Copy the exact original words.
 
 Return STRICT JSON array only, no markdown:
-[{{"id":1,"text":"sentence","visual_1":"dark forest night","visual_2":"candle ritual","visual_3":"mysterious shadow fog","mood":"horror"}}]"""
+[{{"id":1,"text":"exact sentence from script","visual_1":"dark forest night","visual_2":"candle ritual","visual_3":"mysterious shadow fog","mood":"horror"}}]"""
 
         raw = self._generate(visual_prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()
@@ -501,9 +503,10 @@ Rules:
 - visual_1 and visual_2 MUST be in ENGLISH, 2-4 words, suitable for Pexels search
 - Visuals must be inspiring, educational and aspirational: people reading, writing, working, thinking, city life, nature, success, growth, etc.
 - AVOID dark or horror visuals — this is motivational content
+- CRITICAL: The "text" field for each scene must be copied VERBATIM from the script above. Do NOT modify, paraphrase, summarize, shorten or alter any word. Copy the exact original words.
 
 Return STRICT JSON array only, no markdown:
-[{{"id":1,"text":"sentence","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}}]"""
+[{{"id":1,"text":"exact sentence from script","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}}]"""
 
         raw   = self._generate(visual_prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()

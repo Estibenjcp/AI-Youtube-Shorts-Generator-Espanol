@@ -175,6 +175,11 @@ class Composer:
                 print(f"   ⚠️ Skipping Scene {scene['id']} — audio file not found.")
                 continue
 
+            # Guard: skip scene if duration is zero (failed audio generation)
+            if scene.get('duration', 0) <= 0:
+                print(f"   ⚠️ Skipping Scene {scene['id']} — duration is zero or invalid.")
+                continue
+
             current_pair = video_pairs[i] if i < len(video_pairs) else None
             is_avatar    = False
 
