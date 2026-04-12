@@ -33,27 +33,29 @@ html, body, [class*="css"], .stApp {
     font-family: 'Inter', 'Segoe UI', sans-serif !important;
 }
 
-/* Fondo principal con gradiente sutil */
+/* Fondo principal blanco cálido */
 .stApp {
-    background: linear-gradient(160deg, #0f0f1a 0%, #13111e 60%, #0f0f1a 100%) !important;
+    background: #f8f9fb !important;
 }
 
-/* Fondo del sidebar */
+/* Sidebar blanco con borde sutil */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #141128 0%, #1a1632 100%) !important;
-    border-right: 1px solid #ffffff12 !important;
+    background: #ffffff !important;
+    border-right: 1px solid #e5e7eb !important;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.04) !important;
 }
 
 /* ═══════════════════════════ TIPOGRAFÍA ═══════════════════════════ */
-h1 { font-size: clamp(1.6rem, 5vw, 2.4rem) !important; font-weight: 800 !important; letter-spacing: -0.5px !important; }
-h2 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; font-weight: 700 !important; }
-h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important; }
+h1 { font-size: clamp(1.6rem, 5vw, 2.4rem) !important; font-weight: 800 !important; letter-spacing: -0.5px !important; color: #111827 !important; }
+h2 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; font-weight: 700 !important; color: #1f2937 !important; }
+h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important; color: #374151 !important; }
+p, label, .stMarkdown { color: #374151 !important; }
 
 /* ═══════════════════════════ HERO HEADER ═══════════════════════════ */
 .hero-title {
     font-size: clamp(1.8rem, 6vw, 2.8rem);
     font-weight: 800;
-    background: linear-gradient(135deg, #a78bfa, #818cf8, #c4b5fd);
+    background: linear-gradient(135deg, #6d28d9, #4f46e5, #7c3aed);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -68,10 +70,10 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
 
 /* ═══════════════════════════ SELECTOR DE MODO ═══════════════════════════ */
 [data-testid="stRadio"] {
-    background: #1e1b33 !important;
+    background: #f3f4f6 !important;
     border-radius: 14px !important;
     padding: 5px !important;
-    border: 1px solid #2d2a4a !important;
+    border: 1px solid #e5e7eb !important;
 }
 [data-testid="stRadio"] > div {
     gap: 4px !important;
@@ -87,12 +89,12 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     transition: all 0.2s ease !important;
     flex: 1 !important;
     text-align: center !important;
-    color: #9ca3af !important;
+    color: #6b7280 !important;
 }
 [data-testid="stRadio"] label:has(input:checked) {
     background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
     color: white !important;
-    box-shadow: 0 2px 12px rgba(124,58,237,0.5) !important;
+    box-shadow: 0 2px 10px rgba(124,58,237,0.3) !important;
 }
 [data-testid="stRadio"] input { display: none !important; }
 
@@ -101,25 +103,25 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     display: flex;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(90deg, #1e1b3380, #1e1b3310);
-    border: 1px solid #7c3aed40;
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
     border-left: 3px solid #7c3aed;
     padding: 12px 16px;
     border-radius: 0 12px 12px 0;
     margin: 20px 0 10px 0;
     font-weight: 700;
     font-size: 1rem;
-    color: #c4b5fd;
+    color: #5b21b6;
 }
 
 /* ═══════════════════════════ INFO BOX MODO AUTO ═══════════════════════════ */
 .auto-info {
-    background: linear-gradient(90deg, #1e3a5f30, #1e3a5f10);
-    border: 1px solid #3b82f640;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
     border-left: 3px solid #3b82f6;
     padding: 14px 18px;
     border-radius: 0 12px 12px 0;
-    color: #93c5fd;
+    color: #1d4ed8;
     font-size: 0.9rem;
     margin-bottom: 16px;
 }
@@ -131,32 +133,32 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     border-radius: 12px !important;
     font-weight: 600 !important;
     transition: all 0.2s ease !important;
-    border: 1px solid #ffffff18 !important;
 }
 .stButton > button:active { transform: scale(0.97) !important; }
 
-/* Botón primario — púrpura brillante */
+/* Botón primario */
 .stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
     border: none !important;
     color: white !important;
-    box-shadow: 0 4px 20px rgba(124,58,237,0.45) !important;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.35) !important;
     letter-spacing: 0.3px !important;
 }
 .stButton > button[kind="primary"]:hover {
-    box-shadow: 0 6px 28px rgba(124,58,237,0.65) !important;
+    box-shadow: 0 6px 24px rgba(124,58,237,0.5) !important;
     transform: translateY(-1px) !important;
 }
 
-/* Botón secundario — sutil */
+/* Botón secundario */
 .stButton > button[kind="secondary"] {
-    background: #1e1b33 !important;
-    color: #d1d5db !important;
-    border: 1px solid #2d2a4a !important;
+    background: #ffffff !important;
+    color: #374151 !important;
+    border: 1.5px solid #d1d5db !important;
 }
 .stButton > button[kind="secondary"]:hover {
-    border-color: #7c3aed80 !important;
-    color: #c4b5fd !important;
+    border-color: #7c3aed !important;
+    color: #6d28d9 !important;
+    background: #f5f3ff !important;
 }
 
 /* ═══════════════════════════ TARJETAS DE SUGERENCIAS ═══════════════════════════ */
@@ -169,21 +171,23 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     line-height: 1.45 !important;
     font-size: 0.88rem !important;
     font-weight: 500 !important;
-    background: #1a1730 !important;
-    border: 1px solid #2d2a4a !important;
-    color: #d1d5db !important;
+    background: #ffffff !important;
+    border: 1.5px solid #e5e7eb !important;
+    color: #1f2937 !important;
     border-radius: 12px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
 }
 .suggestion-card .stButton > button:hover {
-    border-color: #7c3aed80 !important;
-    background: #231f3d !important;
-    color: #e9d5ff !important;
+    border-color: #a78bfa !important;
+    background: #faf5ff !important;
+    color: #5b21b6 !important;
+    box-shadow: 0 2px 10px rgba(124,58,237,0.12) !important;
 }
 .suggestion-card .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #4c1d9520, #3730a320) !important;
-    border: 1px solid #7c3aed !important;
-    color: #c4b5fd !important;
-    box-shadow: 0 0 16px rgba(124,58,237,0.2) !important;
+    background: #f5f3ff !important;
+    border: 1.5px solid #7c3aed !important;
+    color: #5b21b6 !important;
+    box-shadow: 0 2px 10px rgba(124,58,237,0.15) !important;
 }
 
 /* ═══════════════════════════ INPUTS ═══════════════════════════ */
@@ -191,31 +195,28 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     min-height: 50px !important;
     font-size: 1rem !important;
     border-radius: 12px !important;
-    background: #1a1730 !important;
-    border: 1px solid #2d2a4a !important;
-    color: #e5e7eb !important;
+    background: #ffffff !important;
+    border: 1.5px solid #d1d5db !important;
+    color: #111827 !important;
     padding: 12px 16px !important;
 }
 .stTextInput > div > div > input:focus {
     border-color: #7c3aed !important;
-    box-shadow: 0 0 0 3px rgba(124,58,237,0.2) !important;
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.12) !important;
 }
-.stTextInput > div > div > input::placeholder { color: #4b5563 !important; }
+.stTextInput > div > div > input::placeholder { color: #9ca3af !important; }
 
 .stSelectbox > div > div {
     min-height: 50px !important;
     border-radius: 12px !important;
-    background: #1a1730 !important;
-    border: 1px solid #2d2a4a !important;
+    background: #ffffff !important;
+    border: 1.5px solid #d1d5db !important;
 }
 
 /* ═══════════════════════════ SLIDER ═══════════════════════════ */
 .stSlider [data-baseweb="slider"] div[role="slider"] {
     background: #7c3aed !important;
-    box-shadow: 0 0 8px rgba(124,58,237,0.6) !important;
-}
-.stSlider [data-baseweb="slider"] div[data-testid="stThumbValue"] {
-    color: #c4b5fd !important;
+    box-shadow: 0 0 6px rgba(124,58,237,0.4) !important;
 }
 
 /* ═══════════════════════════ BOTÓN GENERAR ═══════════════════════════ */
@@ -226,10 +227,10 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     letter-spacing: 0.5px !important;
     border-radius: 16px !important;
     background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
-    box-shadow: 0 6px 30px rgba(124,58,237,0.5) !important;
+    box-shadow: 0 6px 24px rgba(124,58,237,0.4) !important;
 }
 .generate-btn .stButton > button:hover {
-    box-shadow: 0 8px 40px rgba(124,58,237,0.7) !important;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.55) !important;
     transform: translateY(-2px) !important;
 }
 
@@ -243,11 +244,11 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     background: linear-gradient(135deg, #059669, #047857) !important;
     color: white !important;
     border: none !important;
-    box-shadow: 0 4px 20px rgba(5,150,105,0.45) !important;
+    box-shadow: 0 4px 16px rgba(5,150,105,0.35) !important;
     letter-spacing: 0.3px !important;
 }
 .stDownloadButton > button:hover {
-    box-shadow: 0 6px 28px rgba(5,150,105,0.65) !important;
+    box-shadow: 0 6px 24px rgba(5,150,105,0.5) !important;
     transform: translateY(-1px) !important;
 }
 
@@ -257,18 +258,18 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     border-radius: 99px !important;
 }
 .stProgress > div {
-    background: #1e1b33 !important;
+    background: #e5e7eb !important;
     border-radius: 99px !important;
     height: 8px !important;
 }
 
 /* ═══════════════════════════ TABS ═══════════════════════════ */
 .stTabs [data-baseweb="tab-list"] {
-    background: #1a1730 !important;
+    background: #f3f4f6 !important;
     border-radius: 12px 12px 0 0 !important;
     padding: 4px 4px 0 4px !important;
     gap: 2px !important;
-    border-bottom: 1px solid #2d2a4a !important;
+    border-bottom: 1px solid #e5e7eb !important;
 }
 .stTabs [data-baseweb="tab"] {
     font-size: 0.88rem !important;
@@ -280,13 +281,13 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
     background: transparent !important;
 }
 .stTabs [aria-selected="true"] {
-    background: #231f3d !important;
-    color: #c4b5fd !important;
+    background: #ffffff !important;
+    color: #6d28d9 !important;
     border-bottom: 2px solid #7c3aed !important;
 }
 .stTabs [data-baseweb="tab-panel"] {
-    background: #141128 !important;
-    border: 1px solid #2d2a4a !important;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
     border-top: none !important;
     border-radius: 0 0 12px 12px !important;
     padding: 16px !important;
@@ -296,56 +297,33 @@ h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important
 .stTextArea textarea {
     font-size: 0.78rem !important;
     font-family: 'Courier New', monospace !important;
-    background: #0d0b1a !important;
-    border: 1px solid #1e1b33 !important;
-    color: #6ee7b7 !important;
+    background: #f8fafc !important;
+    border: 1px solid #e5e7eb !important;
+    color: #374151 !important;
     border-radius: 8px !important;
 }
 
 /* ═══════════════════════════ EXPANDER ═══════════════════════════ */
 .stExpander {
-    border: 1px solid #1e1b33 !important;
+    border: 1px solid #e5e7eb !important;
     border-radius: 12px !important;
-    background: #13111e !important;
+    background: #ffffff !important;
 }
 .stExpander summary {
     font-weight: 600 !important;
     color: #6b7280 !important;
 }
 
-/* ═══════════════════════════ ALERTS ═══════════════════════════ */
-.stSuccess {
-    background: #052e1630 !important;
-    border: 1px solid #10b98150 !important;
-    border-radius: 10px !important;
-    color: #6ee7b7 !important;
-}
-.stInfo {
-    background: #1e3a5f30 !important;
-    border: 1px solid #3b82f650 !important;
-    border-radius: 10px !important;
-}
-.stWarning {
-    background: #78350f30 !important;
-    border: 1px solid #f59e0b50 !important;
-    border-radius: 10px !important;
-}
-.stError {
-    background: #7f1d1d30 !important;
-    border: 1px solid #ef444450 !important;
-    border-radius: 10px !important;
-}
-
 /* ═══════════════════════════ DIVIDER ═══════════════════════════ */
 hr {
-    border-color: #1e1b33 !important;
+    border-color: #e5e7eb !important;
     margin: 20px 0 !important;
 }
 
 /* ═══════════════════════════ CODE BLOCKS ═══════════════════════════ */
 .stCode, pre {
-    background: #0d0b1a !important;
-    border: 1px solid #1e1b33 !important;
+    background: #f8f9fb !important;
+    border: 1px solid #e5e7eb !important;
     border-radius: 10px !important;
     font-size: 0.82rem !important;
 }
@@ -353,7 +331,7 @@ hr {
 /* ═══════════════════════════ SIDEBAR ═══════════════════════════ */
 [data-testid="stSidebar"] .stButton > button { min-height: 44px !important; }
 [data-testid="stSidebar"] .stTextInput > div > div > input { min-height: 44px !important; }
-[data-testid="stSidebar"] hr { border-color: #ffffff0d !important; }
+[data-testid="stSidebar"] hr { border-color: #f3f4f6 !important; }
 
 /* ═══════════════════════════ MOBILE ═══════════════════════════ */
 @media (max-width: 640px) {
