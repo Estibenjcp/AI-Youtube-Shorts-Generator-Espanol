@@ -51,19 +51,61 @@ class ContentBrain:
             response = client.models.generate_content(model=model, contents=prompt)
             return response.text
 
-    def get_trending_topic(self, manual_topic: str = "", lang: str = "es") -> str:
+    def get_trending_topic(self, manual_topic: str = "", lang: str = "es",
+                           category_hint: str = "", mode: str = "auto") -> str:
         if manual_topic.strip():
             label = "Tema" if lang == "es" else "Topic"
             print(f"🎯 {label}: {manual_topic.strip()}")
             return manual_topic.strip()
 
         import random as _random
+        from modules.categories import VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES
 
-        categories = TOPIC_CATEGORIES.get(lang, TOPIC_CATEGORIES_ES)
-        category   = _random.choice(categories)
-        seed       = int(_random.random() * 99999)
+        # Pick category from the right pool depending on mode
+        if category_hint.strip():
+            category = category_hint.strip()
+        elif mode == "viral":
+            category = _random.choice(VIRAL_CATEGORIES)
+        elif mode == "testimonio":
+            category = _random.choice(TESTIMONIO_CATEGORIES)
+        else:
+            categories = TOPIC_CATEGORIES.get(lang, TOPIC_CATEGORIES_ES)
+            category   = _random.choice(categories)
 
-        if lang == "es":
+        seed = int(_random.random() * 99999)
+
+        # Use mode-specific prompt so the topic matches the content style
+        if mode == "viral":
+            prompt = (
+                f"Dame 1 tema oscuro, impactante y poco conocido para un YouTube Short viral "
+                f"en la categoría: {category}. "
+                f"Debe ser un hecho histórico real, catástrofe, near miss, mortandad o conspiración documentada. "
+                f"Estilo: MrBeast + Dark History. Impacto máximo, dato que shockee. "
+                f"Semilla: {seed}. "
+                f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
+            ) if lang == "es" else (
+                f"Give me 1 dark, shocking and little-known topic for a viral YouTube Short "
+                f"in the category: {category}. "
+                f"Must be a real historical fact, catastrophe, near miss, or documented conspiracy. "
+                f"MrBeast + Dark History style. Maximum shock value. "
+                f"Seed: {seed}. Return ONLY the topic name, nothing else."
+            )
+        elif mode == "testimonio":
+            prompt = (
+                f"Dame 1 tema de horror, misterio o testimonio perturbador para un Short cinematográfico "
+                f"en la categoría: {category}. "
+                f"Debe sonar como un testimonio real: una secta, ritual, aparición, revelación aterradora, ocultismo. "
+                f"Estilo Archimosfera — tono oscuro y escalofriante. "
+                f"Semilla: {seed}. "
+                f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
+            ) if lang == "es" else (
+                f"Give me 1 horror, mystery or disturbing testimony topic for a cinematic Short "
+                f"in the category: {category}. "
+                f"Must sound like a real testimony: a cult, ritual, apparition, terrifying revelation, occultism. "
+                f"Archimosfera style — dark and chilling tone. "
+                f"Seed: {seed}. Return ONLY the topic name, nothing else."
+            )
+        else:
             prompt = (
                 f"Dame 1 tema específico, viral y fascinante para un Short Documental "
                 f"en la categoría: {category}. "
@@ -71,9 +113,7 @@ class ContentBrain:
                 f"Hazlo DIFERENTE e INESPERADO — evita temas comunes. "
                 f"Semilla de unicidad: {seed}. "
                 f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
-            )
-        else:
-            prompt = (
+            ) if lang == "es" else (
                 f"Give me 1 specific, viral, and deeply fascinating topic for a Short Documentary "
                 f"in the category of: {category}. "
                 f"It must be a surprising 'Did you know' fact or a little-known true event. "
@@ -201,13 +241,14 @@ Devuelve SOLO el texto completo narrado, de corrido, con emojis. Sin JSON, sin t
 Your goal: maximum retention and shares (MrBeast + The Why Files + Dark History style).
 
 MANDATORY RULES:
+- LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
 - Total duration: 45-60 seconds (maximum 140-160 words).
 - EXACT structure:
   1. HOOK (first 3 sec): Shocking question, mind-blowing number or crazy statement with emoji.
   2. QUICK CONTEXT (5-10 sec): Historical situation in 1-2 sentences.
   3. THE TWIST / NEAR MISS (center): Brutal detail, unknown fact, terrifying consequence.
   4. FINAL TWIST (last 8-10 sec): Shocking revelation, irony or "what happened after".
-  5. CTA (last 3 sec): call to action to follow or ask for part 2.
+  5. CTA (last 3 sec): "Comment 'WHAT ELSE?' if you want part 2" + "Follow for more dark history".
 
 Style: Dramatic, conversational and addictive (CAPS for emphasis, exclamation marks and questions).
 Include emojis. Never say "today I'm going to tell you" or "we're going to talk about".
@@ -309,6 +350,7 @@ Devuelve SOLO el texto completo narrado, de corrido, con emojis. Sin JSON, sin t
 Tell the story as if it were a real testimony from a real person (ex-satanist, witness, priest, victim, etc.).
 
 Important rules:
+- LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
 - Narration must be slow, deep and full of suspense.
 - Choose scenes that match: dark forests at night, lit candles, ancient churches, mysterious silhouettes, candle rituals, fog, storms, dark rooms, crucifixes, eyes in the darkness, etc.
 
@@ -421,6 +463,7 @@ Create a script where every sentence has a "Visual Switch" to keep retention hig
 We need TWO different stock videos for every single scene.
 
 ### 1. SCRIPT REQUIREMENTS (The Voiceover):
+- **Language:** ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
 - **Perspective:** Strictly **3rd Person** ("Scientists found...", "The ocean hides...").
 - **Tone:** Engaging, fast-paced, logical. No fluff. Every sentence must build curiosity.
 - **Structure:** Exactly {num_scenes} scenes total.

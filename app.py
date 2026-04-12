@@ -939,16 +939,29 @@ T    = UI[lang]
 # ── Pipeline runner ───────────────────────────────────────────────────────────
 
 def run_pipeline(log_q: queue.Queue, params: dict):
-    import sys, io
+    import sys, io, threading
+
+    _local = threading.local()
+    _real_stdout = sys.__stdout__  # always the real stdout, not another thread's writer
 
     class QueueWriter(io.TextIOBase):
         def write(self, msg):
-            if msg and msg.strip():
-                log_q.put(msg.rstrip())
+            # Only capture output from THIS thread; other threads use real stdout
+            if threading.current_thread() is _local.owner_thread:
+                if msg and msg.strip():
+                    log_q.put(msg.rstrip())
+            else:
+                if _real_stdout:
+                    _real_stdout.write(msg)
             return len(msg) if msg else 0
 
+        def flush(self):
+            pass
+
+    _local.owner_thread = threading.current_thread()
+    writer = QueueWriter()
     old_stdout = sys.stdout
-    sys.stdout = QueueWriter()
+    sys.stdout = writer
 
     try:
         import modules.brain         as _brain_mod
@@ -969,18 +982,23 @@ def run_pipeline(log_q: queue.Queue, params: dict):
 
         if pipeline_mode == "viral":
             topic    = params.get("topic", "").strip()
-            category = params.get("category", "")
+            category = params.get("category", "").strip()
             if not topic:
-                topic = brain.get_trending_topic("", lang=pipeline_lang)
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="viral")
             script = brain.generate_viral_script(topic, category, lang=pipeline_lang)
+
         elif pipeline_mode == "testimonio":
             topic    = params.get("topic", "").strip()
-            category = params.get("category", "")
+            category = params.get("category", "").strip()
             if not topic:
-                topic = brain.get_trending_topic("", lang=pipeline_lang)
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="testimonio")
             script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang)
+
         else:
-            topic  = brain.get_trending_topic(params.get("topic", ""), lang=pipeline_lang)
+            topic  = brain.get_trending_topic(params.get("topic", ""),
+                                              lang=pipeline_lang, mode="auto")
             script = brain.generate_script(topic, num_scenes=params.get("num_scenes", 9), lang=pipeline_lang)
 
         if not script:
