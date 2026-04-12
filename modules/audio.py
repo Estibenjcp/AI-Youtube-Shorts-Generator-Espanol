@@ -71,14 +71,30 @@ class AudioEngine:
             print(f"❌ Error reading audio length: {e}")
             return 0.0
 
+    @staticmethod
+    def _clean_text(text: str) -> str:
+        """Sanitize text before sending to Edge TTS.
+        Newlines, tabs and multiple spaces confuse the TTS engine and cause
+        words to be dropped or the request to fail silently."""
+        import re as _re
+        # Replace newlines / tabs with a space
+        text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+        # Collapse multiple whitespace into one
+        text = _re.sub(r'\s{2,}', ' ', text)
+        # Strip leading/trailing
+        return text.strip()
+
     async def process_script(self, script_data):
         print(f"🎙️ Starting Audio Generation for {len(script_data)} scenes...")
-        
+
         for scene in script_data:
             scene_id = scene['id']
-            text = scene['text']
+            text = self._clean_text(scene.get('text', ''))
+            if not text:
+                print(f"   ⚠️ Scene {scene_id} has empty text — skipping.")
+                continue
             filename = f"voice_{scene_id}.mp3"
-            
+
             try:
                 # Generate Audio
                 file_path = await self.generate_audio(text, filename)

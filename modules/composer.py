@@ -261,22 +261,38 @@ class Composer:
                 if i < len(video_paths):
                     sub_files[i] = self._write_sub_file(scene.get('text', ''), i)
 
-        input0   = ffmpeg.input(video_paths[0])
+        # Pre-filter: drop any clip whose duration cannot be probed or is too short for xfade
+        v_trans = 0.5
+        valid_paths  = []
+        valid_subs   = {}
+        for orig_i, vp in enumerate(video_paths):
+            d = self.get_duration(vp)
+            if d <= v_trans:
+                print(f"   ⚠️ Skipping clip {orig_i} in stitch — duration {d:.2f}s too short.")
+                continue
+            valid_subs[len(valid_paths)] = sub_files.get(orig_i)
+            valid_paths.append(vp)
+
+        if not valid_paths:
+            print("❌ No valid clips left after duration check.")
+            return None
+
+        input0   = ffmpeg.input(valid_paths[0])
         v_stream = input0.video
         a_stream = input0.audio
 
-        if 0 in sub_files:
-            v_stream = self._apply_subtitle(v_stream, sub_files[0])
+        if valid_subs.get(0):
+            v_stream = self._apply_subtitle(v_stream, valid_subs[0])
 
-        current_dur = self.get_duration(video_paths[0])
+        current_dur = self.get_duration(valid_paths[0])
 
-        for i in range(1, len(video_paths)):
-            next_clip = ffmpeg.input(video_paths[i])
+        for i in range(1, len(valid_paths)):
+            next_clip = ffmpeg.input(valid_paths[i])
             next_v    = next_clip.video
-            next_dur  = self.get_duration(video_paths[i])
+            next_dur  = self.get_duration(valid_paths[i])
 
-            if i in sub_files:
-                next_v = self._apply_subtitle(next_v, sub_files[i])
+            if valid_subs.get(i):
+                next_v = self._apply_subtitle(next_v, valid_subs[i])
 
             v_trans = 0.5   # video xfade duration
             a_trans = 0.05  # audio crossfade — near-instant cut, no pop, no overlap
