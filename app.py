@@ -1079,6 +1079,44 @@ with st.sidebar:
         load_dotenv(ENV_PATH, override=True)
         st.success(T["api_saved"])
 
+    # ── Export / Import config ────────────────────────────
+    st.divider()
+    st.caption("💾 " + ("Exportar / Importar configuración" if lang_option == "es" else "Export / Import config"))
+
+    # Export
+    import json as _json
+    export_data = _json.dumps({
+        "AI_PROVIDER":    cfg["AI_PROVIDER"],
+        "AI_API_KEY":     cfg["AI_API_KEY"],
+        "AI_MODEL":       cfg["AI_MODEL"],
+        "PEXELS_API_KEY": cfg["PEXELS_API_KEY"],
+    }, indent=2)
+    st.download_button(
+        label="⬇️ " + ("Exportar claves" if lang_option == "es" else "Export keys"),
+        data=export_data,
+        file_name="autoshorts_config.json",
+        mime="application/json",
+        use_container_width=True,
+    )
+
+    # Import
+    uploaded = st.file_uploader(
+        "⬆️ " + ("Importar claves (.json)" if lang_option == "es" else "Import keys (.json)"),
+        type="json",
+        label_visibility="collapsed",
+    )
+    if uploaded is not None:
+        try:
+            imported = _json.loads(uploaded.read())
+            set_key(ENV_PATH, "AI_PROVIDER",    imported.get("AI_PROVIDER", ""))
+            set_key(ENV_PATH, "AI_API_KEY",     imported.get("AI_API_KEY", ""))
+            set_key(ENV_PATH, "AI_MODEL",       imported.get("AI_MODEL", ""))
+            set_key(ENV_PATH, "PEXELS_API_KEY", imported.get("PEXELS_API_KEY", ""))
+            load_dotenv(ENV_PATH, override=True)
+            st.success("✅ " + ("Configuración importada. Recarga la página." if lang_option == "es" else "Config imported. Reload the page."))
+        except Exception as _e:
+            st.error(f"❌ Error: {_e}")
+
     st.divider()
     if check_config():
         st.success(T["config_ready"])
