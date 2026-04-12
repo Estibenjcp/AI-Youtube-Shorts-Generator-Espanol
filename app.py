@@ -828,6 +828,10 @@ UI = {
         "tab_copy":          "📣 Copy",
         "tab_thumb":         "🖼️ Miniatura",
         "restart_btn":       "🔄 Crear Otro Video",
+        "viral_mode_info":   "🔥 Guion ultra-viral de 45-60 seg — estructura MrBeast + Dark History. Hook demoledor, giro inesperado y CTA que engancha.",
+        "viral_category":    "Categoría del tema",
+        "viral_topic":       "Tema (opcional — déjalo vacío para que la IA elija)",
+        "viral_topic_ph":    "ej. La conspiración del Proyecto MKUltra...",
     },
     "en": {
         "page_title":        "AutoShorts AI 🎬",
@@ -893,6 +897,10 @@ UI = {
         "tab_copy":          "📣 Copy",
         "tab_thumb":         "🖼️ Thumbnail",
         "restart_btn":       "🔄 Create Another Video",
+        "viral_mode_info":   "🔥 Ultra-viral 45-60 sec script — MrBeast + Dark History structure. Devastating hook, unexpected twist and addictive CTA.",
+        "viral_category":    "Topic category",
+        "viral_topic":       "Topic (optional — leave blank for AI to choose)",
+        "viral_topic_ph":    "e.g. The MKUltra mind control conspiracy...",
     },
 }
 
@@ -948,9 +956,19 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         pipeline_lang = params.get("lang", "es")
 
         log_q.put("STAGE:Brain")
-        brain  = ContentBrain()
-        topic  = brain.get_trending_topic(params.get("topic", ""), lang=pipeline_lang)
-        script = brain.generate_script(topic, num_scenes=params.get("num_scenes", 9), lang=pipeline_lang)
+        brain         = ContentBrain()
+        pipeline_mode = params.get("mode", "auto")
+
+        if pipeline_mode == "viral":
+            topic    = params.get("topic", "").strip()
+            category = params.get("category", "")
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang)
+            script = brain.generate_viral_script(topic, category, lang=pipeline_lang)
+        else:
+            topic  = brain.get_trending_topic(params.get("topic", ""), lang=pipeline_lang)
+            script = brain.generate_script(topic, num_scenes=params.get("num_scenes", 9), lang=pipeline_lang)
+
         if not script:
             log_q.put("ERROR:Script generation failed.")
             return
@@ -1122,9 +1140,9 @@ with st.expander(voice_label_hint, expanded=False):
 # ── Selector de modo ──────────────────────────────────────────────────────────
 
 mode_labels = (
-    ["⚡ Automático", "🗂️ Por Categoría"]
+    ["⚡ Automático", "🗂️ Por Categoría", "🔥 Más Virales"]
     if lang_option == "es"
-    else ["⚡ Automatic", "🗂️ By Category"]
+    else ["⚡ Automatic", "🗂️ By Category", "🔥 Most Viral"]
 )
 st.markdown(
     f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
@@ -1132,8 +1150,8 @@ st.markdown(
 )
 mode = st.radio(
     "mode",
-    options=["auto", "category"],
-    format_func=lambda x: mode_labels[0] if x == "auto" else mode_labels[1],
+    options=["auto", "category", "viral"],
+    format_func=lambda x: {"auto": mode_labels[0], "category": mode_labels[1], "viral": mode_labels[2]}[x],
     horizontal=True,
     label_visibility="collapsed",
     key="generation_mode",
@@ -1169,8 +1187,9 @@ if mode == "auto":
         ),
     )
 
-    num_scenes = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
-    final_topic = manual_topic_auto.strip()
+    num_scenes     = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
+    final_topic    = manual_topic_auto.strip()
+    final_category = ""
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO POR CATEGORÍA
@@ -1246,9 +1265,37 @@ else:
         placeholder=T["topic_placeholder"],
     )
 
-    num_scenes = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
+    num_scenes     = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
+    final_category = selected_category
+    final_topic    = st.session_state.get("manual_topic_input", "").strip() or st.session_state.get("selected_topic", "").strip()
 
-    final_topic = st.session_state.get("manual_topic_input", "").strip() or st.session_state.get("selected_topic", "").strip()
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO MÁS VIRALES
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "viral":
+
+    st.markdown(f"<div class='auto-info'>{T['viral_mode_info']}</div>", unsafe_allow_html=True)
+
+    st.markdown(f"<div class='step-header'>🎯 {T['viral_category']}</div>", unsafe_allow_html=True)
+    viral_category = st.selectbox(
+        "vcat", options=[""] + CATEGORIES,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="viral_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {T['viral_topic']}</div>", unsafe_allow_html=True)
+    viral_topic_input = st.text_input(
+        "vtopic",
+        key="viral_topic_input",
+        placeholder=T["viral_topic_ph"],
+        label_visibility="collapsed",
+    )
+
+    final_topic   = viral_topic_input.strip()
+    final_category = viral_category
+    num_scenes    = 9  # no usado en modo viral, la IA decide
 
 # ── Generar ───────────────────────────────────────────────────────────────────
 
@@ -1272,7 +1319,8 @@ if generate_clicked and not st.session_state.running:
         "topic": final_topic, "num_scenes": num_scenes,
         "voice": selected_voice, "rate": rate_str,
         "use_avatar": use_avatar, "use_subtitles": use_subtitles,
-        "lang": lang_option,
+        "lang": lang_option, "mode": mode,
+        "category": final_category,
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t

@@ -167,6 +167,93 @@ OUTPUT FORMAT (strict JSON, no markdown):
         result = [l for l in lines if len(l) > 10][:n]
         return result or [f"Viral topic about {category}"]
 
+    def generate_viral_script(self, topic: str, category: str, lang: str = "es") -> list:
+        """Genera un guion viral ultra-retención (45-60 seg) con estructura MrBeast/Dark History."""
+        import re as _re
+        label = "Generando guion viral" if lang == "es" else "Generating viral script"
+        print(f"🔥 {label}: {topic}...")
+
+        if lang == "es":
+            script_prompt = f"""Eres el mejor guionista de YouTube Shorts especializado en hechos históricos impactantes, near misses, catástrofes evitadas, mortandades misteriosas y misterios sin resolver.
+
+Tu objetivo es crear Shorts que generen máxima retención y shares (estilo MrBeast + The Why Files + Dark History).
+
+REGLAS OBLIGATORIAS:
+- Duración total: 45-60 segundos (máximo 140-160 palabras).
+- Estructura EXACTA:
+  1. HOOK (primeros 3 seg): Pregunta impactante, número shockeante o afirmación loca con emoji.
+  2. CONTEXTO RÁPIDO (5-10 seg): Situación histórica en 1-2 frases.
+  3. EL GIRO / LA MORTANDAD / EL NEAR MISS (centro): Detalle brutal, dato desconocido, consecuencia terrorífica.
+  4. TWIST FINAL (últimos 8-10 seg): Revelación impactante, ironía o "lo que pasó después".
+  5. CTA (últimos 3 seg): "Comenta '¿QUÉ MÁS?' si querés la parte 2" + "Sígueme para más historia oscura".
+
+Estilo: Lenguaje dramático, conversacional y adictivo (usa MAYÚSCULAS para énfasis, signos de exclamación y preguntas).
+Incluye emojis en el texto del script.
+Siempre en español neutro latino. Nunca digas "hoy te voy a contar" ni "vamos a hablar de".
+
+Tema: {topic}
+Categoría: {category}
+
+Devuelve SOLO el texto completo narrado, de corrido, con emojis. Sin JSON, sin títulos de sección, sin markdown."""
+        else:
+            script_prompt = f"""You are the best YouTube Shorts scriptwriter specialized in shocking historical facts, near misses, avoided catastrophes, mysterious deaths and unsolved mysteries.
+
+Your goal: maximum retention and shares (MrBeast + The Why Files + Dark History style).
+
+MANDATORY RULES:
+- Total duration: 45-60 seconds (maximum 140-160 words).
+- EXACT structure:
+  1. HOOK (first 3 sec): Shocking question, mind-blowing number or crazy statement with emoji.
+  2. QUICK CONTEXT (5-10 sec): Historical situation in 1-2 sentences.
+  3. THE TWIST / NEAR MISS (center): Brutal detail, unknown fact, terrifying consequence.
+  4. FINAL TWIST (last 8-10 sec): Shocking revelation, irony or "what happened after".
+  5. CTA (last 3 sec): call to action to follow or ask for part 2.
+
+Style: Dramatic, conversational and addictive (CAPS for emphasis, exclamation marks and questions).
+Include emojis. Never say "today I'm going to tell you" or "we're going to talk about".
+
+Topic: {topic}
+Category: {category}
+
+Return ONLY the complete narrated text, straight through, with emojis. No JSON, no section titles, no markdown."""
+
+        full_script = self._generate(script_prompt).strip()
+        word_count = len(full_script.split())
+        print(f"📜 Viral script: {word_count} words")
+
+        # Convertir a formato de escenas con términos visuales
+        visual_prompt = f"""You are a video editor. Split this script into individual scenes and assign TWO English Pexels stock video search terms per scene.
+
+Script:
+{full_script}
+
+Rules:
+- Split at natural sentence/phrase breaks
+- Maximum 10 scenes
+- visual_1 and visual_2 MUST be in ENGLISH, 2-4 words, suitable for Pexels search
+- Visuals must match the content of each sentence
+
+Return STRICT JSON array only, no markdown:
+[{{"id":1,"text":"sentence","visual_1":"term","visual_2":"term","mood":"dramatic"}}]"""
+
+        raw = self._generate(visual_prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id'] = i + 1
+                s.setdefault('mood', 'dramatic')
+            print(f"✅ {len(scenes)} viral scenes ready")
+            return scenes
+        except Exception:
+            # Fallback: dividir manualmente
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', full_script) if len(s.strip()) > 8][:10]
+            return [
+                {"id": i+1, "text": s, "visual_1": "dramatic cinematic footage", "visual_2": "historical documentary", "mood": "dramatic"}
+                for i, s in enumerate(sentences)
+            ]
+
     def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es") -> list:
         label = "Escribiendo guion" if lang == "es" else "Writing script"
         print(f"📝 {label}: {topic} ({num_scenes} scenes)...")
