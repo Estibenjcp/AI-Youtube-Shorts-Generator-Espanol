@@ -1156,12 +1156,21 @@ CATEGORIES = TOPIC_CATEGORIES_ES if lang_option == "es" else TOPIC_CATEGORIES_EN
 VOICES        = VOICES_ES if lang_option == "es" else VOICES_EN
 default_voice = T["default_voice"]
 
+# Reset voice selection when language changes so default always matches
+_voice_lang_key = f"voice_lang_{lang_option}"
+if _voice_lang_key not in st.session_state:
+    # New language — clear any stale voice_select state
+    st.session_state.pop("voice_select", None)
+    st.session_state[_voice_lang_key] = True
+
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
+    _voice_options = list(VOICES.keys())
+    _default_idx   = _voice_options.index(default_voice) if default_voice in _voice_options else 0
     voice_label = st.selectbox(
         T["narrator_voice"],
-        options=list(VOICES.keys()),
-        index=list(VOICES.keys()).index(default_voice) if default_voice in VOICES else 0,
+        options=_voice_options,
+        index=_default_idx,
         key="voice_select",
     )
     selected_voice = VOICES[voice_label]
