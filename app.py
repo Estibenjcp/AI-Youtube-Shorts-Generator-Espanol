@@ -548,80 +548,132 @@ st.caption(T["page_caption"])
 config_ok  = check_config()
 CATEGORIES = TOPIC_CATEGORIES_ES if lang_option == "es" else TOPIC_CATEGORIES_EN
 
-# ── Paso 1 ────────────────────────────────────────────────────────────────────
+# ── Selector de modo ──────────────────────────────────────────────────────────
 
-st.markdown(f"<div class='step-header'>{T['step1']}</div>", unsafe_allow_html=True)
-
-selected_category = st.selectbox(
-    "cat", options=[""] + CATEGORIES,
-    format_func=lambda x: T["category_placeholder"] if x == "" else x,
+mode_labels = (
+    ["⚡ Automático", "🗂️ Por Categoría"]
+    if lang_option == "es"
+    else ["⚡ Automatic", "🗂️ By Category"]
+)
+mode = st.radio(
+    "mode",
+    options=["auto", "category"],
+    format_func=lambda x: mode_labels[0] if x == "auto" else mode_labels[1],
+    horizontal=True,
     label_visibility="collapsed",
+    key="generation_mode",
 )
 
-# ── Paso 2 ────────────────────────────────────────────────────────────────────
+if mode != st.session_state.get("_last_mode"):
+    st.session_state.topic_suggestions = []
+    st.session_state.selected_topic    = ""
+    st.session_state["_last_mode"]     = mode
 
-st.markdown(f"<div class='step-header'>{T['step2']}</div>", unsafe_allow_html=True)
+st.markdown("---")
 
-col_s, col_c = st.columns([5, 1])
-with col_s:
-    suggest_clicked = st.button(T["suggest_btn"],
-        disabled=(not selected_category or st.session_state.running),
-        type="secondary", use_container_width=True)
-with col_c:
-    if st.button(T["clear_btn"], use_container_width=True, disabled=st.session_state.running):
-        st.session_state.topic_suggestions = []
-        st.session_state.selected_topic    = ""
-        st.rerun()
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO AUTOMÁTICO
+# ══════════════════════════════════════════════════════════════════════════════
 
-if suggest_clicked and selected_category:
-    with st.spinner(f"{T['suggest_spinner']} '{selected_category}'..."):
-        try:
-            from modules.brain import ContentBrain as _BS
-            suggestions = _BS().get_topic_suggestions(selected_category, n=6, lang=lang_option)
-            st.session_state.topic_suggestions = suggestions
+if mode == "auto":
+
+    auto_hint = (
+        "La IA elige una categoría y tema viral automáticamente. Solo presiona Generar."
+        if lang_option == "es"
+        else "The AI picks a category and viral topic automatically. Just press Generate."
+    )
+    st.info(f"✨ {auto_hint}")
+
+    manual_topic_auto = st.text_input(
+        "Tema opcional" if lang_option == "es" else "Optional topic",
+        key="manual_topic_input",
+        placeholder=(
+            "Déjalo vacío para que la IA elija, o escribe tu propio tema..."
+            if lang_option == "es"
+            else "Leave blank for AI to choose, or type your own topic..."
+        ),
+    )
+
+    num_scenes = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
+    final_topic = manual_topic_auto.strip()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO POR CATEGORÍA
+# ══════════════════════════════════════════════════════════════════════════════
+
+else:
+
+    # ── Paso 1 ────────────────────────────────────────────────────────────────
+    st.markdown(f"<div class='step-header'>{T['step1']}</div>", unsafe_allow_html=True)
+
+    selected_category = st.selectbox(
+        "cat", options=[""] + CATEGORIES,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+    )
+
+    # ── Paso 2 ────────────────────────────────────────────────────────────────
+    st.markdown(f"<div class='step-header'>{T['step2']}</div>", unsafe_allow_html=True)
+
+    col_s, col_c = st.columns([5, 1])
+    with col_s:
+        suggest_clicked = st.button(T["suggest_btn"],
+            disabled=(not selected_category or st.session_state.running),
+            type="secondary", use_container_width=True)
+    with col_c:
+        if st.button(T["clear_btn"], use_container_width=True, disabled=st.session_state.running):
+            st.session_state.topic_suggestions = []
             st.session_state.selected_topic    = ""
             st.rerun()
-        except Exception as _err:
-            _msg = str(_err)
-            if "NotFound" in _msg or "404" in _msg or "model" in _msg.lower():
-                st.error("❌ Modelo de IA no encontrado. Verifica que **AI_PROVIDER = 'gemini'** y **AI_MODEL = 'gemini-2.0-flash-exp'** en los Secrets de Streamlit Cloud.")
-            elif "auth" in _msg.lower() or "401" in _msg or "403" in _msg or "api key" in _msg.lower():
-                st.error("❌ Clave de API inválida. Verifica **AI_API_KEY** en los Secrets de Streamlit Cloud.")
-            else:
-                st.error(f"❌ Error al generar sugerencias: {_msg[:200]}")
 
-if st.session_state.topic_suggestions:
-    st.caption(T["suggest_caption"])
-    suggestions = st.session_state.topic_suggestions
-    st.markdown("<div class='suggestion-card'>", unsafe_allow_html=True)
-    col_a, col_b = st.columns(2)
-    for idx, sug in enumerate(suggestions):
-        col = col_a if idx % 2 == 0 else col_b
-        with col:
-            is_sel = (st.session_state.selected_topic == sug)
-            if st.button(f"{'✓ ' if is_sel else ''}{sug}",
-                         key=f"sug_{idx}",
-                         type="primary" if is_sel else "secondary",
-                         use_container_width=True):
-                st.session_state.selected_topic        = sug
-                st.session_state["manual_topic_input"] = sug
+    if suggest_clicked and selected_category:
+        with st.spinner(f"{T['suggest_spinner']} '{selected_category}'..."):
+            try:
+                from modules.brain import ContentBrain as _BS
+                suggestions = _BS().get_topic_suggestions(selected_category, n=6, lang=lang_option)
+                st.session_state.topic_suggestions = suggestions
+                st.session_state.selected_topic    = ""
                 st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+            except Exception as _err:
+                _msg = str(_err)
+                if "NotFound" in _msg or "404" in _msg or "model" in _msg.lower():
+                    st.error("❌ Modelo de IA no encontrado. Verifica **AI_MODEL** en los Secrets de Streamlit Cloud.")
+                elif "auth" in _msg.lower() or "401" in _msg or "403" in _msg:
+                    st.error("❌ Clave de API inválida. Verifica **AI_API_KEY** en los Secrets.")
+                else:
+                    st.error(f"❌ Error: {_msg[:200]}")
 
-# ── Paso 3 ────────────────────────────────────────────────────────────────────
+    if st.session_state.topic_suggestions:
+        st.caption(T["suggest_caption"])
+        suggestions = st.session_state.topic_suggestions
+        st.markdown("<div class='suggestion-card'>", unsafe_allow_html=True)
+        col_a, col_b = st.columns(2)
+        for idx, sug in enumerate(suggestions):
+            col = col_a if idx % 2 == 0 else col_b
+            with col:
+                is_sel = (st.session_state.selected_topic == sug)
+                if st.button(f"{'✓ ' if is_sel else ''}{sug}",
+                             key=f"sug_{idx}",
+                             type="primary" if is_sel else "secondary",
+                             use_container_width=True):
+                    st.session_state.selected_topic        = sug
+                    st.session_state["manual_topic_input"] = sug
+                    st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown(f"<div class='step-header'>{T['step3']}</div>", unsafe_allow_html=True)
+    # ── Paso 3 ────────────────────────────────────────────────────────────────
+    st.markdown(f"<div class='step-header'>{T['step3']}</div>", unsafe_allow_html=True)
 
-manual_topic = st.text_input(
-    T["topic_label"],
-    value=st.session_state.get("selected_topic", ""),
-    key="manual_topic_input",
-    placeholder=T["topic_placeholder"],
-)
+    manual_topic = st.text_input(
+        T["topic_label"],
+        value=st.session_state.get("selected_topic", ""),
+        key="manual_topic_input",
+        placeholder=T["topic_placeholder"],
+    )
 
-num_scenes = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
+    num_scenes = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
 
-final_topic = st.session_state.get("manual_topic_input", "").strip() or st.session_state.get("selected_topic", "").strip()
+    final_topic = st.session_state.get("manual_topic_input", "").strip() or st.session_state.get("selected_topic", "").strip()
 
 # ── Generar ───────────────────────────────────────────────────────────────────
 
