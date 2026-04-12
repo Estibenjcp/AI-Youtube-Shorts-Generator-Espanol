@@ -237,8 +237,11 @@ strong { color: var(--text-primary) !important; }
     transform: scale(0.975) !important;
 }
 
-/* Primario */
-.stButton > button[kind="primary"] {
+/* Primario — forzar texto blanco en todos los elementos hijos */
+.stButton > button[kind="primary"],
+.stButton > button[kind="primary"] p,
+.stButton > button[kind="primary"] span,
+.stButton > button[kind="primary"] div {
     background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%) !important;
     color: #ffffff !important;
     border: none !important;
@@ -298,29 +301,25 @@ strong { color: var(--text-primary) !important; }
 }
 
 /* ── BOTÓN GENERAR ── */
-.generate-btn .stButton > button {
+.generate-btn .stButton > button,
+.generate-btn .stButton > button p,
+.generate-btn .stButton > button span,
+.generate-btn .stButton > button div {
     min-height: 62px !important;
-    font-size: 1.05rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.3px !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.4px !important;
     border-radius: var(--radius-lg) !important;
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%) !important;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
     box-shadow: 0 8px 28px rgba(99,102,241,0.4) !important;
     border: none !important;
-    position: relative !important;
-    overflow: hidden !important;
-}
-.generate-btn .stButton > button::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 100%);
-    pointer-events: none;
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15) !important;
 }
 .generate-btn .stButton > button:hover {
     box-shadow: 0 10px 36px rgba(99,102,241,0.55) !important;
     transform: translateY(-2px) !important;
-    filter: brightness(1.06) !important;
+    filter: brightness(1.08) !important;
 }
 
 /* ── DOWNLOAD ── */
@@ -346,16 +345,19 @@ strong { color: var(--text-primary) !important; }
 /* ── INPUTS ── */
 .stTextInput > div > div > input,
 .stTextInput > div > div > input:not([disabled]) {
-    min-height: 48px !important;
+    min-height: 52px !important;
+    height: 52px !important;
     font-family: 'Inter', sans-serif !important;
     font-size: 0.95rem !important;
+    line-height: 1.5 !important;
     border-radius: var(--radius-md) !important;
     background: var(--surface) !important;
     border: 1.5px solid var(--border) !important;
     color: var(--text-primary) !important;
-    padding: 11px 16px !important;
+    padding: 14px 16px !important;
     transition: var(--transition) !important;
     box-shadow: var(--shadow-sm) !important;
+    overflow: visible !important;
 }
 .stTextInput > div > div > input:focus {
     border-color: var(--brand) !important;
