@@ -36,6 +36,10 @@ st.markdown("""
 
 /* ── RESET & TOKENS ── */
 :root {
+    /* Sobreescribir la variable interna de Streamlit (rojo → índigo) */
+    --primary-color:    #6366f1 !important;
+    --secondary-color:  #4f46e5 !important;
+
     --brand:        #6366f1;
     --brand-dark:   #4f46e5;
     --brand-light:  #eef2ff;
@@ -167,6 +171,10 @@ strong { color: var(--text-primary) !important; }
     text-align: center !important;
     color: var(--text-muted) !important;
     white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
 }
 [data-testid="stRadio"] label:has(input:checked) {
     background: var(--brand) !important;
@@ -174,17 +182,13 @@ strong { color: var(--text-primary) !important; }
     box-shadow: var(--shadow-md) !important;
     font-weight: 700 !important;
 }
-/* Ocultar el círculo nativo del radio button */
-[data-testid="stRadio"] input[type="radio"] {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    position: absolute !important;
-    opacity: 0 !important;
-}
-[data-testid="stRadio"] label > div:first-child {
-    display: none !important;
-}
+/* Ocultar TODA la parte del círculo nativo (BaseUI radio) */
+[data-testid="stRadio"] input[type="radio"]          { display:none!important; }
+[data-testid="stRadio"] [data-baseweb="radio"]        { gap:0!important; }
+[data-testid="stRadio"] [data-baseweb="radio"] > div:first-child { display:none!important; }
+[data-testid="stRadio"] [data-baseweb="radio"] svg    { display:none!important; }
+/* Círculo coloreado de BaseUI */
+[data-testid="stRadio"] label > div:first-child       { display:none!important; }
 
 /* ── STEP HEADERS ── */
 .step-header {
@@ -400,30 +404,33 @@ strong { color: var(--text-primary) !important; }
 /* ── PASSWORD INPUT ── */
 .stTextInput[data-baseweb="input"] { border-radius: var(--radius-md) !important; }
 
-/* ── SLIDER ── */
-.stSlider [data-baseweb="slider"] div[role="slider"] {
+/* ── SLIDER — forzar color índigo sobre el rojo de Streamlit ── */
+/* Thumb (círculo arrastrable) */
+[data-testid="stSlider"] [role="slider"],
+[data-testid="stSlider"] div[role="slider"],
+[data-baseweb="slider"] div[role="slider"] {
     background: var(--brand) !important;
-    border: 2px solid white !important;
-    box-shadow: 0 2px 8px var(--brand-glow) !important;
-    width: 20px !important;
-    height: 20px !important;
+    border: 3px solid #ffffff !important;
+    box-shadow: 0 0 0 2px var(--brand), 0 2px 8px var(--brand-glow) !important;
+    width: 20px !important; height: 20px !important;
 }
-.stSlider [data-baseweb="slider"] [data-testid="stThumbValue"] {
+/* Valor encima del thumb */
+[data-testid="stSlider"] [data-testid="stThumbValue"],
+[data-testid="stSlider"] [data-baseweb="slider"] [data-testid="stThumbValue"] {
     color: var(--brand) !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 0.82rem !important;
 }
-/* Track fill — múltiples selectores para cubrir versiones de Streamlit */
-.stSlider [data-baseweb="slider"] [data-baseweb="slider-track-fill"],
-.stSlider [data-baseweb="slider"] div[class*="Track"] > div,
-.stSlider [data-baseweb="slider"] div > div > div:first-child {
+/* Track llenado (la parte izquierda del slider) */
+[data-baseweb="slider-track-fill"],
+[data-testid="stSlider"] [data-baseweb="slider-track-fill"],
+[data-testid="stSlider"] [data-baseweb="slider"] > div > div:first-child > div:first-child {
     background: var(--brand) !important;
 }
-/* Sobreescribir el rojo por defecto de Streamlit en cualquier parte */
-.stSlider * { accent-color: var(--brand) !important; }
-[data-testid="stSlider"] [role="slider"] { background: var(--brand) !important; }
-[data-testid="stSlider"] > div > div > div > div:nth-child(3) > div {
-    background: var(--brand) !important;
+/* Trick global: accent-color cubre inputs range en navegadores modernos */
+[data-testid="stSlider"] { accent-color: var(--brand) !important; }
+[data-testid="stSlider"] input[type="range"] {
+    accent-color: var(--brand) !important;
 }
 
 /* ── TOGGLE / CHECKBOX ── */
