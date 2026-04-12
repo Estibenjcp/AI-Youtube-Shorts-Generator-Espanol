@@ -91,45 +91,63 @@ class ContentBrain:
         print(f"💡 {label}: {category}...")
 
         if lang == "es":
-            prompt = f"""Eres el estratega de contenido viral más experto de YouTube en español.
+            prompt = f"""Eres un investigador experto en contenido viral para YouTube Shorts. Tu especialidad es encontrar HECHOS REALES que la gente no conoce.
 
 Categoría: "{category}"
 
-TAREA: Genera exactamente {n} títulos de temas virales para un canal de YouTube Shorts educativo-entretenimiento en español latino.
+TAREA: Dame exactamente {n} temas REALES de la categoría indicada. Deben provenir de:
+- Noticias reales documentadas (pueden ser recientes o históricas)
+- Leyendas o mitos populares que circulan en internet y la cultura popular
+- Teorías de conspiración conocidas que la gente discute actualmente
+- Fábulas o historias tradicionales con trasfondo real o histórico
+- Misterios no resueltos reconocidos por la ciencia o la historia
+- Experimentos, eventos o descubrimientos científicos reales poco conocidos
 
-REGLAS ESTRICTAS:
-- Cada tema debe sonar como un titular de noticias que no puedes ignorar.
+REGLAS ABSOLUTAS:
+- PROHIBIDO inventar eventos, personas o datos que no existan.
+- PROHIBIDO mezclar hechos reales con detalles ficticios.
+- Cada tema debe ser algo que realmente ocurrió, que realmente se dice, o que realmente existe como leyenda o teoría en la cultura popular.
 - Longitud: máximo 12 palabras por tema.
-- Estilo: directo, sin rodeos, sin preguntas. Afirmaciones audaces o datos perturbadores.
-- PROHIBIDO: temas genéricos, obvios o que cualquiera ya conoce.
-- REQUERIDO: cada tema debe ser 100% verificable (basado en hechos reales).
-- Idioma: español neutro latino, sin regionalismos.
+- Estilo: titular directo, impactante, que genere curiosidad real.
+- Idioma: español neutro latino.
 
-EJEMPLOS del estilo correcto (NO los copies, son solo referencia de tono):
-- "El ejército soviético entrenó delfines como armas nucleares vivientes"
-- "Una ciudad entera desapareció bajo el mar en 1931 y nadie lo reportó"
-- "El ser humano tiene un órgano que la ciencia ignoró por 300 años"
+FUENTES VÁLIDAS de donde debes extraer (usa tu conocimiento entrenado):
+- Historia documentada mundial
+- Teorías de conspiración populares (Área 51, Illuminati, reptilianos, etc.)
+- Leyendas urbanas conocidas (La Llorona, El Chupacabras, etc.)
+- Misterios históricos reales (El Triángulo de las Bermudas, El Arca Perdida, etc.)
+- Noticias científicas o sociales reales de los últimos años
+- Fábulas con origen histórico verificable
 
 FORMATO DE SALIDA (JSON estricto, sin markdown):
 ["tema 1", "tema 2", "tema 3", "tema 4", "tema 5", "tema 6"]"""
         else:
-            prompt = f"""You are the most expert viral content strategist on YouTube in English.
+            prompt = f"""You are an expert researcher in viral YouTube Shorts content. Your specialty is finding REAL FACTS that most people don't know about.
 
 Category: "{category}"
 
-TASK: Generate exactly {n} viral topic titles for an English-language educational-entertainment YouTube Shorts channel.
+TASK: Give me exactly {n} REAL topics from the given category. They must come from:
+- Real documented news events (recent or historical)
+- Popular legends or myths circulating on the internet and in popular culture
+- Known conspiracy theories that people actively discuss
+- Fables or traditional stories with a real or historical background
+- Unsolved mysteries acknowledged by science or history
+- Real lesser-known scientific experiments, events, or discoveries
 
-STRICT RULES:
-- Each topic must sound like a headline you cannot ignore.
+ABSOLUTE RULES:
+- FORBIDDEN: inventing events, people, or data that do not exist.
+- FORBIDDEN: mixing real facts with fictional details.
+- Each topic must be something that actually happened, is actually said, or actually exists as a legend or theory in popular culture.
 - Length: maximum 12 words per topic.
-- Style: direct, no fluff, no questions. Bold claims or disturbing facts.
-- FORBIDDEN: generic, obvious, or already well-known topics.
-- REQUIRED: every topic must be 100% verifiable (based on real events).
+- Style: direct, impactful headline that creates genuine curiosity.
 
-EXAMPLES of correct style (do NOT copy — for tone reference only):
-- "The Soviet Army Trained Dolphins as Living Nuclear Weapons"
-- "An Entire City Vanished Under the Sea in 1931 and No One Reported It"
-- "The Human Body Has an Organ That Science Ignored for 300 Years"
+VALID SOURCES to draw from (use your trained knowledge):
+- Documented world history
+- Popular conspiracy theories (Area 51, Illuminati, reptilians, flat earth, etc.)
+- Known urban legends (Bigfoot, Loch Ness, Bermuda Triangle, etc.)
+- Real historical mysteries (Lost Ark, Atlantis, Stonehenge, etc.)
+- Real scientific or social news from recent years
+- Fables with verifiable historical origins
 
 OUTPUT FORMAT (strict JSON, no markdown):
 ["topic 1", "topic 2", "topic 3", "topic 4", "topic 5", "topic 6"]"""
