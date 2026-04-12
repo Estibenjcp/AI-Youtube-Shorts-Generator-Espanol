@@ -1025,6 +1025,40 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         log_q.put(f"COPY:{__import__('json').dumps(copy_data)}")
         log_q.put(f"THUMB:{thumb_prompt}")
         log_q.put(f"SCRIPT:{__import__('json').dumps(script)}")
+
+        # ── Enviar a webhook n8n ──────────────────────────────
+        webhook_url = params.get("webhook_url", "").strip()
+        if webhook_url:
+            try:
+                import requests as _req, json as _j
+                video_path = os.path.join(os.path.dirname(__file__), "assets", "final", "final_short.mp4")
+                script_text = " ".join(s.get("text", "") for s in script)
+                payload = {
+                    "topic":               topic,
+                    "lang":                pipeline_lang,
+                    "mode":                pipeline_mode,
+                    "script_text":         script_text,
+                    "youtube_title":       copy_data.get("youtube_title", ""),
+                    "youtube_description": copy_data.get("youtube_description", ""),
+                    "tiktok_caption":      copy_data.get("tiktok_caption", ""),
+                    "facebook_caption":    copy_data.get("facebook_caption", ""),
+                    "thumbnail_prompt":    thumb_prompt,
+                }
+                print("📡 Enviando datos al webhook n8n...")
+                if os.path.exists(video_path):
+                    with open(video_path, "rb") as _vf:
+                        files   = {"video": ("final_short.mp4", _vf, "video/mp4")}
+                        fields  = {k: (None, v) for k, v in payload.items()}
+                        resp = _req.post(webhook_url, files={**files, **fields}, timeout=120)
+                else:
+                    resp = _req.post(webhook_url, json=payload, timeout=60)
+                if resp.status_code in (200, 201, 202):
+                    print(f"✅ Webhook OK ({resp.status_code})")
+                else:
+                    print(f"⚠️ Webhook respondió {resp.status_code}: {resp.text[:200]}")
+            except Exception as _we:
+                print(f"⚠️ Webhook error: {_we}")
+
         log_q.put("DONE")
 
     except Exception as e:
@@ -1068,6 +1102,26 @@ with st.sidebar:
         set_key(ENV_PATH, "PEXELS_API_KEY", pexels_key)
         load_dotenv(ENV_PATH, override=True)
         st.success(T["api_saved"])
+
+    # ── Webhook n8n ───────────────────────────────────────
+    st.divider()
+    st.caption("🔗 Webhook n8n")
+    webhook_enabled = st.toggle(
+        "Enviar a n8n" if lang_option == "es" else "Send to n8n",
+        value=st.session_state.get("webhook_enabled", False),
+        key="webhook_enabled",
+    )
+    webhook_url_input = st.text_input(
+        "URL del webhook" if lang_option == "es" else "Webhook URL",
+        value=st.session_state.get("webhook_url_saved",
+              "https://n8n.digency.lat/webhook/0a98a5c2-e3ec-4aa4-924d-e27ec8893125"),
+        placeholder="https://n8n.../webhook/...",
+        label_visibility="collapsed",
+        key="webhook_url_input",
+    )
+    if webhook_enabled:
+        st.session_state["webhook_url_saved"] = webhook_url_input
+        st.caption("✅ " + ("Datos + video se enviarán al generar." if lang_option == "es" else "Data + video will be sent on generate."))
 
     # ── Export / Import config ────────────────────────────
     st.divider()
@@ -1412,12 +1466,14 @@ if generate_clicked and not st.session_state.running:
     st.session_state.log_lines = []
     st.session_state.log_queue = queue.Queue()
 
+    _wh_url = webhook_url_input if st.session_state.get("webhook_enabled") else ""
     params = {
         "topic": final_topic, "num_scenes": num_scenes,
         "voice": selected_voice, "rate": rate_str,
         "use_avatar": use_avatar, "use_subtitles": use_subtitles,
         "lang": lang_option, "mode": mode,
         "category": final_category,
+        "webhook_url": _wh_url,
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
