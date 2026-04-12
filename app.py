@@ -1028,6 +1028,7 @@ def run_pipeline(log_q: queue.Queue, params: dict):
 
         # ── Enviar a webhook n8n ──────────────────────────────
         webhook_url = params.get("webhook_url", "").strip()
+        log_q.put(f"🔗 Webhook URL en params: '{webhook_url[:40] if webhook_url else 'VACÍO'}'")
         if webhook_url:
             try:
                 import requests as _req, base64 as _b64
@@ -1512,7 +1513,9 @@ if generate_clicked and not st.session_state.running:
     st.session_state.log_lines = []
     st.session_state.log_queue = queue.Queue()
 
-    _wh_url = st.session_state.get("webhook_url_saved", "") if st.session_state.get("webhook_enabled") else ""
+    # Lee directo del key del widget — Streamlit siempre lo tiene en session_state
+    _wh_enabled = st.session_state.get("webhook_enabled", False)
+    _wh_url = st.session_state.get("webhook_url_input", "").strip() if _wh_enabled else ""
     params = {
         "topic": final_topic, "num_scenes": num_scenes,
         "voice": selected_voice, "rate": rate_str,
