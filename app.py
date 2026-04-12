@@ -934,6 +934,8 @@ for key, default in [
     ("topic_suggestions", []),
     ("selected_topic",    ""),
     ("lang",              "es"),
+    ("webhook_enabled",   False),
+    ("webhook_url_input", "https://n8n.digency.lat/webhook/0a98a5c2-e3ec-4aa4-924d-e27ec8893125"),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1135,20 +1137,14 @@ with st.sidebar:
     st.caption("🔗 Webhook n8n")
     webhook_enabled = st.toggle(
         "Enviar a n8n" if lang_option == "es" else "Send to n8n",
-        value=st.session_state.get("webhook_enabled", False),
         key="webhook_enabled",
     )
-    webhook_url_input = st.text_input(
+    st.text_input(
         "URL del webhook",
-        value=st.session_state.get("webhook_url_saved",
-              "https://n8n.digency.lat/webhook/0a98a5c2-e3ec-4aa4-924d-e27ec8893125"),
         placeholder="https://n8n.../webhook/...",
         label_visibility="collapsed",
         key="webhook_url_input",
     )
-    # Guardar URL siempre (no solo cuando está habilitado)
-    st.session_state["webhook_url_saved"] = webhook_url_input
-
     if webhook_enabled:
         st.caption("✅ " + ("Datos + video se enviarán al generar." if lang_option == "es" else "Data + video will be sent on generate."))
 
