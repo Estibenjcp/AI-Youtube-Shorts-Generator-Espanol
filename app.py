@@ -1195,7 +1195,7 @@ if mode == "auto":
 # MODO POR CATEGORÍA
 # ══════════════════════════════════════════════════════════════════════════════
 
-else:
+elif mode == "category":
 
     # ── Paso 1 ────────────────────────────────────────────────────────────────
     st.markdown(f"<div class='step-header'>{T['step1']}</div>", unsafe_allow_html=True)
