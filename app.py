@@ -1030,9 +1030,10 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         webhook_url = params.get("webhook_url", "").strip()
         if webhook_url:
             try:
-                import requests as _req, json as _j
-                video_path = os.path.join(os.path.dirname(__file__), "assets", "final", "final_short.mp4")
+                import requests as _req, base64 as _b64
+                video_path  = os.path.join(os.path.dirname(__file__), "assets", "final", "final_short.mp4")
                 script_text = " ".join(s.get("text", "") for s in script)
+
                 payload = {
                     "topic":               topic,
                     "lang":                pipeline_lang,
@@ -1043,17 +1044,26 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     "tiktok_caption":      copy_data.get("tiktok_caption", ""),
                     "facebook_caption":    copy_data.get("facebook_caption", ""),
                     "thumbnail_prompt":    thumb_prompt,
+                    "video_base64":        "",
+                    "video_filename":      "final_short.mp4",
+                    "video_mimetype":      "video/mp4",
                 }
-                print("📡 Enviando datos al webhook n8n...")
+
                 if os.path.exists(video_path):
                     with open(video_path, "rb") as _vf:
-                        files   = {"video": ("final_short.mp4", _vf, "video/mp4")}
-                        fields  = {k: (None, v) for k, v in payload.items()}
-                        resp = _req.post(webhook_url, files={**files, **fields}, timeout=120)
+                        payload["video_base64"] = _b64.b64encode(_vf.read()).decode("utf-8")
+                    print(f"📡 Enviando video + datos al webhook n8n...")
                 else:
-                    resp = _req.post(webhook_url, json=payload, timeout=60)
+                    print("📡 Enviando datos al webhook n8n (sin video)...")
+
+                resp = _req.post(
+                    webhook_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=180,
+                )
                 if resp.status_code in (200, 201, 202):
-                    print(f"✅ Webhook OK ({resp.status_code})")
+                    print(f"✅ Webhook n8n OK ({resp.status_code})")
                 else:
                     print(f"⚠️ Webhook respondió {resp.status_code}: {resp.text[:200]}")
             except Exception as _we:
