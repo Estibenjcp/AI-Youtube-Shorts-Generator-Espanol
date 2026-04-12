@@ -1149,8 +1149,9 @@ with st.sidebar:
         st.caption("✅ " + ("Datos + video se enviarán al generar." if lang_option == "es" else "Data + video will be sent on generate."))
 
     # Botón de prueba
+    _wh_url_now = st.session_state.get("webhook_url_input", "").strip()
     if st.button("🧪 " + ("Probar conexión" if lang_option == "es" else "Test connection"),
-                 use_container_width=True, disabled=not webhook_url_input.strip()):
+                 use_container_width=True, disabled=not _wh_url_now):
         import requests as _r
         _test_payload = {
             "test": True,
@@ -1170,7 +1171,7 @@ with st.sidebar:
         try:
             with st.spinner("Probando..."):
                 _resp = _r.post(
-                    webhook_url_input.strip(),
+                    _wh_url_now,
                     json=_test_payload,
                     headers={"Content-Type": "application/json"},
                     timeout=15,
