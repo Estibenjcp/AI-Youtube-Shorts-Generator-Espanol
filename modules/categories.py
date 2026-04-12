@@ -63,3 +63,34 @@ TESTIMONIO_CATEGORIES = [
     "Misterios Religiosos y Satanismo",
     "Historias Basadas en Testimonios",
 ]
+
+# Categorías exclusivas del modo "Resumen de Libro"
+BOOK_CATEGORIES = [
+    "Superación Personal",
+    "Emprendimiento y Negocios",
+    "Psicología y Comportamiento Humano",
+    "Finanzas e Inversión",
+    "Liderazgo y Productividad",
+    "Filosofía y Estoicismo",
+    "Ciencia y Divulgación",
+    "Historia y Biografías",
+    "Relaciones y Comunicación",
+    "Espiritualidad y Bienestar",
+    "Hábitos y Disciplina",
+    "Marketing y Ventas",
+]
+
+BOOK_CATEGORIES_EN = [
+    "Self-Improvement",
+    "Entrepreneurship and Business",
+    "Psychology and Human Behavior",
+    "Finance and Investing",
+    "Leadership and Productivity",
+    "Philosophy and Stoicism",
+    "Science and Popular Knowledge",
+    "History and Biographies",
+    "Relationships and Communication",
+    "Spirituality and Wellness",
+    "Habits and Discipline",
+    "Marketing and Sales",
+]

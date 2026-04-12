@@ -11,7 +11,7 @@ import shutil
 import io
 
 from modules.config import load_config, check_config, PROVIDER_DEFAULTS
-from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES
+from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES, BOOK_CATEGORIES, BOOK_CATEGORIES_EN
 from dotenv import set_key, load_dotenv
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -835,6 +835,10 @@ UI = {
         "testimonio_cat":    "Categoría del testimonio",
         "testimonio_topic":  "Tema (opcional — déjalo vacío para que la IA elija)",
         "testimonio_topic_ph": "ej. La secta que operaba en las catacumbas de Roma...",
+        "libro_info":        "📚 Resumen de 60 seg que enseña, aplica y motiva a leer el libro. Tono inspirador y educativo.",
+        "libro_cat":         "Género del libro",
+        "libro_topic":       "Título del libro (opcional — déjalo vacío para que la IA elija)",
+        "libro_topic_ph":    "ej. Hábitos Atómicos — James Clear...",
         "restart_btn":       "🔄 Crear Otro Video",
     },
     "en": {
@@ -908,6 +912,10 @@ UI = {
         "testimonio_cat":    "Testimony category",
         "testimonio_topic":  "Topic (optional — leave blank for AI to choose)",
         "testimonio_topic_ph": "e.g. The cult operating in the catacombs of Rome...",
+        "libro_info":        "📚 60-sec summary that teaches, applies and motivates reading. Inspiring and educational tone.",
+        "libro_cat":         "Book genre",
+        "libro_topic":       "Book title (optional — leave blank for AI to choose)",
+        "libro_topic_ph":    "e.g. Atomic Habits — James Clear...",
         "restart_btn":       "🔄 Create Another Video",
     },
 }
@@ -985,6 +993,14 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="testimonio")
             script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang)
+
+        elif pipeline_mode == "libro":
+            topic    = params.get("topic", "").strip()
+            category = params.get("category", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="libro")
+            script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang)
 
         else:
             topic  = brain.get_trending_topic(params.get("topic", ""),
@@ -1310,9 +1326,9 @@ with st.expander(voice_label_hint, expanded=False):
 # ── Selector de modo ──────────────────────────────────────────────────────────
 
 mode_labels = (
-    ["⚡ Automático", "🗂️ Por Categoría", "🔥 Más Virales", "👁️ Testimonio Misterioso"]
+    ["⚡ Automático", "🗂️ Por Categoría", "🔥 Más Virales", "👁️ Testimonio Misterioso", "📚 Resumen de Libro"]
     if lang_option == "es"
-    else ["⚡ Automatic", "🗂️ By Category", "🔥 Most Viral", "👁️ Mystery Testimony"]
+    else ["⚡ Automatic", "🗂️ By Category", "🔥 Most Viral", "👁️ Mystery Testimony", "📚 Book Summary"]
 )
 st.markdown(
     f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
@@ -1320,8 +1336,8 @@ st.markdown(
 )
 mode = st.radio(
     "mode",
-    options=["auto", "category", "viral", "testimonio"],
-    format_func=lambda x: {"auto": mode_labels[0], "category": mode_labels[1], "viral": mode_labels[2], "testimonio": mode_labels[3]}[x],
+    options=["auto", "category", "viral", "testimonio", "libro"],
+    format_func=lambda x: {"auto": mode_labels[0], "category": mode_labels[1], "viral": mode_labels[2], "testimonio": mode_labels[3], "libro": mode_labels[4]}[x],
     horizontal=True,
     label_visibility="collapsed",
     key="generation_mode",
@@ -1493,6 +1509,35 @@ elif mode == "testimonio":
 
     final_topic    = test_topic_input.strip()
     final_category = test_category
+    num_scenes     = 9
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO RESUMEN DE LIBRO
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "libro":
+
+    st.markdown(f"<div class='auto-info'>{T['libro_info']}</div>", unsafe_allow_html=True)
+
+    _book_cats = BOOK_CATEGORIES if lang_option == "es" else BOOK_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>📖 {T['libro_cat']}</div>", unsafe_allow_html=True)
+    libro_category = st.selectbox(
+        "lcat", options=[""] + _book_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="libro_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {T['libro_topic']}</div>", unsafe_allow_html=True)
+    libro_topic_input = st.text_input(
+        "ltopic",
+        key="libro_topic_input",
+        placeholder=T["libro_topic_ph"],
+        label_visibility="collapsed",
+    )
+
+    final_topic    = libro_topic_input.strip()
+    final_category = libro_category
     num_scenes     = 9
 
 # ── Generar ───────────────────────────────────────────────────────────────────

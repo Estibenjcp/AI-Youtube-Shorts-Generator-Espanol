@@ -59,7 +59,7 @@ class ContentBrain:
             return manual_topic.strip()
 
         import random as _random
-        from modules.categories import VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES
+        from modules.categories import VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES, BOOK_CATEGORIES, BOOK_CATEGORIES_EN
 
         # Pick category from the right pool depending on mode
         if category_hint.strip():
@@ -68,6 +68,8 @@ class ContentBrain:
             category = _random.choice(VIRAL_CATEGORIES)
         elif mode == "testimonio":
             category = _random.choice(TESTIMONIO_CATEGORIES)
+        elif mode == "libro":
+            category = _random.choice(BOOK_CATEGORIES if lang == "es" else BOOK_CATEGORIES_EN)
         else:
             categories = TOPIC_CATEGORIES.get(lang, TOPIC_CATEGORIES_ES)
             category   = _random.choice(categories)
@@ -104,6 +106,20 @@ class ContentBrain:
                 f"Must sound like a real testimony: a cult, ritual, apparition, terrifying revelation, occultism. "
                 f"Archimosfera style — dark and chilling tone. "
                 f"Seed: {seed}. Return ONLY the topic name, nothing else."
+            )
+        elif mode == "libro":
+            prompt = (
+                f"Dame el título de 1 libro real, famoso y muy recomendado en la categoría: {category}. "
+                f"Debe ser un libro que haya cambiado la vida de muchas personas o que sea muy popular. "
+                f"Formato: 'Título del Libro — Autor'. "
+                f"Semilla: {seed}. "
+                f"Responde ÚNICAMENTE con el título y autor, nada más. En español."
+            ) if lang == "es" else (
+                f"Give me the title of 1 real, famous and highly recommended book in the category: {category}. "
+                f"Must be a book that has changed many people's lives or is very popular. "
+                f"Format: 'Book Title — Author'. "
+                f"Seed: {seed}. "
+                f"Return ONLY the title and author, nothing else."
             )
         else:
             prompt = (
@@ -416,6 +432,101 @@ Return STRICT JSON array only, no markdown:
                     "visual_3": _random.choice(ATMOSPHERIC_KEYWORDS),
                     "mood": "horror"
                 }
+                for i, s in enumerate(sentences)
+            ]
+
+    def generate_book_summary_script(self, book: str, category: str, lang: str = "es") -> list:
+        """Resumen de libro de 60 seg — enseña, aplica y motiva a leer."""
+        import re as _re
+        label = "Generando resumen del libro" if lang == "es" else "Generating book summary"
+        print(f"📚 {label}: {book}...")
+
+        if lang == "es":
+            script_prompt = f"""Eres el mejor creador de contenido educativo para YouTube Shorts. Tu especialidad es resumir libros de forma que la gente quiera leerlos inmediatamente.
+
+Debes crear un Short de 60 segundos que:
+1. Presente el libro y su idea central de forma impactante.
+2. Comparta 2-3 lecciones o aplicaciones prácticas de la vida real.
+3. Termine con una frase tan poderosa que el espectador quiera leer el libro YA.
+
+REGLAS OBLIGATORIAS:
+- PROHIBIDO usar emojis. Solo texto puro narrado.
+- Duración: 55-65 segundos (máximo 150-170 palabras).
+- Tono: Inspirador, directo, curioso. Como si le hablaras a un amigo inteligente.
+- Perspectiva: 2da persona ("Imagina que...", "¿Qué harías si..."). Involucra al espectador.
+- Estructura EXACTA:
+  1. HOOK (primeros 5 seg): Una pregunta o afirmación poderosa relacionada al problema que resuelve el libro.
+  2. EL LIBRO (5 seg): Presenta el libro y el autor en 1 frase. Sin decir "hoy te voy a hablar de".
+  3. LECCIÓN 1 (10-15 seg): La idea más poderosa del libro con una aplicación práctica real.
+  4. LECCIÓN 2 (10-15 seg): Segunda idea clave — sorprendente o contraintuitiva.
+  5. LECCIÓN 3 (10 seg): Tercera idea que cambia perspectiva.
+  6. CIERRE + CTA (10 seg): Frase final inspiradora del libro + "Comenta LEÍDO si ya lo leíste o QUIERO si lo vas a leer".
+
+Idioma: ESPAÑOL LATINO neutro. Sin regionalismos.
+
+Libro: {book}
+Categoría: {category}
+
+Devuelve SOLO el texto completo narrado, de corrido, sin emojis. Sin JSON, sin títulos de sección, sin markdown."""
+        else:
+            script_prompt = f"""You are the best educational content creator for YouTube Shorts. Your specialty is summarizing books in a way that makes people want to read them immediately.
+
+Create a 60-second Short that:
+1. Presents the book and its core idea in an impactful way.
+2. Shares 2-3 practical lessons or real-life applications.
+3. Ends with a phrase so powerful the viewer wants to read the book NOW.
+
+MANDATORY RULES:
+- NO emojis. Pure narration text only.
+- LANGUAGE: ENGLISH ONLY. Every single word must be in English.
+- Duration: 55-65 seconds (maximum 150-170 words).
+- Tone: Inspiring, direct, curious. Like talking to a smart friend.
+- Perspective: 2nd person ("Imagine that...", "What would you do if..."). Involve the viewer.
+- EXACT structure:
+  1. HOOK (first 5 sec): A powerful question or statement related to the problem the book solves.
+  2. THE BOOK (5 sec): Introduce the book and author in 1 sentence. Never say "today I'm going to talk about".
+  3. LESSON 1 (10-15 sec): The most powerful idea with a real practical application.
+  4. LESSON 2 (10-15 sec): Second key idea — surprising or counterintuitive.
+  5. LESSON 3 (10 sec): Third perspective-shifting idea.
+  6. CLOSE + CTA (10 sec): Inspiring final quote from the book + "Comment READ if you've read it or WANT if you're going to read it".
+
+Book: {book}
+Category: {category}
+
+Return ONLY the complete narrated text, straight through, no emojis. No JSON, no section titles, no markdown."""
+
+        full_script = self._generate(script_prompt).strip()
+        print(f"📜 Book summary: {len(full_script.split())} words")
+
+        visual_prompt = f"""You are a video editor for an educational book summary channel. Split this script into scenes and assign TWO English Pexels stock video search terms per scene.
+
+Script:
+{full_script}
+
+Rules:
+- Split at natural sentence/phrase breaks
+- Maximum 10 scenes
+- visual_1 and visual_2 MUST be in ENGLISH, 2-4 words, suitable for Pexels search
+- Visuals must be inspiring, educational and aspirational: people reading, writing, working, thinking, city life, nature, success, growth, etc.
+- AVOID dark or horror visuals — this is motivational content
+
+Return STRICT JSON array only, no markdown:
+[{{"id":1,"text":"sentence","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}}]"""
+
+        raw   = self._generate(visual_prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id'] = i + 1
+                s.setdefault('mood', 'inspiring')
+            print(f"✅ {len(scenes)} book summary scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', full_script) if len(s.strip()) > 8][:10]
+            return [
+                {"id": i+1, "text": s, "visual_1": "person reading book", "visual_2": "open notebook inspiring", "mood": "inspiring"}
                 for i, s in enumerate(sentences)
             ]
 
