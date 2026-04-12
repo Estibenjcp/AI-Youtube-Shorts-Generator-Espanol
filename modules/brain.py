@@ -442,32 +442,27 @@ Return STRICT JSON array only, no markdown:
         print(f"📚 {label}: {book}...")
 
         if lang == "es":
-            script_prompt = f"""Eres el mejor creador de contenido educativo para YouTube Shorts. Tu especialidad es resumir libros de forma que la gente quiera leerlos inmediatamente.
+            script_prompt = f"""Actúa como un narrador de historias experto y analista literario con un estilo minimalista, profundo y misterioso, similar al de los mejores curadores de contenido en TikTok. Tu objetivo no es resumir un libro, sino revelar su esencia de forma que parezca un descubrimiento necesario para el espectador.
 
-Debes crear un Short de 60 segundos que:
-1. Presente el libro y su idea central de forma impactante.
-2. Comparta 2-3 lecciones o aplicaciones prácticas de la vida real.
-3. Termine con una frase tan poderosa que el espectador quiera leer el libro YA.
+Estructura del Guion (55-65 segundos / 150-170 palabras):
 
-REGLAS OBLIGATORIAS:
-- PROHIBIDO usar emojis. Solo texto puro narrado.
-- Duración: 55-65 segundos (máximo 150-170 palabras).
-- Tono: Inspirador, directo, curioso. Como si le hablaras a un amigo inteligente.
-- Perspectiva: 2da persona ("Imagina que...", "¿Qué harías si..."). Involucra al espectador.
-- Estructura EXACTA:
-  1. HOOK (primeros 5 seg): Una pregunta o afirmación poderosa relacionada al problema que resuelve el libro.
-  2. EL LIBRO (5 seg): Presenta el libro y el autor en 1 frase. Sin decir "hoy te voy a hablar de".
-  3. LECCIÓN 1 (10-15 seg): La idea más poderosa del libro con una aplicación práctica real.
-  4. LECCIÓN 2 (10-15 seg): Segunda idea clave — sorprendente o contraintuitiva.
-  5. LECCIÓN 3 (10 seg): Tercera idea que cambia perspectiva.
-  6. CIERRE + CTA (10 seg): Frase final inspiradora del libro + "Comenta LEÍDO si ya lo leíste o QUIERO si lo vas a leer".
+1. EL MISTERIO (5 seg): No empieces con una pregunta de autoayuda. Empieza con una observación contraintuitiva o una verdad incómoda que el libro aborda. Ej: "Casi nadie se da cuenta, pero vivimos en un mundo donde..."
+2. LA REVELACIÓN (5 seg): Introduce el título y autor como si fuera la pieza que falta en el rompecabezas. Sin introducciones innecesarias.
+3. EL DESCUBRIMIENTO (15 seg): Explica la premisa central no como una lección, sino como una "regla del juego" que el autor descubrió. Usa frases como "El autor plantea algo fascinante..." o "Lo que este libro propone es que...".
+4. EL GIRO (15 seg): Presenta la idea más sorprendente o radical del libro. Esa que te hace detener el scroll. Debe sonar profunda y analítica.
+5. LA APLICACIÓN INVISIBLE (10 seg): Cómo cambia este libro la forma en que el espectador verá el mundo mañana por la mañana.
+6. EL IMPACTO FINAL (10 seg): Una frase de cierre que deje un silencio reflexivo. El CTA debe ser minimalista, sin sonar a vendedor.
 
-Idioma: ESPAÑOL LATINO neutro. Sin regionalismos.
+REGLAS CRÍTICAS:
+- PROHIBIDO: Emojis, saludos iniciales, despedidas genéricas o lenguaje de vendedor.
+- PERSPECTIVA: 2da persona constante. Habla directamente a la mente del espectador.
+- TONO: Cinematográfico, pausado, intelectual pero accesible. Como un susurro inteligente en medio del ruido.
+- LENGUAJE: Español Latino neutro, elegante y preciso. Evita palabras comunes; busca palabras que evoquen imágenes.
 
 Libro: {book}
 Categoría: {category}
 
-Devuelve SOLO el texto completo narrado, de corrido, sin emojis. Sin JSON, sin títulos de sección, sin markdown."""
+Devuelve exclusivamente el texto narrado de corrido, sin títulos de sección, sin formato Markdown, sin etiquetas de tiempo. Solo las palabras que deben ser pronunciadas."""
         else:
             script_prompt = f"""You are the best educational content creator for YouTube Shorts. Your specialty is summarizing books in a way that makes people want to read them immediately.
 
