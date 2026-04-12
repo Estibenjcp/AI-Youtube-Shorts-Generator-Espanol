@@ -524,32 +524,42 @@ strong { color: var(--text-primary) !important; }
 /* Por si Streamlit usa otra estructura */
 .stRadio > label { display: none !important; }
 
-/* ── TOGGLE DE IDIOMA compacto (columna derecha del hero) ── */
+/* ── TOGGLE DE IDIOMA compacto (emoji only, horizontal) ── */
+.lang-toggle {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 6px;
+}
 .lang-toggle [data-testid="stRadio"] {
     background: var(--surface) !important;
-    border-radius: var(--radius-md) !important;
+    border-radius: 99px !important;
     padding: 3px !important;
     border: 1.5px solid var(--border) !important;
     box-shadow: var(--shadow-sm) !important;
-    margin-top: 8px !important;
+    width: fit-content !important;
+    min-width: unset !important;
 }
 .lang-toggle [data-testid="stRadio"] > div {
-    flex-direction: column !important;
+    flex-direction: row !important;
     gap: 2px !important;
+    flex-wrap: nowrap !important;
+    width: fit-content !important;
 }
 .lang-toggle [data-testid="stRadio"] label {
-    padding: 7px 10px !important;
-    font-size: 0.82rem !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
+    padding: 6px 12px !important;
+    font-size: 1.1rem !important;
+    border-radius: 99px !important;
     color: var(--text-muted) !important;
     text-align: center !important;
     flex: unset !important;
+    width: auto !important;
+    min-width: unset !important;
+    white-space: nowrap !important;
 }
 .lang-toggle [data-testid="stRadio"] label:has(input:checked) {
     background: var(--brand) !important;
     color: #fff !important;
-    box-shadow: none !important;
+    box-shadow: 0 2px 8px var(--brand-glow) !important;
 }
 
 /* ── ALERTS ── */
@@ -1043,9 +1053,9 @@ with col_lang:
     lang_option = st.radio(
         "lang",
         options=["es", "en"],
-        format_func=lambda x: "🇪🇸 ES" if x == "es" else "🇺🇸 EN",
+        format_func=lambda x: "🇪🇸" if x == "es" else "🇺🇸",
         index=0 if st.session_state.lang == "es" else 1,
-        horizontal=False,
+        horizontal=True,
         label_visibility="collapsed",
         key="lang_main",
     )
