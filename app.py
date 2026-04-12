@@ -517,11 +517,39 @@ strong { color: var(--text-primary) !important; }
     border-color: #c7d2fe !important;
 }
 
-/* ── RADIO IDIOMA arriba del hero ── */
-[data-testid="stRadio"][key="lang_main"] label,
-div:has(> [data-testid="stRadio"]):first-of-type [data-testid="stRadio"] label {
-    padding: 7px 18px !important;
-    font-size: 0.85rem !important;
+/* ── OCULTAR labels internos "lang" y "mode" de Streamlit ── */
+[data-testid="stWidgetLabel"]:has(+ [data-testid="stRadio"]) {
+    display: none !important;
+}
+/* Por si Streamlit usa otra estructura */
+.stRadio > label { display: none !important; }
+
+/* ── TOGGLE DE IDIOMA compacto (columna derecha del hero) ── */
+.lang-toggle [data-testid="stRadio"] {
+    background: var(--surface) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 3px !important;
+    border: 1.5px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+    margin-top: 8px !important;
+}
+.lang-toggle [data-testid="stRadio"] > div {
+    flex-direction: column !important;
+    gap: 2px !important;
+}
+.lang-toggle [data-testid="stRadio"] label {
+    padding: 7px 10px !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    color: var(--text-muted) !important;
+    text-align: center !important;
+    flex: unset !important;
+}
+.lang-toggle [data-testid="stRadio"] label:has(input:checked) {
+    background: var(--brand) !important;
+    color: #fff !important;
+    box-shadow: none !important;
 }
 
 /* ── ALERTS ── */
@@ -624,6 +652,16 @@ hr {
     background: #fef2f2 !important;
     border-color: #fca5a5 !important;
     color: #b91c1c !important;
+}
+
+/* ── SECTION LABEL ── */
+.section-label {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    margin: 0 0 6px 2px !important;
 }
 
 /* ── RESPONSIVE: TABLET ── */
@@ -989,18 +1027,30 @@ with st.sidebar:
 
 # ── Main area ─────────────────────────────────────────────────────────────────
 
-# ── Idioma (visible en móvil) ─────────────────────────────────────────────────
-lang_col, _ = st.columns([1, 2])
-with lang_col:
+# ── Header: título + toggle de idioma en la misma fila ───────────────────────
+col_hero, col_lang = st.columns([3, 1])
+
+with col_hero:
+    T = UI[lang_option]
+    st.markdown(
+        f"<div class='hero-title'>{T['page_title']}</div>"
+        f"<p class='hero-sub'>{T['page_caption']}</p>",
+        unsafe_allow_html=True,
+    )
+
+with col_lang:
+    st.markdown("<div class='lang-toggle'>", unsafe_allow_html=True)
     lang_option = st.radio(
         "lang",
         options=["es", "en"],
-        format_func=lambda x: "🇪🇸 Español" if x == "es" else "🇺🇸 English",
+        format_func=lambda x: "🇪🇸 ES" if x == "es" else "🇺🇸 EN",
         index=0 if st.session_state.lang == "es" else 1,
-        horizontal=True,
+        horizontal=False,
         label_visibility="collapsed",
         key="lang_main",
     )
+    st.markdown("</div>", unsafe_allow_html=True)
+
 if lang_option != st.session_state.lang:
     st.session_state.lang              = lang_option
     st.session_state.topic_suggestions = []
@@ -1009,12 +1059,6 @@ if lang_option != st.session_state.lang:
     st.rerun()
 
 T = UI[lang_option]
-
-st.markdown(
-    f"<div class='hero-title'>{T['page_title']}</div>"
-    f"<p class='hero-sub'>{T['page_caption']}</p>",
-    unsafe_allow_html=True,
-)
 
 config_ok  = check_config()
 CATEGORIES = TOPIC_CATEGORIES_ES if lang_option == "es" else TOPIC_CATEGORIES_EN
@@ -1071,6 +1115,10 @@ mode_labels = (
     ["⚡ Automático", "🗂️ Por Categoría"]
     if lang_option == "es"
     else ["⚡ Automatic", "🗂️ By Category"]
+)
+st.markdown(
+    f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
+    unsafe_allow_html=True,
 )
 mode = st.radio(
     "mode",
