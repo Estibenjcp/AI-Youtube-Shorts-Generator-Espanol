@@ -575,11 +575,20 @@ with col_c:
 
 if suggest_clicked and selected_category:
     with st.spinner(f"{T['suggest_spinner']} '{selected_category}'..."):
-        from modules.brain import ContentBrain as _BS
-        suggestions = _BS().get_topic_suggestions(selected_category, n=6, lang=lang_option)
-        st.session_state.topic_suggestions = suggestions
-        st.session_state.selected_topic    = ""
-    st.rerun()
+        try:
+            from modules.brain import ContentBrain as _BS
+            suggestions = _BS().get_topic_suggestions(selected_category, n=6, lang=lang_option)
+            st.session_state.topic_suggestions = suggestions
+            st.session_state.selected_topic    = ""
+            st.rerun()
+        except Exception as _err:
+            _msg = str(_err)
+            if "NotFound" in _msg or "404" in _msg or "model" in _msg.lower():
+                st.error("❌ Modelo de IA no encontrado. Verifica que **AI_PROVIDER = 'gemini'** y **AI_MODEL = 'gemini-2.0-flash-exp'** en los Secrets de Streamlit Cloud.")
+            elif "auth" in _msg.lower() or "401" in _msg or "403" in _msg or "api key" in _msg.lower():
+                st.error("❌ Clave de API inválida. Verifica **AI_API_KEY** en los Secrets de Streamlit Cloud.")
+            else:
+                st.error(f"❌ Error al generar sugerencias: {_msg[:200]}")
 
 if st.session_state.topic_suggestions:
     st.caption(T["suggest_caption"])
