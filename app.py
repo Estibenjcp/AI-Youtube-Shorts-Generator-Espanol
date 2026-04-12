@@ -502,14 +502,27 @@ strong { color: var(--text-primary) !important; }
     background: var(--surface) !important;
     box-shadow: var(--shadow-sm) !important;
     overflow: hidden !important;
+    margin-bottom: 12px !important;
 }
 .stExpander summary {
     font-weight: 600 !important;
-    font-size: 0.88rem !important;
+    font-size: 0.9rem !important;
     color: var(--text-secondary) !important;
     padding: 14px 18px !important;
 }
 .stExpander summary:hover { color: var(--brand) !important; }
+
+/* Expander de voz — highlight sutil */
+.stExpander:has(summary:first-child) {
+    border-color: #c7d2fe !important;
+}
+
+/* ── RADIO IDIOMA arriba del hero ── */
+[data-testid="stRadio"][key="lang_main"] label,
+div:has(> [data-testid="stRadio"]):first-of-type [data-testid="stRadio"] label {
+    padding: 7px 18px !important;
+    font-size: 0.85rem !important;
+}
 
 /* ── ALERTS ── */
 .stSuccess > div {
@@ -934,32 +947,17 @@ def run_pipeline(log_q: queue.Queue, params: dict):
     finally:
         sys.stdout = old_stdout
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ── Sidebar — solo API keys (configuración única) ────────────────────────────
+
+# Necesitamos lang_option antes del sidebar para el diccionario T
+lang_option = st.session_state.lang
+T = UI[lang_option]
 
 with st.sidebar:
-    st.markdown("# 🎬 AutoShorts AI")
-
-    # Idioma
-    lang_option = st.radio(
-        "Idioma",
-        options=["es", "en"],
-        format_func=lambda x: "🇪🇸 Español" if x == "es" else "🇺🇸 English",
-        index=0 if st.session_state.lang == "es" else 1,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-    if lang_option != st.session_state.lang:
-        st.session_state.lang              = lang_option
-        st.session_state.topic_suggestions = []
-        st.session_state.selected_topic    = ""
-        st.session_state.selected_category = ""
-        st.rerun()
-
-    T = UI[lang_option]
+    st.markdown("# ⚙️ AutoShorts AI")
+    st.caption("Configuración de API" if lang_option == "es" else "API Settings")
     st.divider()
 
-    # API Settings
-    st.subheader(T["api_settings"])
     cfg = load_config()
 
     with st.form("api_form"):
@@ -984,19 +982,61 @@ with st.sidebar:
         st.success(T["api_saved"])
 
     st.divider()
+    if check_config():
+        st.success(T["config_ready"])
+    else:
+        st.warning(T["config_incomplete"])
 
-    # Video Settings
-    st.subheader(T["video_settings"])
+# ── Main area ─────────────────────────────────────────────────────────────────
 
-    VOICES        = VOICES_ES if lang_option == "es" else VOICES_EN
-    default_voice = T["default_voice"]
-    voice_label   = st.selectbox(T["narrator_voice"], options=list(VOICES.keys()),
-                        index=list(VOICES.keys()).index(default_voice) if default_voice in VOICES else 0)
+# ── Idioma (visible en móvil) ─────────────────────────────────────────────────
+lang_col, _ = st.columns([1, 2])
+with lang_col:
+    lang_option = st.radio(
+        "lang",
+        options=["es", "en"],
+        format_func=lambda x: "🇪🇸 Español" if x == "es" else "🇺🇸 English",
+        index=0 if st.session_state.lang == "es" else 1,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="lang_main",
+    )
+if lang_option != st.session_state.lang:
+    st.session_state.lang              = lang_option
+    st.session_state.topic_suggestions = []
+    st.session_state.selected_topic    = ""
+    st.session_state.selected_category = ""
+    st.rerun()
+
+T = UI[lang_option]
+
+st.markdown(
+    f"<div class='hero-title'>{T['page_title']}</div>"
+    f"<p class='hero-sub'>{T['page_caption']}</p>",
+    unsafe_allow_html=True,
+)
+
+config_ok  = check_config()
+CATEGORIES = TOPIC_CATEGORIES_ES if lang_option == "es" else TOPIC_CATEGORIES_EN
+
+# ── Configuración de Voz (expander accesible en móvil) ───────────────────────
+
+VOICES        = VOICES_ES if lang_option == "es" else VOICES_EN
+default_voice = T["default_voice"]
+
+voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
+with st.expander(voice_label_hint, expanded=False):
+    voice_label = st.selectbox(
+        T["narrator_voice"],
+        options=list(VOICES.keys()),
+        index=list(VOICES.keys()).index(default_voice) if default_voice in VOICES else 0,
+        key="voice_select",
+    )
     selected_voice = VOICES[voice_label]
 
     col_prev, col_spin = st.columns([1, 2])
     with col_prev:
-        preview_clicked = st.button(T["preview_btn"], use_container_width=True)
+        preview_clicked = st.button(T["preview_btn"], use_container_width=True, key="preview_btn_main")
     with col_spin:
         preview_status = st.empty()
 
@@ -1019,28 +1059,11 @@ with st.sidebar:
             st.audio(preview_path, format="audio/mp3")
 
     rate_pct = st.slider(T["speech_rate"], min_value=-30, max_value=50, value=10, step=5,
-                         format="%+d%%", help=T["speech_help"])
+                         format="%+d%%", help=T["speech_help"], key="rate_slider")
     rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
 
-    use_avatar    = st.toggle(T["avatar_toggle"],    value=False, help=T["avatar_help"])
-    use_subtitles = st.toggle(T["subtitles_toggle"], value=False, help=T["subtitles_help"])
-
-    st.divider()
-    if check_config():
-        st.success(T["config_ready"])
-    else:
-        st.warning(T["config_incomplete"])
-
-# ── Main area ─────────────────────────────────────────────────────────────────
-
-st.markdown(
-    f"<div class='hero-title'>{T['page_title']}</div>"
-    f"<p class='hero-sub'>{T['page_caption']}</p>",
-    unsafe_allow_html=True,
-)
-
-config_ok  = check_config()
-CATEGORIES = TOPIC_CATEGORIES_ES if lang_option == "es" else TOPIC_CATEGORIES_EN
+    use_avatar    = st.toggle(T["avatar_toggle"],    value=False, help=T["avatar_help"],    key="avatar_toggle")
+    use_subtitles = st.toggle(T["subtitles_toggle"], value=False, help=T["subtitles_help"], key="subs_toggle")
 
 # ── Selector de modo ──────────────────────────────────────────────────────────
 
