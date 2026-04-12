@@ -109,17 +109,23 @@ class ContentBrain:
             )
         elif mode == "libro":
             prompt = (
-                f"Dame el título de 1 libro real, famoso y muy recomendado en la categoría: {category}. "
-                f"Debe ser un libro que haya cambiado la vida de muchas personas o que sea muy popular. "
-                f"Formato: 'Título del Libro — Autor'. "
-                f"Semilla: {seed}. "
-                f"Responde ÚNICAMENTE con el título y autor, nada más. En español."
+                f"Eres un curador literario experto. Necesito el título de UN libro real de la categoría: {category}.\n"
+                f"Semilla de aleatoriedad: {seed} — usa este número para seleccionar un libro DIFERENTE cada vez.\n"
+                f"REGLAS ESTRICTAS:\n"
+                f"- PROHIBIDO elegir siempre el libro más famoso de la categoría (ej: no siempre 'Hábitos Atómicos', no siempre 'El Poder del Ahora').\n"
+                f"- Elige un libro real, valioso, pero que NO sea el primero que se te ocurra.\n"
+                f"- Varía entre libros clásicos, modernos, latinoamericanos, europeos según la semilla.\n"
+                f"- Formato exacto: 'Título del Libro — Autor'\n"
+                f"- Responde ÚNICAMENTE con el título y autor. Nada más."
             ) if lang == "es" else (
-                f"Give me the title of 1 real, famous and highly recommended book in the category: {category}. "
-                f"Must be a book that has changed many people's lives or is very popular. "
-                f"Format: 'Book Title — Author'. "
-                f"Seed: {seed}. "
-                f"Return ONLY the title and author, nothing else."
+                f"You are an expert literary curator. Give me the title of ONE real book from the category: {category}.\n"
+                f"Randomness seed: {seed} — use this number to select a DIFFERENT book each time.\n"
+                f"STRICT RULES:\n"
+                f"- FORBIDDEN to always pick the most famous book in the category (e.g. not always 'Atomic Habits', not always 'The Power of Now').\n"
+                f"- Choose a real, valuable book that is NOT the first one that comes to mind.\n"
+                f"- Vary between classic, modern, international books based on the seed.\n"
+                f"- Exact format: 'Book Title — Author'\n"
+                f"- Return ONLY the title and author. Nothing else."
             )
         else:
             prompt = (
@@ -444,70 +450,73 @@ JSON RULES:
         print(f"📚 {label}: {book}...")
 
         if lang == "es":
-            prompt = f"""Actua como un narrador de historias experto y analista literario con un estilo minimalista, profundo y misterioso, similar al de los mejores curadores de contenido en TikTok. Tu objetivo no es resumir un libro, sino revelar su esencia de forma que parezca un descubrimiento necesario para el espectador.
+            prompt = f"""Eres un narrador conversacional que habla directamente al oido del espectador. Tu voz sera leida por un sistema de texto a voz, por eso CADA FRASE debe sonar natural al ser pronunciada en voz alta.
 
-Estructura del Guion (55-65 segundos / 150-170 palabras en total):
-  Escena 1 - EL MISTERIO (5 seg): No empieces con una pregunta de autoayuda. Empieza con una observacion contraintuitiva o una verdad incomoda que el libro aborda.
-  Escena 2 - LA REVELACION (5 seg): Introduce el titulo y autor como si fuera la pieza que falta en el rompecabezas. Sin introducciones innecesarias.
-  Escenas 3-4 - EL DESCUBRIMIENTO (15 seg): Explica la premisa central no como una leccion, sino como una "regla del juego" que el autor descubrio.
-  Escenas 5-6 - EL GIRO (15 seg): Presenta la idea mas sorprendente o radical del libro. La que te hace detener el scroll.
-  Escena 7 - LA APLICACION INVISIBLE (10 seg): Como cambia este libro la forma en que el espectador vera el mundo.
-  Escenas 8-9 - EL IMPACTO FINAL (10 seg): Una frase de cierre que deje un silencio reflexivo. CTA minimalista, sin sonar a vendedor.
+Estructura (8-10 escenas / 150-170 palabras en total):
+  Escena 1 - GANCHO: Una verdad incomoda o dato sorprendente que el libro revela. Directo, sin rodeos.
+  Escena 2 - EL LIBRO: Presenta el titulo y autor de forma natural, como si lo recomendaras a un amigo.
+  Escenas 3-4 - LA IDEA CENTRAL: La premisa principal del libro, explicada simple y clara.
+  Escenas 5-6 - EL GIRO: La idea mas inesperada o radical. La que cambia como piensas.
+  Escena 7 - EN TU VIDA: Como aplicar esto manana mismo, con un ejemplo concreto.
+  Escenas 8-9 - CIERRE: Una frase que quede resonando. Un CTA simple y directo.
 
-REGLAS CRITICAS:
-- PROHIBIDO: Emojis, saludos iniciales, despedidas genericas o lenguaje de vendedor.
-- PROHIBIDO: caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales).
-- USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
-- PERSPECTIVA: 2da persona constante. Habla directamente a la mente del espectador.
-- TONO: Cinematografico, pausado, intelectual pero accesible.
-- LENGUAJE: Espanol Latino neutro, elegante y preciso.
+REGLAS CRITICAS PARA SONAR HUMANO:
+- Cada escena: maximo 15 palabras. Frases cortas. Una idea por escena.
+- Usa comas donde harias una pausa al hablar.
+- Usa "..." solo para pausas dramaticas intencionales (maximo 2 veces en todo el guion).
+- Habla en 2da persona: "tu", "te", "tu vida".
+- Tono: como si le hablaras a un amigo inteligente, no como un libro de texto.
+- Varía el ritmo: alterna frases muy cortas con frases medianas.
+- PROHIBIDO: emojis, palabras rebuscadas, frases subordinadas largas, lenguaje de vendedor.
+- PROHIBIDO: caracteres especiales Unicode. Solo letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion.
 
 Libro: {book}
 Categoria: {category}
 
 FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
 [
-  {{"id":1,"text":"texto de la escena","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}},
-  {{"id":2,"text":"texto de la escena","visual_1":"city skyline sunrise","visual_2":"person thinking window","mood":"inspiring"}}
+  {{"id":1,"text":"texto corto y natural aqui","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}},
+  {{"id":2,"text":"texto corto y natural aqui","visual_1":"city skyline sunrise","visual_2":"person thinking window","mood":"inspiring"}}
 ]
 
 REGLAS DEL JSON:
-- Entre 8 y 10 escenas.
-- "text": el texto narrado de esa escena. Sin emojis. Sin caracteres especiales.
-- "visual_1" y "visual_2": terminos en INGLES para Pexels (2-4 palabras). Inspiradores, educativos: personas leyendo, escribiendo, pensando, naturaleza, ciudad, exito, crecimiento. EVITAR visuals oscuros.
+- "text": el texto narrado. Maximo 15 palabras por escena. Sin caracteres especiales.
+- "visual_1" y "visual_2": terminos en INGLES para Pexels (2-4 palabras). Inspiradores: personas leyendo, escribiendo, pensando, naturaleza, ciudad, exito. EVITAR visuals oscuros.
 - "mood": siempre "inspiring"."""
         else:
-            prompt = f"""Act as an expert storyteller and literary analyst with a minimalist, deep and mysterious style, similar to the best content curators on TikTok. Your goal is not to summarize a book, but to reveal its essence in a way that feels like a necessary discovery for the viewer.
+            prompt = f"""You are a conversational narrator speaking directly into the viewer's ear. Your voice will be read by a text-to-speech system, so EVERY SENTENCE must sound natural when spoken out loud.
 
-Script Structure (55-65 seconds / 150-170 words total):
-  Scene 1 - THE MYSTERY (5 sec): Don't start with a self-help question. Start with a counterintuitive observation or an uncomfortable truth the book addresses.
-  Scene 2 - THE REVELATION (5 sec): Introduce the title and author as if it were the missing piece of the puzzle. No unnecessary introductions.
-  Scenes 3-4 - THE DISCOVERY (15 sec): Explain the core premise not as a lesson, but as a "rule of the game" the author uncovered.
-  Scenes 5-6 - THE TWIST (15 sec): Present the most surprising or radical idea in the book. The one that makes you stop scrolling.
-  Scene 7 - THE INVISIBLE APPLICATION (10 sec): How this book changes the way the viewer will see the world.
-  Scenes 8-9 - THE FINAL IMPACT (10 sec): A closing line that leaves a reflective silence. Minimalist CTA, never salesy.
+Structure (8-10 scenes / 150-170 words total):
+  Scene 1 - HOOK: An uncomfortable truth or surprising fact the book reveals. Direct, no fluff.
+  Scene 2 - THE BOOK: Introduce the title and author naturally, like recommending it to a friend.
+  Scenes 3-4 - THE CORE IDEA: The book's main premise, explained simply and clearly.
+  Scenes 5-6 - THE TWIST: The most unexpected or radical idea. The one that changes how you think.
+  Scene 7 - IN YOUR LIFE: How to apply this tomorrow, with a concrete example.
+  Scenes 8-9 - CLOSE: A line that keeps echoing. A simple, direct CTA.
 
-CRITICAL RULES:
-- FORBIDDEN: Emojis, opening greetings, generic farewells or salesy language.
-- FORBIDDEN: Special Unicode characters (em-dashes, curly quotes, special ellipsis characters).
-- USE ONLY: letters, numbers, commas, periods, exclamation marks, question marks, plain apostrophes.
+CRITICAL RULES FOR SOUNDING HUMAN:
+- Each scene: maximum 15 words. Short sentences. One idea per scene.
+- Use commas where you would pause when speaking.
+- Use "..." only for intentional dramatic pauses (maximum 2 times in the whole script).
+- Speak in 2nd person: "you", "your", "your life".
+- Tone: like talking to a smart friend, not writing a textbook.
+- Vary the rhythm: alternate very short sentences with medium ones.
+- FORBIDDEN: emojis, complex vocabulary, long subordinate clauses, salesy language.
+- FORBIDDEN: special Unicode characters. Only letters, numbers, commas, periods, exclamation marks, question marks.
 - LANGUAGE: ENGLISH ONLY. No Spanish words.
-- PERSPECTIVE: Constant 2nd person. Speak directly to the viewer's mind.
-- TONE: Cinematic, unhurried, intellectual yet accessible.
 
 Book: {book}
 Category: {category}
 
 OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
 [
-  {{"id":1,"text":"scene text here","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}},
-  {{"id":2,"text":"scene text here","visual_1":"city skyline sunrise","visual_2":"person thinking window","mood":"inspiring"}}
+  {{"id":1,"text":"short natural text here","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}},
+  {{"id":2,"text":"short natural text here","visual_1":"city skyline sunrise","visual_2":"person thinking window","mood":"inspiring"}}
 ]
 
 JSON RULES:
-- Between 8 and 10 scenes.
-- "text": narrated text for that scene. No emojis. No special characters.
-- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Inspiring and educational: people reading, writing, thinking, nature, city, success, growth. AVOID dark visuals.
+- "text": narrated text. Maximum 15 words per scene. No special characters.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Inspiring: people reading, writing, thinking, nature, city, success. AVOID dark visuals.
 - "mood": always "inspiring"."""
 
         raw   = self._generate(prompt)

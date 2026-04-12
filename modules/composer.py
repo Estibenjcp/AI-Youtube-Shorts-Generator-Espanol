@@ -187,7 +187,20 @@ class Composer:
                 current_pair = (self.avatar_path, None)
                 is_avatar    = True
             elif current_pair is None:
-                continue
+                # ── Fallback: borrow video from the nearest scene that succeeded ──
+                fallback_pair = None
+                for offset in range(1, len(video_pairs)):
+                    for candidate in [i - offset, i + offset]:
+                        if 0 <= candidate < len(video_pairs) and video_pairs[candidate] is not None:
+                            fallback_pair = video_pairs[candidate]
+                            print(f"   ♻️  Scene {scene['id']} video failed — borrowing clip from scene {candidate+1}.")
+                            break
+                    if fallback_pair:
+                        break
+                if fallback_pair is None:
+                    print(f"   ❌ Scene {scene['id']} — no video fallback found, skipping.")
+                    continue
+                current_pair = fallback_pair
 
             path = self.process_scene(scene, current_pair, is_avatar)
             if path:
