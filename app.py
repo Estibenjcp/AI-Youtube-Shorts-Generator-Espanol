@@ -592,6 +592,27 @@ hr {
     margin-bottom: 8px !important;
 }
 
+/* ── BOTÓN REINICIAR ── */
+.restart-btn .stButton > button,
+.restart-btn .stButton > button p,
+.restart-btn .stButton > button span {
+    min-height: 52px !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--surface-3) !important;
+    color: var(--text-secondary) !important;
+    border: 1.5px solid var(--border) !important;
+    transition: var(--transition) !important;
+}
+.restart-btn .stButton > button:hover,
+.restart-btn .stButton > button:hover p,
+.restart-btn .stButton > button:hover span {
+    background: #fef2f2 !important;
+    border-color: #fca5a5 !important;
+    color: #b91c1c !important;
+}
+
 /* ── RESPONSIVE: TABLET ── */
 @media (max-width: 1024px) {
     .block-container { padding: 1.5rem 1.25rem 3rem !important; }
@@ -745,6 +766,7 @@ UI = {
         "tab_script":        "📝 Guion",
         "tab_copy":          "📣 Copy",
         "tab_thumb":         "🖼️ Miniatura",
+        "restart_btn":       "🔄 Crear Otro Video",
     },
     "en": {
         "page_title":        "AutoShorts AI 🎬",
@@ -809,6 +831,7 @@ UI = {
         "tab_script":        "📝 Script",
         "tab_copy":          "📣 Copy",
         "tab_thumb":         "🖼️ Thumbnail",
+        "restart_btn":       "🔄 Create Another Video",
     },
 }
 
@@ -1259,6 +1282,24 @@ def _build_zip(T: dict) -> tuple:
     return buf.getvalue(), zip_name
 
 
+def _reset_session():
+    """Limpia todo el estado para empezar de nuevo."""
+    keys_to_reset = [
+        "running", "log_lines", "status", "thread",
+        "copy_data", "thumb_prompt", "script_data",
+        "selected_category", "topic_suggestions", "selected_topic",
+        "_last_mode",
+    ]
+    for k in keys_to_reset:
+        if k in st.session_state:
+            del st.session_state[k]
+    # Limpiar el input de tema si existe
+    for k in list(st.session_state.keys()):
+        if "manual_topic" in k or "topic_input" in k:
+            del st.session_state[k]
+    st.rerun()
+
+
 if st.session_state.status == "done":
     st.markdown("---")
     st.success(T["done_msg"])
@@ -1327,7 +1368,18 @@ if st.session_state.status == "done":
         else:
             st.info("No disponible.")
 
+    # ── Botón Volver a Comenzar ───────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("<div class='restart-btn'>", unsafe_allow_html=True)
+    if st.button(T["restart_btn"], key="restart_done", use_container_width=True, type="secondary"):
+        _reset_session()
+    st.markdown("</div>", unsafe_allow_html=True)
+
 elif st.session_state.status == "error":
     err = next((l.split(":", 1)[1] for l in st.session_state.log_lines if l.startswith("ERROR:")), "Unknown error")
     st.error(f"{T['error_prefix']} {err}")
     st.info(T["error_hint"])
+    st.markdown("<div class='restart-btn'>", unsafe_allow_html=True)
+    if st.button(T["restart_btn"], key="restart_error", use_container_width=True, type="secondary"):
+        _reset_session()
+    st.markdown("</div>", unsafe_allow_html=True)
