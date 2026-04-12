@@ -98,9 +98,12 @@ h1, h2, h3, h4, .hero-title {
     background: var(--surface) !important;
     border-right: 1px solid var(--border) !important;
     box-shadow: var(--shadow-sm) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
 }
 [data-testid="stSidebar"] > div:first-child {
-    padding: 1.5rem 1rem !important;
+    padding: 1.25rem 0.875rem 3rem !important;
+    min-height: 100vh;
 }
 /* Título del sidebar */
 [data-testid="stSidebar"] h1 {
@@ -166,12 +169,22 @@ strong { color: var(--text-primary) !important; }
     white-space: nowrap !important;
 }
 [data-testid="stRadio"] label:has(input:checked) {
-    background: var(--surface) !important;
-    color: var(--brand) !important;
+    background: var(--brand) !important;
+    color: #ffffff !important;
     box-shadow: var(--shadow-md) !important;
     font-weight: 700 !important;
 }
-[data-testid="stRadio"] input { display: none !important; }
+/* Ocultar el círculo nativo del radio button */
+[data-testid="stRadio"] input[type="radio"] {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+    opacity: 0 !important;
+}
+[data-testid="stRadio"] label > div:first-child {
+    display: none !important;
+}
 
 /* ── STEP HEADERS ── */
 .step-header {
@@ -273,11 +286,11 @@ strong { color: var(--text-primary) !important; }
     transform: translateY(-2px) !important;
 }
 .suggestion-card .stButton > button[kind="primary"] {
-    background: var(--brand-light) !important;
-    border: 2px solid var(--brand) !important;
-    color: #3730a3 !important;
-    box-shadow: 0 4px 14px rgba(99,102,241,0.2) !important;
-    font-weight: 600 !important;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%) !important;
+    border: 2px solid var(--brand-dark) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.35) !important;
+    font-weight: 700 !important;
 }
 
 /* ── BOTÓN GENERAR ── */
@@ -400,7 +413,16 @@ strong { color: var(--text-primary) !important; }
     font-weight: 600 !important;
     font-size: 0.82rem !important;
 }
-.stSlider [data-baseweb="slider"] div[data-baseweb="slider-track-fill"] {
+/* Track fill — múltiples selectores para cubrir versiones de Streamlit */
+.stSlider [data-baseweb="slider"] [data-baseweb="slider-track-fill"],
+.stSlider [data-baseweb="slider"] div[class*="Track"] > div,
+.stSlider [data-baseweb="slider"] div > div > div:first-child {
+    background: var(--brand) !important;
+}
+/* Sobreescribir el rojo por defecto de Streamlit en cualquier parte */
+.stSlider * { accent-color: var(--brand) !important; }
+[data-testid="stSlider"] [role="slider"] { background: var(--brand) !important; }
+[data-testid="stSlider"] > div > div > div > div:nth-child(3) > div {
     background: var(--brand) !important;
 }
 
