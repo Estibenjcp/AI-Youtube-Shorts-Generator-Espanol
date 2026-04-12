@@ -253,9 +253,24 @@ We need TWO different stock videos for every single scene.
             print(clean_text)
             return None
 
-    def generate_thumbnail_prompt(self, topic: str, script: list) -> str:
+    def generate_thumbnail_prompt(self, topic: str, script: list, lang: str = "es") -> str:
         print("🖼️ Generating thumbnail prompt...")
         hook = script[0]['text'] if script else ""
+
+        if lang == "es":
+            word_lang_instruction = (
+                "- El prompt de imagen va en INGLÉS (para compatibilidad con Midjourney/DALL-E).\n"
+                "- EXCEPCIÓN IMPORTANTE: Las palabras del título, badge y headline superpuestos en la imagen "
+                "DEBEN estar en ESPAÑOL. Ejemplo: en vez de 'ETERNITY' usa 'ETERNIDAD', "
+                "en vez de 'LOST REALM' usa 'REINO PERDIDO', en vez de 'MYTH' usa 'MITO'.\n"
+                "- El subtítulo contextual final también debe ir en ESPAÑOL."
+            )
+        else:
+            word_lang_instruction = (
+                "- Every single word in the entire prompt — including title, badge, headline, and subtitle — "
+                "MUST be in ENGLISH. Absolutely no other language."
+            )
+
         prompt = f"""
 You are an expert AI image prompt engineer specializing in viral YouTube Shorts thumbnails.
 
@@ -277,17 +292,19 @@ Swirling particles (dust, embers, glowing debris) around the central figure.
 Breaking news/historic discovery aesthetic. Maximum detail, photorealistic, 8k,
 vertical composition (9:16). Centralized composition, all key elements within the
 central 1:1 safe area. Top area is clear of text.
-Title overlaid in the upper center, one dominant word: '[ENGLISH_WORD]' with a rugged,
-glowing stone texture. Below it, a short secondary badge: '[SHORT_ENGLISH_LABEL]' like a label.
-Main headline below that, a large powerful word: '[ENGLISH_WORD_2]' with a bright crystalline texture.
-Finally, a short contextual subtitle in English relevant to the topic."
+Title overlaid in the upper center, one dominant word: '[WORD]' with a rugged,
+glowing stone texture. Below it, a short secondary badge: '[SHORT_LABEL]' like a label.
+Main headline below that, a large powerful word: '[WORD_2]' with a bright crystalline texture.
+Finally, a short contextual subtitle relevant to the topic."
 
-### RULES:
+### LANGUAGE RULES:
+{word_lang_instruction}
+- Title and Headline must be single dramatic words in ALL CAPS.
+- Badge and subtitle must be short punchy phrases.
+
+### OTHER RULES:
 - Keep the same structural format and length as the reference.
 - Replace every placeholder with elements specific to "{topic}".
-- **CRITICAL: Every single word in the entire prompt — including title, badge, headline, and subtitle — MUST be in ENGLISH. Absolutely no Spanish or any other language.**
-- Title and Headline must be single dramatic English words in ALL CAPS.
-- Badge and subtitle must be short punchy English phrases.
 - Return ONLY the final prompt text. No explanations. No JSON. No markdown.
 """
         return self._generate(prompt).strip()

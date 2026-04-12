@@ -980,7 +980,7 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 os.makedirs(p, exist_ok=True)
 
         copy_data    = brain.generate_copy(topic, script, lang=pipeline_lang)
-        thumb_prompt = brain.generate_thumbnail_prompt(topic, script)
+        thumb_prompt = brain.generate_thumbnail_prompt(topic, script, lang=pipeline_lang)
 
         log_q.put(f"COPY:{__import__('json').dumps(copy_data)}")
         log_q.put(f"THUMB:{thumb_prompt}")
@@ -1443,9 +1443,11 @@ if st.session_state.status == "done":
     with tab_thumb:
         thumb = st.session_state.get("thumb_prompt")
         if thumb:
-            st.caption("Midjourney · DALL·E · Ideogram · Flux")
-            st.text_area("thumb", value=thumb, height=320, label_visibility="collapsed")
-            st.button("📋 Copiar", key="copy_thumb", use_container_width=True)
+            st.caption("Midjourney · DALL·E · Ideogram · Flux — " + (
+                "Usa el ícono 📋 de la esquina para copiar" if lang_option == "es"
+                else "Use the 📋 icon in the corner to copy"
+            ))
+            st.code(thumb, language=None)
         else:
             st.info("No disponible.")
 
