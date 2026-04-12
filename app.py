@@ -939,29 +939,19 @@ T    = UI[lang]
 # ── Pipeline runner ───────────────────────────────────────────────────────────
 
 def run_pipeline(log_q: queue.Queue, params: dict):
-    import sys, io, threading
-
-    _local = threading.local()
-    _real_stdout = sys.__stdout__  # always the real stdout, not another thread's writer
+    import sys, io
 
     class QueueWriter(io.TextIOBase):
         def write(self, msg):
-            # Only capture output from THIS thread; other threads use real stdout
-            if threading.current_thread() is _local.owner_thread:
-                if msg and msg.strip():
-                    log_q.put(msg.rstrip())
-            else:
-                if _real_stdout:
-                    _real_stdout.write(msg)
+            if msg and msg.strip():
+                log_q.put(msg.rstrip())
             return len(msg) if msg else 0
 
         def flush(self):
             pass
 
-    _local.owner_thread = threading.current_thread()
-    writer = QueueWriter()
     old_stdout = sys.stdout
-    sys.stdout = writer
+    sys.stdout = QueueWriter()
 
     try:
         import modules.brain         as _brain_mod
