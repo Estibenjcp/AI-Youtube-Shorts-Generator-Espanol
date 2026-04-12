@@ -223,305 +223,308 @@ OUTPUT FORMAT (strict JSON, no markdown):
         result = [l for l in lines if len(l) > 10][:n]
         return result or [f"Viral topic about {category}"]
 
+    @staticmethod
+    def _sanitize(text: str) -> str:
+        """Remove special Unicode characters that break TTS or JSON parsing."""
+        replacements = {
+            "\u2014": "-", "\u2013": "-",   # em-dash, en-dash
+            "\u2018": "'", "\u2019": "'",   # curly single quotes
+            "\u201c": '"', "\u201d": '"',   # curly double quotes
+            "\u2026": "...",                # ellipsis character
+            "\u00ab": '"', "\u00bb": '"',   # guillemets
+            "\u2022": "-",                  # bullet
+        }
+        for char, rep in replacements.items():
+            text = text.replace(char, rep)
+        return text
+
     def generate_viral_script(self, topic: str, category: str, lang: str = "es") -> list:
-        """Genera un guion viral ultra-retención (45-60 seg) con estructura MrBeast/Dark History."""
+        """Genera un guion viral ultra-retención (45-60 seg) con estructura MrBeast/Dark History.
+        Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
         label = "Generando guion viral" if lang == "es" else "Generating viral script"
         print(f"🔥 {label}: {topic}...")
 
         if lang == "es":
-            script_prompt = f"""Eres el mejor guionista de YouTube Shorts especializado en hechos históricos impactantes, near misses, catástrofes evitadas, mortandades misteriosas y misterios sin resolver.
+            prompt = f"""Eres el mejor guionista de YouTube Shorts especializado en hechos historicos impactantes, near misses, catastrofes evitadas, mortandades misteriosas y misterios sin resolver.
 
-Tu objetivo es crear Shorts que generen máxima retención y shares (estilo MrBeast + The Why Files + Dark History).
+Tu objetivo es crear Shorts que generen maxima retencion y shares (estilo MrBeast + The Why Files + Dark History).
 
 REGLAS OBLIGATORIAS:
-- Duración total: 45-60 segundos (máximo 140-160 palabras).
-- Estructura EXACTA:
-  1. HOOK (primeros 3 seg): Pregunta impactante, número shockeante o afirmación loca.
-  2. CONTEXTO RÁPIDO (5-10 seg): Situación histórica en 1-2 frases.
-  3. EL GIRO / LA MORTANDAD / EL NEAR MISS (centro): Detalle brutal, dato desconocido, consecuencia terrorífica.
-  4. TWIST FINAL (últimos 8-10 seg): Revelación impactante, ironía o "lo que pasó después".
-  5. CTA (últimos 3 seg): "Comenta '¿QUÉ MÁS?' si querés la parte 2" + "Sígueme para más historia oscura".
-
-Estilo: Lenguaje dramático, conversacional y adictivo (usa MAYÚSCULAS para énfasis, signos de exclamación y preguntas).
-PROHIBIDO usar emojis. Solo texto puro narrado.
-Siempre en español neutro latino. Nunca digas "hoy te voy a contar" ni "vamos a hablar de".
+- Duracion total: 45-60 segundos (maximo 140-160 palabras en total sumando todos los campos "text").
+- Estructura EXACTA en el orden de las escenas:
+  Escena 1: HOOK - Pregunta impactante, numero shockeante o afirmacion loca.
+  Escenas 2-3: CONTEXTO RAPIDO - Situacion historica en 1-2 frases.
+  Escenas 4-7: EL GIRO / LA MORTANDAD / EL NEAR MISS - Detalle brutal, dato desconocido, consecuencia terrorifica.
+  Escena 8: TWIST FINAL - Revelacion impactante, ironia o "lo que paso despues".
+  Escena 9: CTA - "Comenta QUE MAS si queres la parte 2. Sigueme para mas historia oscura."
+- Lenguaje dramatico, conversacional y adictivo. Usa MAYUSCULAS para enfasis.
+- PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales).
+- USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
+- En espanol neutro latino. Nunca digas "hoy te voy a contar" ni "vamos a hablar de".
 
 Tema: {topic}
-Categoría: {category}
+Categoria: {category}
 
-Devuelve SOLO el texto completo narrado, de corrido, sin emojis. Sin JSON, sin títulos de sección, sin markdown."""
+FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
+[
+  {{"id":1,"text":"texto de la escena aqui","visual_1":"english pexels term","visual_2":"english pexels term","mood":"dramatic"}},
+  {{"id":2,"text":"texto de la escena aqui","visual_1":"english pexels term","visual_2":"english pexels term","mood":"dramatic"}}
+]
+
+REGLAS DEL JSON:
+- Entre 8 y 10 escenas.
+- "text": el texto narrado de esa escena. Sin emojis. Sin caracteres especiales.
+- "visual_1" y "visual_2": terminos de busqueda en INGLES para Pexels (2-4 palabras), que coincidan con el contenido.
+- "mood": siempre "dramatic"."""
         else:
-            script_prompt = f"""You are the best YouTube Shorts scriptwriter specialized in shocking historical facts, near misses, avoided catastrophes, mysterious deaths and unsolved mysteries.
+            prompt = f"""You are the best YouTube Shorts scriptwriter specialized in shocking historical facts, near misses, avoided catastrophes, mysterious deaths and unsolved mysteries.
 
 Your goal: maximum retention and shares (MrBeast + The Why Files + Dark History style).
 
 MANDATORY RULES:
 - LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
-- NO emojis. Pure narration text only.
-- Total duration: 45-60 seconds (maximum 140-160 words).
-- EXACT structure:
-  1. HOOK (first 3 sec): Shocking question, mind-blowing number or crazy statement.
-  2. QUICK CONTEXT (5-10 sec): Historical situation in 1-2 sentences.
-  3. THE TWIST / NEAR MISS (center): Brutal detail, unknown fact, terrifying consequence.
-  4. FINAL TWIST (last 8-10 sec): Shocking revelation, irony or "what happened after".
-  5. CTA (last 3 sec): "Comment 'WHAT ELSE?' if you want part 2" + "Follow for more dark history".
-
-Style: Dramatic, conversational and addictive (CAPS for emphasis, exclamation marks and questions).
-Never say "today I'm going to tell you" or "we're going to talk about".
+- Total duration: 45-60 seconds (maximum 140-160 words total across all "text" fields).
+- EXACT scene structure:
+  Scene 1: HOOK - Shocking question, mind-blowing number or crazy statement.
+  Scenes 2-3: QUICK CONTEXT - Historical situation in 1-2 sentences.
+  Scenes 4-7: THE TWIST / NEAR MISS - Brutal detail, unknown fact, terrifying consequence.
+  Scene 8: FINAL TWIST - Shocking revelation, irony or "what happened after".
+  Scene 9: CTA - "Comment WHAT ELSE if you want part 2. Follow for more dark history."
+- Dramatic, conversational and addictive language. Use CAPS for emphasis.
+- FORBIDDEN: emojis, special Unicode characters (em-dashes, curly quotes, special ellipsis).
+- USE ONLY: letters, numbers, commas, periods, exclamation marks, question marks, plain apostrophes.
+- Never say "today I'm going to tell you" or "we're going to talk about".
 
 Topic: {topic}
 Category: {category}
 
-Return ONLY the complete narrated text, straight through, no emojis. No JSON, no section titles, no markdown."""
+OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
+[
+  {{"id":1,"text":"scene text here","visual_1":"pexels search term","visual_2":"pexels search term","mood":"dramatic"}},
+  {{"id":2,"text":"scene text here","visual_1":"pexels search term","visual_2":"pexels search term","mood":"dramatic"}}
+]
 
-        full_script = self._generate(script_prompt).strip()
-        word_count = len(full_script.split())
-        print(f"📜 Viral script: {word_count} words")
+JSON RULES:
+- Between 8 and 10 scenes.
+- "text": narrated text for that scene. No emojis. No special characters.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words) matching the content.
+- "mood": always "dramatic"."""
 
-        # Convertir a formato de escenas con términos visuales
-        visual_prompt = f"""You are a video editor. Split this script into individual scenes and assign TWO English Pexels stock video search terms per scene.
-
-Script:
-{full_script}
-
-Rules:
-- Split at natural sentence/phrase breaks
-- Maximum 10 scenes
-- visual_1 and visual_2 MUST be in ENGLISH, 2-4 words, suitable for Pexels search
-- Visuals must match the content of each sentence
-- CRITICAL: The "text" field for each scene must be copied VERBATIM from the script above. Do NOT modify, paraphrase, summarize, shorten or alter any word. Copy the exact original words.
-
-Return STRICT JSON array only, no markdown:
-[{{"id":1,"text":"exact sentence from script","visual_1":"term","visual_2":"term","mood":"dramatic"}}]"""
-
-        raw = self._generate(visual_prompt)
+        raw   = self._generate(prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()
 
         try:
             scenes = json.loads(clean)
             for i, s in enumerate(scenes):
-                s['id'] = i + 1
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
                 s.setdefault('mood', 'dramatic')
             print(f"✅ {len(scenes)} viral scenes ready")
             return scenes
         except Exception:
-            # Fallback: dividir manualmente
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', full_script) if len(s.strip()) > 8][:10]
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
             return [
-                {"id": i+1, "text": s, "visual_1": "dramatic cinematic footage", "visual_2": "historical documentary", "mood": "dramatic"}
+                {"id": i+1, "text": self._sanitize(s), "visual_1": "dramatic cinematic footage", "visual_2": "historical documentary", "mood": "dramatic"}
                 for i, s in enumerate(sentences)
             ]
 
     def generate_testimonio_script(self, topic: str, category: str, lang: str = "es") -> list:
-        """Guion estilo testimonio misterioso — narración lenta, cinematográfica, terror."""
+        """Guion estilo testimonio misterioso — narración lenta, cinematográfica, terror.
+        Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
+        import random as _random
         print(f"👁️ Generando testimonio: {topic}...")
 
-        # Atmospheric Pexels keywords for this mode
-        ATMOSPHERIC_KEYWORDS = [
-            "dark forest night fog",
-            "candle ritual dark room",
-            "haunted abandoned church",
-            "mysterious silhouette shadow",
-            "foggy cemetery night",
-            "occult candles smoke",
-            "creepy shadow wall",
-            "stormy dark night lightning",
-            "old crucifix dark",
-            "eerie fog forest",
-            "abandoned house dark interior",
-            "candlelit room dark",
-            "dark religious altar",
-            "mysterious hooded figure",
+        ATMOSPHERIC_FALLBACKS = [
+            "dark forest night fog", "candle ritual dark room",
+            "haunted abandoned church", "mysterious silhouette shadow",
+            "foggy cemetery night", "stormy dark night lightning",
+            "eerie fog forest", "candlelit room dark",
         ]
 
         if lang == "es":
-            script_prompt = f"""Eres un experto en crear historias de terror y misterio en formato YouTube/TikTok Shorts, estilo Archimosfera.
+            prompt = f"""Eres un experto en crear historias de terror y misterio en formato YouTube/TikTok Shorts, estilo Archimosfera.
 
-Debes contar la historia como si fuera un testimonio real de una persona (ex satánica, testigo, sacerdote, víctima, etc.).
+Debes contar la historia como si fuera un testimonio real de una persona (ex satanica, testigo, sacerdote, victima, etc.).
 
-Reglas importantes:
-- La narración debe ser lenta, grave y llena de suspense.
-- Elige escenas que coincidan con: bosques oscuros de noche, velas encendidas, iglesias antiguas, siluetas misteriosas, rituales con velas, niebla, tormentas, habitaciones oscuras, crucifijos, ojos en la oscuridad, etc.
+Estructura exacta (50-70 segundos en total):
+  Escena 1 - HOOK: Afirmacion o pregunta muy fuerte que paralice al espectador.
+  Escenas 2-3 - TESTIGO: Presentacion del testimoniante ("Segun una mujer que estuvo anos en el satanismo...").
+  Escenas 4-7 - DESARROLLO: Detalles escalofriantes contados poco a poco.
+  Escena 8 - CLIMAX: La parte mas fuerte y perturbadora.
+  Escena 9 - CIERRE: Consecuencia + CTA ("Vos crees en esto? Comenta SI o NO").
 
-Estructura exacta (50-70 segundos):
-1. HOOK (0-5 seg): Afirmación o pregunta muy fuerte. Ej: "Una ex satánica reveló qué pasa realmente en Semana Santa. Lo que dijo te dejará sin dormir..."
-2. PRESENTACIÓN DEL TESTIGO: "Según una mujer que estuvo años en el satanismo..." o "Un ex miembro de una secta contó..."
-3. DESARROLLO: Cuenta los detalles escalofriantes poco a poco.
-4. CLÍMAX / TWIST: La parte más fuerte y perturbadora.
-5. CIERRE: Consecuencia + CTA fuerte ("¿Vos creés en esto? Comenta SÍ o NO")
-
-Estilo narrativo:
-- Lenguaje conversacional, misterioso y dramático.
-- Usa frases como: "me contó que...", "reveló que...", "nadie se atreve a decir...", "lo más aterrador fue...".
-- PROHIBIDO usar emojis. Solo texto puro narrado.
-- Siempre en español neutro latino.
+Reglas de estilo:
+- Lenguaje conversacional, misterioso y dramatico.
+- Frases como: "me conto que...", "revelo que...", "nadie se atreve a decir...", "lo mas aterrador fue...".
+- PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales).
+- USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
+- En espanol neutro latino.
 
 Tema: {topic}
-Categoría: {category}
+Categoria: {category}
 
-Devuelve SOLO el texto completo narrado, de corrido, sin emojis. Sin JSON, sin títulos de sección."""
+FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
+[
+  {{"id":1,"text":"texto de la escena","visual_1":"dark forest night","visual_2":"candle ritual","visual_3":"mysterious shadow","mood":"horror"}},
+  {{"id":2,"text":"texto de la escena","visual_1":"foggy cemetery","visual_2":"abandoned church","visual_3":"eerie fog","mood":"horror"}}
+]
+
+REGLAS DEL JSON:
+- Entre 8 y 10 escenas.
+- "text": el texto narrado de esa escena. Sin emojis. Sin caracteres especiales.
+- "visual_1", "visual_2", "visual_3": terminos en INGLES para Pexels (2-4 palabras). Deben ser oscuros, atmosfericos: dark forest, candles, fog, shadow, cemetery, abandoned, storm, etc.
+- "mood": siempre "horror"."""
         else:
-            script_prompt = f"""You are an expert at creating horror and mystery stories in YouTube/TikTok Shorts format, Archimosfera style.
+            prompt = f"""You are an expert at creating horror and mystery stories in YouTube/TikTok Shorts format, Archimosfera style.
 
 Tell the story as if it were a real testimony from a real person (ex-satanist, witness, priest, victim, etc.).
 
-Important rules:
-- LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
-- NO emojis. Pure narration text only.
-- Narration must be slow, deep and full of suspense.
-- Choose scenes that match: dark forests at night, lit candles, ancient churches, mysterious silhouettes, candle rituals, fog, storms, dark rooms, crucifixes, eyes in the darkness, etc.
+Exact structure (50-70 seconds total):
+  Scene 1 - HOOK: Very strong statement or question that freezes the viewer.
+  Scenes 2-3 - WITNESS: Introduce the person giving testimony ("According to a woman who spent years in satanism...").
+  Scenes 4-7 - DEVELOPMENT: Tell the chilling details gradually.
+  Scene 8 - CLIMAX: The strongest and most disturbing part.
+  Scene 9 - CLOSING: Consequence + CTA ("Do you believe this? Comment YES or NO").
 
-Exact structure (50-70 seconds):
-1. HOOK (0-5 sec): Very strong statement or question. No emojis.
-2. WITNESS INTRO: "According to a woman who spent years in satanism..." or "A former cult member revealed..."
-3. DEVELOPMENT: Tell the chilling details gradually.
-4. CLIMAX / TWIST: The strongest and most disturbing part.
-5. CLOSING: Consequence + strong CTA ("Do you believe this? Comment YES or NO")
-
-Narrative style:
+Style rules:
+- LANGUAGE: ENGLISH ONLY. No Spanish words.
 - Conversational, mysterious and dramatic language.
 - Use phrases like: "she told me that...", "revealed that...", "nobody dares to say...", "the scariest part was...".
-- Slow, grave tone. No emojis whatsoever.
+- FORBIDDEN: emojis, special Unicode characters (em-dashes, curly quotes, special ellipsis).
+- USE ONLY: letters, numbers, commas, periods, exclamation marks, question marks, plain apostrophes.
 
 Topic: {topic}
 Category: {category}
 
-Return ONLY the complete narrated text, straight through, no emojis. No JSON, no section titles."""
+OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
+[
+  {{"id":1,"text":"scene text here","visual_1":"dark forest night","visual_2":"candle ritual","visual_3":"mysterious shadow","mood":"horror"}},
+  {{"id":2,"text":"scene text here","visual_1":"foggy cemetery","visual_2":"abandoned church","visual_3":"eerie fog","mood":"horror"}}
+]
 
-        full_script = self._generate(script_prompt).strip()
-        print(f"📜 Testimonio: {len(full_script.split())} words")
+JSON RULES:
+- Between 8 and 10 scenes.
+- "text": narrated text for that scene. No emojis. No special characters.
+- "visual_1", "visual_2", "visual_3": English Pexels search terms (2-4 words). Must be dark and atmospheric: dark forest, candles, fog, shadow, cemetery, abandoned, storm, etc.
+- "mood": always "horror"."""
 
-        # Convert to scene format with 3 atmospheric visuals per scene
-        import random as _random
-        visual_prompt = f"""You are a horror video editor. Split this script into scenes and assign THREE English Pexels stock video search terms per scene.
-
-Script:
-{full_script}
-
-Rules:
-- Split at natural sentence/phrase breaks
-- Maximum 10 scenes
-- ALL THREE visuals MUST be in ENGLISH, 2-4 words, suitable for dark/atmospheric Pexels search
-- Visuals must be dark, mysterious, atmospheric (dark forest, candles, shadows, fog, etc.)
-- visual_1: matches start of sentence, visual_2: matches end/context, visual_3: extra atmospheric b-roll
-- CRITICAL: The "text" field for each scene must be copied VERBATIM from the script above. Do NOT modify, paraphrase, summarize, shorten or alter any word. Copy the exact original words.
-
-Return STRICT JSON array only, no markdown:
-[{{"id":1,"text":"exact sentence from script","visual_1":"dark forest night","visual_2":"candle ritual","visual_3":"mysterious shadow fog","mood":"horror"}}]"""
-
-        raw = self._generate(visual_prompt)
+        raw   = self._generate(prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()
 
         try:
             scenes = json.loads(clean)
             for i, s in enumerate(scenes):
-                s['id'] = i + 1
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
                 s.setdefault('mood', 'horror')
-                # Ensure visual_3 always exists
-                if 'visual_3' not in s:
-                    s['visual_3'] = _random.choice(ATMOSPHERIC_KEYWORDS)
+                if not s.get('visual_3'):
+                    s['visual_3'] = _random.choice(ATMOSPHERIC_FALLBACKS)
             print(f"✅ {len(scenes)} testimonio scenes ready")
             return scenes
         except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', full_script) if len(s.strip()) > 8][:10]
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
             return [
                 {
-                    "id": i+1, "text": s,
-                    "visual_1": _random.choice(ATMOSPHERIC_KEYWORDS),
-                    "visual_2": _random.choice(ATMOSPHERIC_KEYWORDS),
-                    "visual_3": _random.choice(ATMOSPHERIC_KEYWORDS),
+                    "id": i+1, "text": self._sanitize(s),
+                    "visual_1": _random.choice(ATMOSPHERIC_FALLBACKS),
+                    "visual_2": _random.choice(ATMOSPHERIC_FALLBACKS),
+                    "visual_3": _random.choice(ATMOSPHERIC_FALLBACKS),
                     "mood": "horror"
                 }
                 for i, s in enumerate(sentences)
             ]
 
     def generate_book_summary_script(self, book: str, category: str, lang: str = "es") -> list:
-        """Resumen de libro de 60 seg — enseña, aplica y motiva a leer."""
+        """Resumen de libro de 60 seg — enseña, aplica y motiva a leer.
+        Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
         label = "Generando resumen del libro" if lang == "es" else "Generating book summary"
         print(f"📚 {label}: {book}...")
 
         if lang == "es":
-            script_prompt = f"""Actúa como un narrador de historias experto y analista literario con un estilo minimalista, profundo y misterioso, similar al de los mejores curadores de contenido en TikTok. Tu objetivo no es resumir un libro, sino revelar su esencia de forma que parezca un descubrimiento necesario para el espectador.
+            prompt = f"""Actua como un narrador de historias experto y analista literario con un estilo minimalista, profundo y misterioso, similar al de los mejores curadores de contenido en TikTok. Tu objetivo no es resumir un libro, sino revelar su esencia de forma que parezca un descubrimiento necesario para el espectador.
 
-Estructura del Guion (55-65 segundos / 150-170 palabras):
+Estructura del Guion (55-65 segundos / 150-170 palabras en total):
+  Escena 1 - EL MISTERIO (5 seg): No empieces con una pregunta de autoayuda. Empieza con una observacion contraintuitiva o una verdad incomoda que el libro aborda.
+  Escena 2 - LA REVELACION (5 seg): Introduce el titulo y autor como si fuera la pieza que falta en el rompecabezas. Sin introducciones innecesarias.
+  Escenas 3-4 - EL DESCUBRIMIENTO (15 seg): Explica la premisa central no como una leccion, sino como una "regla del juego" que el autor descubrio.
+  Escenas 5-6 - EL GIRO (15 seg): Presenta la idea mas sorprendente o radical del libro. La que te hace detener el scroll.
+  Escena 7 - LA APLICACION INVISIBLE (10 seg): Como cambia este libro la forma en que el espectador vera el mundo.
+  Escenas 8-9 - EL IMPACTO FINAL (10 seg): Una frase de cierre que deje un silencio reflexivo. CTA minimalista, sin sonar a vendedor.
 
-1. EL MISTERIO (5 seg): No empieces con una pregunta de autoayuda. Empieza con una observación contraintuitiva o una verdad incómoda que el libro aborda. Ej: "Casi nadie se da cuenta, pero vivimos en un mundo donde..."
-2. LA REVELACIÓN (5 seg): Introduce el título y autor como si fuera la pieza que falta en el rompecabezas. Sin introducciones innecesarias.
-3. EL DESCUBRIMIENTO (15 seg): Explica la premisa central no como una lección, sino como una "regla del juego" que el autor descubrió. Usa frases como "El autor plantea algo fascinante..." o "Lo que este libro propone es que...".
-4. EL GIRO (15 seg): Presenta la idea más sorprendente o radical del libro. Esa que te hace detener el scroll. Debe sonar profunda y analítica.
-5. LA APLICACIÓN INVISIBLE (10 seg): Cómo cambia este libro la forma en que el espectador verá el mundo mañana por la mañana.
-6. EL IMPACTO FINAL (10 seg): Una frase de cierre que deje un silencio reflexivo. El CTA debe ser minimalista, sin sonar a vendedor.
-
-REGLAS CRÍTICAS:
-- PROHIBIDO: Emojis, saludos iniciales, despedidas genéricas o lenguaje de vendedor.
+REGLAS CRITICAS:
+- PROHIBIDO: Emojis, saludos iniciales, despedidas genericas o lenguaje de vendedor.
+- PROHIBIDO: caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales).
+- USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
 - PERSPECTIVA: 2da persona constante. Habla directamente a la mente del espectador.
-- TONO: Cinematográfico, pausado, intelectual pero accesible. Como un susurro inteligente en medio del ruido.
-- LENGUAJE: Español Latino neutro, elegante y preciso. Evita palabras comunes; busca palabras que evoquen imágenes.
+- TONO: Cinematografico, pausado, intelectual pero accesible.
+- LENGUAJE: Espanol Latino neutro, elegante y preciso.
 
 Libro: {book}
-Categoría: {category}
+Categoria: {category}
 
-Devuelve exclusivamente el texto narrado de corrido, sin títulos de sección, sin formato Markdown, sin etiquetas de tiempo. Solo las palabras que deben ser pronunciadas."""
+FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
+[
+  {{"id":1,"text":"texto de la escena","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}},
+  {{"id":2,"text":"texto de la escena","visual_1":"city skyline sunrise","visual_2":"person thinking window","mood":"inspiring"}}
+]
+
+REGLAS DEL JSON:
+- Entre 8 y 10 escenas.
+- "text": el texto narrado de esa escena. Sin emojis. Sin caracteres especiales.
+- "visual_1" y "visual_2": terminos en INGLES para Pexels (2-4 palabras). Inspiradores, educativos: personas leyendo, escribiendo, pensando, naturaleza, ciudad, exito, crecimiento. EVITAR visuals oscuros.
+- "mood": siempre "inspiring"."""
         else:
-            script_prompt = f"""Act as an expert storyteller and literary analyst with a minimalist, deep and mysterious style, similar to the best content curators on TikTok. Your goal is not to summarize a book, but to reveal its essence in a way that feels like a necessary discovery for the viewer.
+            prompt = f"""Act as an expert storyteller and literary analyst with a minimalist, deep and mysterious style, similar to the best content curators on TikTok. Your goal is not to summarize a book, but to reveal its essence in a way that feels like a necessary discovery for the viewer.
 
-Script Structure (55-65 seconds / 150-170 words):
-
-1. THE MYSTERY (5 sec): Don't start with a self-help question. Start with a counterintuitive observation or an uncomfortable truth the book addresses. E.g.: "Almost no one realizes it, but we live in a world where..."
-2. THE REVELATION (5 sec): Introduce the title and author as if it were the missing piece of the puzzle. No unnecessary introductions.
-3. THE DISCOVERY (15 sec): Explain the core premise not as a lesson, but as a "rule of the game" the author uncovered. Use phrases like "The author raises something fascinating..." or "What this book proposes is that...".
-4. THE TWIST (15 sec): Present the most surprising or radical idea in the book. The one that makes you stop scrolling. It must sound deep and analytical.
-5. THE INVISIBLE APPLICATION (10 sec): How this book changes the way the viewer will see the world tomorrow morning.
-6. THE FINAL IMPACT (10 sec): A closing line that leaves a reflective silence. The CTA must be minimalist, never salesy.
+Script Structure (55-65 seconds / 150-170 words total):
+  Scene 1 - THE MYSTERY (5 sec): Don't start with a self-help question. Start with a counterintuitive observation or an uncomfortable truth the book addresses.
+  Scene 2 - THE REVELATION (5 sec): Introduce the title and author as if it were the missing piece of the puzzle. No unnecessary introductions.
+  Scenes 3-4 - THE DISCOVERY (15 sec): Explain the core premise not as a lesson, but as a "rule of the game" the author uncovered.
+  Scenes 5-6 - THE TWIST (15 sec): Present the most surprising or radical idea in the book. The one that makes you stop scrolling.
+  Scene 7 - THE INVISIBLE APPLICATION (10 sec): How this book changes the way the viewer will see the world.
+  Scenes 8-9 - THE FINAL IMPACT (10 sec): A closing line that leaves a reflective silence. Minimalist CTA, never salesy.
 
 CRITICAL RULES:
 - FORBIDDEN: Emojis, opening greetings, generic farewells or salesy language.
-- LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
+- FORBIDDEN: Special Unicode characters (em-dashes, curly quotes, special ellipsis characters).
+- USE ONLY: letters, numbers, commas, periods, exclamation marks, question marks, plain apostrophes.
+- LANGUAGE: ENGLISH ONLY. No Spanish words.
 - PERSPECTIVE: Constant 2nd person. Speak directly to the viewer's mind.
-- TONE: Cinematic, unhurried, intellectual yet accessible. Like an intelligent whisper in the middle of noise.
-- LANGUAGE STYLE: Neutral, elegant and precise English. Avoid common words; seek words that evoke images.
+- TONE: Cinematic, unhurried, intellectual yet accessible.
 
 Book: {book}
 Category: {category}
 
-Return exclusively the narrated text straight through, no section titles, no Markdown formatting, no time labels. Only the words that must be spoken."""
+OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
+[
+  {{"id":1,"text":"scene text here","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}},
+  {{"id":2,"text":"scene text here","visual_1":"city skyline sunrise","visual_2":"person thinking window","mood":"inspiring"}}
+]
 
-        full_script = self._generate(script_prompt).strip()
-        print(f"📜 Book summary: {len(full_script.split())} words")
+JSON RULES:
+- Between 8 and 10 scenes.
+- "text": narrated text for that scene. No emojis. No special characters.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Inspiring and educational: people reading, writing, thinking, nature, city, success, growth. AVOID dark visuals.
+- "mood": always "inspiring"."""
 
-        visual_prompt = f"""You are a video editor for an educational book summary channel. Split this script into scenes and assign TWO English Pexels stock video search terms per scene.
-
-Script:
-{full_script}
-
-Rules:
-- Split at natural sentence/phrase breaks
-- Maximum 10 scenes
-- visual_1 and visual_2 MUST be in ENGLISH, 2-4 words, suitable for Pexels search
-- Visuals must be inspiring, educational and aspirational: people reading, writing, working, thinking, city life, nature, success, growth, etc.
-- AVOID dark or horror visuals — this is motivational content
-- CRITICAL: The "text" field for each scene must be copied VERBATIM from the script above. Do NOT modify, paraphrase, summarize, shorten or alter any word. Copy the exact original words.
-
-Return STRICT JSON array only, no markdown:
-[{{"id":1,"text":"exact sentence from script","visual_1":"person reading book","visual_2":"open notebook writing","mood":"inspiring"}}]"""
-
-        raw   = self._generate(visual_prompt)
+        raw   = self._generate(prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()
 
         try:
             scenes = json.loads(clean)
             for i, s in enumerate(scenes):
-                s['id'] = i + 1
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
                 s.setdefault('mood', 'inspiring')
             print(f"✅ {len(scenes)} book summary scenes ready")
             return scenes
         except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', full_script) if len(s.strip()) > 8][:10]
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
             return [
-                {"id": i+1, "text": s, "visual_1": "person reading book", "visual_2": "open notebook inspiring", "mood": "inspiring"}
+                {"id": i+1, "text": self._sanitize(s), "visual_1": "person reading book", "visual_2": "open notebook inspiring", "mood": "inspiring"}
                 for i, s in enumerate(sentences)
             ]
 
@@ -607,7 +610,8 @@ We need TWO different stock videos for every single scene.
             elif len(scenes) < num_scenes:
                 print(f"⚠️ AI returned only {len(scenes)} scenes (requested {num_scenes}).")
             for i, scene in enumerate(scenes):
-                scene['id'] = i + 1
+                scene['id']   = i + 1
+                scene['text'] = self._sanitize(scene.get('text', ''))
             return scenes
         except json.JSONDecodeError:
             print("❌ Error parsing JSON. Raw output:")
