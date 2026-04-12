@@ -221,20 +221,20 @@ Tu objetivo es crear Shorts que generen máxima retención y shares (estilo MrBe
 REGLAS OBLIGATORIAS:
 - Duración total: 45-60 segundos (máximo 140-160 palabras).
 - Estructura EXACTA:
-  1. HOOK (primeros 3 seg): Pregunta impactante, número shockeante o afirmación loca con emoji.
+  1. HOOK (primeros 3 seg): Pregunta impactante, número shockeante o afirmación loca.
   2. CONTEXTO RÁPIDO (5-10 seg): Situación histórica en 1-2 frases.
   3. EL GIRO / LA MORTANDAD / EL NEAR MISS (centro): Detalle brutal, dato desconocido, consecuencia terrorífica.
   4. TWIST FINAL (últimos 8-10 seg): Revelación impactante, ironía o "lo que pasó después".
   5. CTA (últimos 3 seg): "Comenta '¿QUÉ MÁS?' si querés la parte 2" + "Sígueme para más historia oscura".
 
 Estilo: Lenguaje dramático, conversacional y adictivo (usa MAYÚSCULAS para énfasis, signos de exclamación y preguntas).
-Incluye emojis en el texto del script.
+PROHIBIDO usar emojis. Solo texto puro narrado.
 Siempre en español neutro latino. Nunca digas "hoy te voy a contar" ni "vamos a hablar de".
 
 Tema: {topic}
 Categoría: {category}
 
-Devuelve SOLO el texto completo narrado, de corrido, con emojis. Sin JSON, sin títulos de sección, sin markdown."""
+Devuelve SOLO el texto completo narrado, de corrido, sin emojis. Sin JSON, sin títulos de sección, sin markdown."""
         else:
             script_prompt = f"""You are the best YouTube Shorts scriptwriter specialized in shocking historical facts, near misses, avoided catastrophes, mysterious deaths and unsolved mysteries.
 
@@ -242,21 +242,22 @@ Your goal: maximum retention and shares (MrBeast + The Why Files + Dark History 
 
 MANDATORY RULES:
 - LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
+- NO emojis. Pure narration text only.
 - Total duration: 45-60 seconds (maximum 140-160 words).
 - EXACT structure:
-  1. HOOK (first 3 sec): Shocking question, mind-blowing number or crazy statement with emoji.
+  1. HOOK (first 3 sec): Shocking question, mind-blowing number or crazy statement.
   2. QUICK CONTEXT (5-10 sec): Historical situation in 1-2 sentences.
   3. THE TWIST / NEAR MISS (center): Brutal detail, unknown fact, terrifying consequence.
   4. FINAL TWIST (last 8-10 sec): Shocking revelation, irony or "what happened after".
   5. CTA (last 3 sec): "Comment 'WHAT ELSE?' if you want part 2" + "Follow for more dark history".
 
 Style: Dramatic, conversational and addictive (CAPS for emphasis, exclamation marks and questions).
-Include emojis. Never say "today I'm going to tell you" or "we're going to talk about".
+Never say "today I'm going to tell you" or "we're going to talk about".
 
 Topic: {topic}
 Category: {category}
 
-Return ONLY the complete narrated text, straight through, with emojis. No JSON, no section titles, no markdown."""
+Return ONLY the complete narrated text, straight through, no emojis. No JSON, no section titles, no markdown."""
 
         full_script = self._generate(script_prompt).strip()
         word_count = len(full_script.split())
@@ -328,22 +329,22 @@ Reglas importantes:
 - Elige escenas que coincidan con: bosques oscuros de noche, velas encendidas, iglesias antiguas, siluetas misteriosas, rituales con velas, niebla, tormentas, habitaciones oscuras, crucifijos, ojos en la oscuridad, etc.
 
 Estructura exacta (50-70 segundos):
-1. HOOK (0-5 seg): Afirmación o pregunta muy fuerte con emoji. Ej: "¿Una ex satánica reveló qué pasa realmente en Semana Santa? 😱 Lo que dijo te dejará sin dormir..."
+1. HOOK (0-5 seg): Afirmación o pregunta muy fuerte. Ej: "Una ex satánica reveló qué pasa realmente en Semana Santa. Lo que dijo te dejará sin dormir..."
 2. PRESENTACIÓN DEL TESTIGO: "Según una mujer que estuvo años en el satanismo..." o "Un ex miembro de una secta contó..."
 3. DESARROLLO: Cuenta los detalles escalofriantes poco a poco.
 4. CLÍMAX / TWIST: La parte más fuerte y perturbadora.
-5. CIERRE: Consecuencia + CTA fuerte ("¿Vos creés en esto? Comenta SÍ o NO 👇")
+5. CIERRE: Consecuencia + CTA fuerte ("¿Vos creés en esto? Comenta SÍ o NO")
 
 Estilo narrativo:
 - Lenguaje conversacional, misterioso y dramático.
 - Usa frases como: "me contó que...", "reveló que...", "nadie se atreve a decir...", "lo más aterrador fue...".
-- Incluye emojis en el texto.
+- PROHIBIDO usar emojis. Solo texto puro narrado.
 - Siempre en español neutro latino.
 
 Tema: {topic}
 Categoría: {category}
 
-Devuelve SOLO el texto completo narrado, de corrido, con emojis. Sin JSON, sin títulos de sección."""
+Devuelve SOLO el texto completo narrado, de corrido, sin emojis. Sin JSON, sin títulos de sección."""
         else:
             script_prompt = f"""You are an expert at creating horror and mystery stories in YouTube/TikTok Shorts format, Archimosfera style.
 
@@ -351,25 +352,26 @@ Tell the story as if it were a real testimony from a real person (ex-satanist, w
 
 Important rules:
 - LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
+- NO emojis. Pure narration text only.
 - Narration must be slow, deep and full of suspense.
 - Choose scenes that match: dark forests at night, lit candles, ancient churches, mysterious silhouettes, candle rituals, fog, storms, dark rooms, crucifixes, eyes in the darkness, etc.
 
 Exact structure (50-70 seconds):
-1. HOOK (0-5 sec): Very strong statement or question with emoji.
+1. HOOK (0-5 sec): Very strong statement or question. No emojis.
 2. WITNESS INTRO: "According to a woman who spent years in satanism..." or "A former cult member revealed..."
 3. DEVELOPMENT: Tell the chilling details gradually.
 4. CLIMAX / TWIST: The strongest and most disturbing part.
-5. CLOSING: Consequence + strong CTA ("Do you believe this? Comment YES or NO 👇")
+5. CLOSING: Consequence + strong CTA ("Do you believe this? Comment YES or NO")
 
 Narrative style:
 - Conversational, mysterious and dramatic language.
 - Use phrases like: "she told me that...", "revealed that...", "nobody dares to say...", "the scariest part was...".
-- Include emojis. Slow, grave tone.
+- Slow, grave tone. No emojis whatsoever.
 
 Topic: {topic}
 Category: {category}
 
-Return ONLY the complete narrated text, straight through, with emojis. No JSON, no section titles."""
+Return ONLY the complete narrated text, straight through, no emojis. No JSON, no section titles."""
 
         full_script = self._generate(script_prompt).strip()
         print(f"📜 Testimonio: {len(full_script.split())} words")
@@ -432,6 +434,7 @@ Necesitamos DOS videos de stock diferentes por cada escena.
 
 ### 1. REQUISITOS DEL GUION (La narración):
 - **Idioma:** ESPAÑOL LATINO neutro. Sin regionalismos. Sin palabras en inglés.
+- **Emojis:** PROHIBIDO usar emojis. Solo texto puro narrado.
 - **Perspectiva:** Estrictamente **3ª Persona** ("Los científicos descubrieron...", "El océano esconde...").
 - **Tono:** Cautivador, rápido, lógico. Sin relleno. Cada oración debe generar curiosidad.
 - **Estructura:** Exactamente {num_scenes} escenas en total.
@@ -464,6 +467,7 @@ We need TWO different stock videos for every single scene.
 
 ### 1. SCRIPT REQUIREMENTS (The Voiceover):
 - **Language:** ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
+- **Emojis:** NO emojis. Pure narration text only.
 - **Perspective:** Strictly **3rd Person** ("Scientists found...", "The ocean hides...").
 - **Tone:** Engaging, fast-paced, logical. No fluff. Every sentence must build curiosity.
 - **Structure:** Exactly {num_scenes} scenes total.
