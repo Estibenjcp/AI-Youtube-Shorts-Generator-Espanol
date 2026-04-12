@@ -38,3 +38,20 @@ TOPIC_CATEGORIES = {
     "es": TOPIC_CATEGORIES_ES,
     "en": TOPIC_CATEGORIES_EN,
 }
+
+# Categorías exclusivas del modo "Más Virales"
+VIRAL_CATEGORIES = [
+    "Historia Oscura",
+    "Casi Catástrofes (Near Misses)",
+    "Mortandades Históricas",
+    "Misterios Sin Resolver",
+    "Catástrofes Naturales",
+    "Secretos de Guerras",
+    "Hechos Nucleares Impactantes",
+    "Epidemias y Plagas Olvidadas",
+    "Traiciones que Cambiaron la Historia",
+    "Eventos que Casi Acaban el Mundo",
+    "Curiosidades Macabras",
+    "Conspiraciones Históricas",
+    "Mortandad de Animales / Naturaleza",
+]

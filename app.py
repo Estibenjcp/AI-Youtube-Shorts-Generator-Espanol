@@ -11,7 +11,7 @@ import shutil
 import io
 
 from modules.config import load_config, check_config, PROVIDER_DEFAULTS
-from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN
+from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, VIRAL_CATEGORIES
 from dotenv import set_key, load_dotenv
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -1279,7 +1279,7 @@ elif mode == "viral":
 
     st.markdown(f"<div class='step-header'>🎯 {T['viral_category']}</div>", unsafe_allow_html=True)
     viral_category = st.selectbox(
-        "vcat", options=[""] + CATEGORIES,
+        "vcat", options=[""] + VIRAL_CATEGORIES,
         format_func=lambda x: T["category_placeholder"] if x == "" else x,
         label_visibility="collapsed",
         key="viral_cat_select",
