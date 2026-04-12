@@ -26,320 +26,559 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
-/* ═══════════════════════════ BASE ═══════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   AUTOSHORTS AI — PREMIUM UI 2026
+   Paleta: Índigo/Violeta + Neutros
+   Fuentes: Plus Jakarta Sans (títulos) + Inter (cuerpo)
+═══════════════════════════════════════════════════════════ */
+
+/* ── RESET & TOKENS ── */
+:root {
+    --brand:        #6366f1;
+    --brand-dark:   #4f46e5;
+    --brand-light:  #eef2ff;
+    --brand-glow:   rgba(99,102,241,0.25);
+    --surface:      #ffffff;
+    --surface-2:    #f9fafb;
+    --surface-3:    #f3f4f6;
+    --border:       #e5e7eb;
+    --border-focus: #6366f1;
+    --text-primary: #111827;
+    --text-secondary:#4b5563;
+    --text-muted:   #9ca3af;
+    --success:      #10b981;
+    --radius-sm:    8px;
+    --radius-md:    12px;
+    --radius-lg:    16px;
+    --radius-xl:    20px;
+    --shadow-sm:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:    0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+    --shadow-lg:    0 10px 30px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-brand: 0 6px 24px rgba(99,102,241,0.35);
+    --transition:   all 0.18s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── OCULTAR UI NATIVA DE STREAMLIT ── */
+#MainMenu, footer, header,
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],
+.viewerBadge_container__1QSob { display: none !important; }
+
+/* ── BASE ── */
+*, *::before, *::after { box-sizing: border-box; }
+
 html, body, [class*="css"], .stApp {
-    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Fondo principal blanco cálido */
+h1, h2, h3, h4, .hero-title {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+}
+
+/* ── APP BACKGROUND ── */
 .stApp {
-    background: #f8f9fb !important;
+    background: var(--surface-2) !important;
+    min-height: 100vh;
 }
 
-/* Sidebar blanco con borde sutil */
+/* ── CONTENEDOR PRINCIPAL — más estrecho, más elegante ── */
+.block-container {
+    max-width: 720px !important;
+    padding: 2rem 1.5rem 4rem !important;
+    margin: 0 auto !important;
+}
+
+/* ── SIDEBAR ── */
 [data-testid="stSidebar"] {
-    background: #ffffff !important;
-    border-right: 1px solid #e5e7eb !important;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.04) !important;
+    background: var(--surface) !important;
+    border-right: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+[data-testid="stSidebar"] > div:first-child {
+    padding: 1.5rem 1rem !important;
+}
+/* Título del sidebar */
+[data-testid="stSidebar"] h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    letter-spacing: -0.3px !important;
 }
 
-/* ═══════════════════════════ TIPOGRAFÍA ═══════════════════════════ */
-h1 { font-size: clamp(1.6rem, 5vw, 2.4rem) !important; font-weight: 800 !important; letter-spacing: -0.5px !important; color: #111827 !important; }
-h2 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; font-weight: 700 !important; color: #1f2937 !important; }
-h3 { font-size: clamp(1rem, 3vw, 1.2rem) !important; font-weight: 600 !important; color: #374151 !important; }
-p, label, .stMarkdown { color: #374151 !important; }
+/* ── TIPOGRAFÍA GENERAL ── */
+h1 { font-size: clamp(1.5rem,4vw,2.2rem)!important; font-weight:800!important; letter-spacing:-0.5px!important; color:var(--text-primary)!important; }
+h2 { font-size: clamp(1.1rem,3vw,1.4rem)!important; font-weight:700!important; color:var(--text-primary)!important; }
+h3 { font-size: clamp(0.95rem,2.5vw,1.1rem)!important; font-weight:600!important; color:var(--text-secondary)!important; }
+p, .stMarkdown p { color: var(--text-secondary) !important; }
+label, .stWidgetLabel { color: var(--text-secondary) !important; font-weight: 500 !important; font-size: 0.88rem !important; }
+strong { color: var(--text-primary) !important; }
 
-/* ═══════════════════════════ HERO HEADER ═══════════════════════════ */
+/* ── HERO HEADER ── */
 .hero-title {
-    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    font-size: clamp(1.75rem, 5.5vw, 2.6rem);
     font-weight: 800;
-    background: linear-gradient(135deg, #6d28d9, #4f46e5, #7c3aed);
+    letter-spacing: -0.8px;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    line-height: 1.2;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 .hero-sub {
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 0.95rem;
-    margin-top: 0;
+    font-weight: 400;
+    margin: 0 0 1.5rem;
+    line-height: 1.5;
 }
 
-/* ═══════════════════════════ SELECTOR DE MODO ═══════════════════════════ */
+/* ── RADIO / PILL TOGGLE ── */
 [data-testid="stRadio"] {
-    background: #f3f4f6 !important;
-    border-radius: 14px !important;
-    padding: 5px !important;
-    border: 1px solid #e5e7eb !important;
+    background: var(--surface-3) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 4px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
 }
 [data-testid="stRadio"] > div {
-    gap: 4px !important;
+    gap: 2px !important;
     flex-direction: row !important;
+    flex-wrap: nowrap !important;
 }
 [data-testid="stRadio"] label {
     background: transparent !important;
-    border-radius: 10px !important;
-    padding: 10px 20px !important;
+    border-radius: var(--radius-md) !important;
+    padding: 9px 22px !important;
     font-weight: 600 !important;
-    font-size: 0.95rem !important;
+    font-size: 0.9rem !important;
     cursor: pointer !important;
-    transition: all 0.2s ease !important;
+    transition: var(--transition) !important;
     flex: 1 !important;
     text-align: center !important;
-    color: #6b7280 !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
 }
 [data-testid="stRadio"] label:has(input:checked) {
-    background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
-    color: white !important;
-    box-shadow: 0 2px 10px rgba(124,58,237,0.3) !important;
+    background: var(--surface) !important;
+    color: var(--brand) !important;
+    box-shadow: var(--shadow-md) !important;
+    font-weight: 700 !important;
 }
 [data-testid="stRadio"] input { display: none !important; }
 
-/* ═══════════════════════════ SEPARADORES DE PASOS ═══════════════════════════ */
+/* ── STEP HEADERS ── */
 .step-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: #f5f3ff;
-    border: 1px solid #ddd6fe;
-    border-left: 3px solid #7c3aed;
-    padding: 12px 16px;
-    border-radius: 0 12px 12px 0;
-    margin: 20px 0 10px 0;
+    gap: 10px;
+    background: var(--brand-light);
+    border: 1px solid #c7d2fe;
+    border-left: 3px solid var(--brand);
+    padding: 11px 16px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin: 24px 0 12px;
     font-weight: 700;
-    font-size: 1rem;
-    color: #5b21b6;
+    font-size: 0.92rem;
+    color: #3730a3;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.2px;
 }
 
-/* ═══════════════════════════ INFO BOX MODO AUTO ═══════════════════════════ */
+/* ── AUTO INFO BOX ── */
 .auto-info {
     background: #eff6ff;
     border: 1px solid #bfdbfe;
-    border-left: 3px solid #3b82f6;
-    padding: 14px 18px;
-    border-radius: 0 12px 12px 0;
-    color: #1d4ed8;
-    font-size: 0.9rem;
-    margin-bottom: 16px;
+    border-left: 3px solid #60a5fa;
+    padding: 13px 18px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: #1e40af;
+    font-size: 0.875rem;
+    margin-bottom: 20px;
+    line-height: 1.55;
 }
 
-/* ═══════════════════════════ BOTONES ═══════════════════════════ */
+/* ── BOTONES — BASE ── */
 .stButton > button {
-    min-height: 52px !important;
-    font-size: 0.95rem !important;
-    border-radius: 12px !important;
+    width: 100% !important;
+    min-height: 48px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.9rem !important;
     font-weight: 600 !important;
-    transition: all 0.2s ease !important;
+    border-radius: var(--radius-md) !important;
+    transition: var(--transition) !important;
+    cursor: pointer !important;
+    letter-spacing: 0.1px !important;
 }
-.stButton > button:active { transform: scale(0.97) !important; }
+.stButton > button:active {
+    transform: scale(0.975) !important;
+}
 
-/* Botón primario */
+/* Primario */
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%) !important;
+    color: #ffffff !important;
     border: none !important;
-    color: white !important;
-    box-shadow: 0 4px 16px rgba(124,58,237,0.35) !important;
-    letter-spacing: 0.3px !important;
+    box-shadow: var(--shadow-brand) !important;
 }
 .stButton > button[kind="primary"]:hover {
-    box-shadow: 0 6px 24px rgba(124,58,237,0.5) !important;
+    filter: brightness(1.08) !important;
+    box-shadow: 0 8px 30px rgba(99,102,241,0.45) !important;
     transform: translateY(-1px) !important;
 }
 
-/* Botón secundario */
+/* Secundario */
 .stButton > button[kind="secondary"] {
-    background: #ffffff !important;
-    color: #374151 !important;
-    border: 1.5px solid #d1d5db !important;
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1.5px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
 }
 .stButton > button[kind="secondary"]:hover {
-    border-color: #7c3aed !important;
-    color: #6d28d9 !important;
-    background: #f5f3ff !important;
+    border-color: var(--brand) !important;
+    color: var(--brand) !important;
+    background: var(--brand-light) !important;
+    box-shadow: var(--shadow-md) !important;
+    transform: translateY(-1px) !important;
 }
 
-/* ═══════════════════════════ TARJETAS DE SUGERENCIAS ═══════════════════════════ */
+/* ── TARJETAS DE SUGERENCIAS ── */
 .suggestion-card .stButton > button {
     white-space: normal !important;
     height: auto !important;
-    min-height: 70px !important;
+    min-height: 76px !important;
     padding: 14px 16px !important;
     text-align: left !important;
-    line-height: 1.45 !important;
-    font-size: 0.88rem !important;
+    line-height: 1.5 !important;
+    font-size: 0.875rem !important;
     font-weight: 500 !important;
-    background: #ffffff !important;
-    border: 1.5px solid #e5e7eb !important;
-    color: #1f2937 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+    background: var(--surface) !important;
+    border: 1.5px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: var(--transition) !important;
 }
 .suggestion-card .stButton > button:hover {
-    border-color: #a78bfa !important;
-    background: #faf5ff !important;
-    color: #5b21b6 !important;
-    box-shadow: 0 2px 10px rgba(124,58,237,0.12) !important;
-}
-.suggestion-card .stButton > button[kind="primary"] {
-    background: #f5f3ff !important;
-    border: 1.5px solid #7c3aed !important;
-    color: #5b21b6 !important;
-    box-shadow: 0 2px 10px rgba(124,58,237,0.15) !important;
-}
-
-/* ═══════════════════════════ INPUTS ═══════════════════════════ */
-.stTextInput > div > div > input {
-    min-height: 50px !important;
-    font-size: 1rem !important;
-    border-radius: 12px !important;
-    background: #ffffff !important;
-    border: 1.5px solid #d1d5db !important;
-    color: #111827 !important;
-    padding: 12px 16px !important;
-}
-.stTextInput > div > div > input:focus {
-    border-color: #7c3aed !important;
-    box-shadow: 0 0 0 3px rgba(124,58,237,0.12) !important;
-}
-.stTextInput > div > div > input::placeholder { color: #9ca3af !important; }
-
-.stSelectbox > div > div {
-    min-height: 50px !important;
-    border-radius: 12px !important;
-    background: #ffffff !important;
-    border: 1.5px solid #d1d5db !important;
-}
-
-/* ═══════════════════════════ SLIDER ═══════════════════════════ */
-.stSlider [data-baseweb="slider"] div[role="slider"] {
-    background: #7c3aed !important;
-    box-shadow: 0 0 6px rgba(124,58,237,0.4) !important;
-}
-
-/* ═══════════════════════════ BOTÓN GENERAR ═══════════════════════════ */
-.generate-btn .stButton > button {
-    min-height: 64px !important;
-    font-size: 1.15rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.5px !important;
-    border-radius: 16px !important;
-    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
-    box-shadow: 0 6px 24px rgba(124,58,237,0.4) !important;
-}
-.generate-btn .stButton > button:hover {
-    box-shadow: 0 8px 32px rgba(124,58,237,0.55) !important;
+    border-color: var(--brand) !important;
+    background: var(--brand-light) !important;
+    color: #3730a3 !important;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.15) !important;
     transform: translateY(-2px) !important;
 }
+.suggestion-card .stButton > button[kind="primary"] {
+    background: var(--brand-light) !important;
+    border: 2px solid var(--brand) !important;
+    color: #3730a3 !important;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.2) !important;
+    font-weight: 600 !important;
+}
 
-/* ═══════════════════════════ DOWNLOAD ═══════════════════════════ */
-.stDownloadButton > button {
-    width: 100% !important;
-    min-height: 58px !important;
+/* ── BOTÓN GENERAR ── */
+.generate-btn .stButton > button {
+    min-height: 62px !important;
     font-size: 1.05rem !important;
     font-weight: 700 !important;
-    border-radius: 14px !important;
-    background: linear-gradient(135deg, #059669, #047857) !important;
-    color: white !important;
-    border: none !important;
-    box-shadow: 0 4px 16px rgba(5,150,105,0.35) !important;
     letter-spacing: 0.3px !important;
+    border-radius: var(--radius-lg) !important;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%) !important;
+    box-shadow: 0 8px 28px rgba(99,102,241,0.4) !important;
+    border: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+.generate-btn .stButton > button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+    pointer-events: none;
+}
+.generate-btn .stButton > button:hover {
+    box-shadow: 0 10px 36px rgba(99,102,241,0.55) !important;
+    transform: translateY(-2px) !important;
+    filter: brightness(1.06) !important;
+}
+
+/* ── DOWNLOAD ── */
+.stDownloadButton > button {
+    width: 100% !important;
+    min-height: 56px !important;
+    font-size: 0.98rem !important;
+    font-weight: 700 !important;
+    border-radius: var(--radius-lg) !important;
+    background: linear-gradient(135deg, #059669, #047857) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 6px 20px rgba(5,150,105,0.3) !important;
+    letter-spacing: 0.2px !important;
+    transition: var(--transition) !important;
 }
 .stDownloadButton > button:hover {
-    box-shadow: 0 6px 24px rgba(5,150,105,0.5) !important;
-    transform: translateY(-1px) !important;
+    box-shadow: 0 8px 28px rgba(5,150,105,0.45) !important;
+    transform: translateY(-2px) !important;
+    filter: brightness(1.06) !important;
 }
 
-/* ═══════════════════════════ PROGRESS ═══════════════════════════ */
+/* ── INPUTS ── */
+.stTextInput > div > div > input,
+.stTextInput > div > div > input:not([disabled]) {
+    min-height: 48px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.95rem !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--surface) !important;
+    border: 1.5px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    padding: 11px 16px !important;
+    transition: var(--transition) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+.stTextInput > div > div > input:focus {
+    border-color: var(--brand) !important;
+    box-shadow: 0 0 0 3px var(--brand-glow) !important;
+    outline: none !important;
+}
+.stTextInput > div > div > input::placeholder {
+    color: var(--text-muted) !important;
+    font-weight: 400 !important;
+}
+
+/* Textarea (log, script) */
+.stTextArea textarea {
+    font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+    font-size: 0.78rem !important;
+    background: #fafafa !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--text-secondary) !important;
+    line-height: 1.6 !important;
+    transition: var(--transition) !important;
+}
+.stTextArea textarea:focus {
+    border-color: var(--brand) !important;
+    box-shadow: 0 0 0 3px var(--brand-glow) !important;
+}
+
+/* ── SELECTBOX ── */
+.stSelectbox > div > div {
+    min-height: 48px !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--surface) !important;
+    border: 1.5px solid var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: var(--transition) !important;
+}
+.stSelectbox > div > div:focus-within {
+    border-color: var(--brand) !important;
+    box-shadow: 0 0 0 3px var(--brand-glow) !important;
+}
+.stSelectbox [data-baseweb="select"] div {
+    color: var(--text-primary) !important;
+    font-size: 0.93rem !important;
+}
+
+/* ── PASSWORD INPUT ── */
+.stTextInput[data-baseweb="input"] { border-radius: var(--radius-md) !important; }
+
+/* ── SLIDER ── */
+.stSlider [data-baseweb="slider"] div[role="slider"] {
+    background: var(--brand) !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 8px var(--brand-glow) !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+.stSlider [data-baseweb="slider"] [data-testid="stThumbValue"] {
+    color: var(--brand) !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+}
+.stSlider [data-baseweb="slider"] div[data-baseweb="slider-track-fill"] {
+    background: var(--brand) !important;
+}
+
+/* ── TOGGLE / CHECKBOX ── */
+.stCheckbox > label, .stToggle > label {
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    color: var(--text-secondary) !important;
+}
+
+/* ── PROGRESS BAR ── */
 .stProgress > div > div {
-    background: linear-gradient(90deg, #7c3aed, #818cf8) !important;
+    background: linear-gradient(90deg, var(--brand), #818cf8) !important;
     border-radius: 99px !important;
+    transition: width 0.4s ease !important;
 }
 .stProgress > div {
-    background: #e5e7eb !important;
+    background: var(--surface-3) !important;
     border-radius: 99px !important;
-    height: 8px !important;
+    height: 7px !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.06) !important;
 }
 
-/* ═══════════════════════════ TABS ═══════════════════════════ */
+/* ── TABS ── */
 .stTabs [data-baseweb="tab-list"] {
-    background: #f3f4f6 !important;
-    border-radius: 12px 12px 0 0 !important;
-    padding: 4px 4px 0 4px !important;
+    background: var(--surface-3) !important;
+    border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+    padding: 4px !important;
     gap: 2px !important;
-    border-bottom: 1px solid #e5e7eb !important;
+    border: 1px solid var(--border) !important;
+    border-bottom: none !important;
 }
 .stTabs [data-baseweb="tab"] {
-    font-size: 0.88rem !important;
+    font-size: 0.85rem !important;
     font-weight: 600 !important;
-    padding: 10px 14px !important;
-    border-radius: 8px 8px 0 0 !important;
-    color: #6b7280 !important;
+    padding: 9px 16px !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--text-muted) !important;
     border: none !important;
     background: transparent !important;
+    transition: var(--transition) !important;
+}
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--brand) !important;
+    background: var(--brand-light) !important;
 }
 .stTabs [aria-selected="true"] {
-    background: #ffffff !important;
-    color: #6d28d9 !important;
-    border-bottom: 2px solid #7c3aed !important;
+    background: var(--surface) !important;
+    color: var(--brand) !important;
+    box-shadow: var(--shadow-sm) !important;
+    font-weight: 700 !important;
+}
+.stTabs [data-baseweb="tab-highlight"] {
+    display: none !important;
 }
 .stTabs [data-baseweb="tab-panel"] {
-    background: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
     border-top: none !important;
-    border-radius: 0 0 12px 12px !important;
-    padding: 16px !important;
+    border-radius: 0 0 var(--radius-md) var(--radius-md) !important;
+    padding: 20px !important;
 }
 
-/* ═══════════════════════════ LOG ═══════════════════════════ */
-.stTextArea textarea {
-    font-size: 0.78rem !important;
-    font-family: 'Courier New', monospace !important;
-    background: #f8fafc !important;
-    border: 1px solid #e5e7eb !important;
-    color: #374151 !important;
-    border-radius: 8px !important;
-}
-
-/* ═══════════════════════════ EXPANDER ═══════════════════════════ */
+/* ── EXPANDER ── */
 .stExpander {
-    border: 1px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    background: #ffffff !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--surface) !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden !important;
 }
 .stExpander summary {
     font-weight: 600 !important;
-    color: #6b7280 !important;
+    font-size: 0.88rem !important;
+    color: var(--text-secondary) !important;
+    padding: 14px 18px !important;
+}
+.stExpander summary:hover { color: var(--brand) !important; }
+
+/* ── ALERTS ── */
+.stSuccess > div {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    border-radius: var(--radius-md) !important;
+    color: #065f46 !important;
+}
+.stInfo > div {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: var(--radius-md) !important;
+    color: #1e40af !important;
+}
+.stWarning > div {
+    background: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+    border-radius: var(--radius-md) !important;
+    color: #92400e !important;
+}
+.stError > div {
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
+    border-radius: var(--radius-md) !important;
+    color: #991b1b !important;
 }
 
-/* ═══════════════════════════ DIVIDER ═══════════════════════════ */
+/* ── CODE BLOCKS ── */
+.stCode, pre, code {
+    font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+    background: #f8fafc !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 0.82rem !important;
+    color: #1e293b !important;
+}
+
+/* ── DIVIDER ── */
 hr {
-    border-color: #e5e7eb !important;
-    margin: 20px 0 !important;
+    border: none !important;
+    border-top: 1px solid var(--border) !important;
+    margin: 24px 0 !important;
 }
 
-/* ═══════════════════════════ CODE BLOCKS ═══════════════════════════ */
-.stCode, pre {
-    background: #f8f9fb !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 10px !important;
+/* ── CAPTION ── */
+.stCaption {
+    color: var(--text-muted) !important;
+    font-size: 0.8rem !important;
+}
+
+/* ── VIDEO PLAYER ── */
+.stVideo video {
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+/* ── SIDEBAR AJUSTES ── */
+[data-testid="stSidebar"] .stButton > button {
+    min-height: 42px !important;
+    font-size: 0.85rem !important;
+}
+[data-testid="stSidebar"] .stTextInput > div > div > input {
+    min-height: 42px !important;
+    font-size: 0.88rem !important;
+}
+[data-testid="stSidebar"] hr {
+    border-color: #f3f4f6 !important;
+    margin: 14px 0 !important;
+}
+[data-testid="stSidebar"] .stSelectbox > div > div {
+    min-height: 42px !important;
+}
+[data-testid="stSidebar"] label {
     font-size: 0.82rem !important;
 }
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 8px !important;
+}
 
-/* ═══════════════════════════ SIDEBAR ═══════════════════════════ */
-[data-testid="stSidebar"] .stButton > button { min-height: 44px !important; }
-[data-testid="stSidebar"] .stTextInput > div > div > input { min-height: 44px !important; }
-[data-testid="stSidebar"] hr { border-color: #f3f4f6 !important; }
+/* ── RESPONSIVE: TABLET ── */
+@media (max-width: 1024px) {
+    .block-container { padding: 1.5rem 1.25rem 3rem !important; }
+}
 
-/* ═══════════════════════════ MOBILE ═══════════════════════════ */
+/* ── RESPONSIVE: MOBILE ── */
 @media (max-width: 640px) {
-    .stButton > button { min-height: 56px !important; }
-    h1 { font-size: 1.4rem !important; }
-    .stTabs [data-baseweb="tab"] { font-size: 0.78rem !important; padding: 8px 8px !important; }
-    [data-testid="stSidebar"] { min-width: 280px !important; }
-    .step-header { font-size: 0.9rem !important; }
+    .block-container { padding: 1rem 0.75rem 3rem !important; }
+    .hero-title { font-size: 1.65rem !important; letter-spacing: -0.4px !important; }
+    .hero-sub   { font-size: 0.88rem !important; }
+    .stButton > button { min-height: 54px !important; font-size: 0.92rem !important; }
+    .generate-btn .stButton > button { min-height: 60px !important; font-size: 1rem !important; }
+    .stTabs [data-baseweb="tab"] { font-size: 0.78rem !important; padding: 8px 10px !important; }
+    [data-testid="stSidebar"] { min-width: 280px !important; max-width: 300px !important; }
+    .step-header { font-size: 0.85rem !important; padding: 10px 14px !important; }
+    .suggestion-card .stButton > button { min-height: 68px !important; font-size: 0.83rem !important; }
+    h1 { font-size: 1.3rem !important; }
+    h2 { font-size: 1.05rem !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -359,8 +598,8 @@ def _check_auth():
     st.markdown("""
     <div style="text-align:center; padding: 3rem 1rem 1rem 1rem;">
         <div style="font-size:3rem;">🎬</div>
-        <h1 style="margin:0.5rem 0;">AutoShorts AI</h1>
-        <p style="color:#888; margin-bottom:2rem;">Ingresa la contraseña para continuar</p>
+        <h1 style="margin:0.5rem 0; font-family:'Plus Jakarta Sans',sans-serif;">AutoShorts AI</h1>
+        <p style="color:#9ca3af; margin-bottom:2rem; font-size:0.95rem;">Ingresa la contraseña para continuar</p>
     </div>
     """, unsafe_allow_html=True)
 
