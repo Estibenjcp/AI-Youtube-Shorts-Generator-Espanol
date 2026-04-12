@@ -10,7 +10,7 @@ PROVIDER_DEFAULTS = {
     },
     "openrouter": {
         "label": "OpenRouter",
-        "model": "google/gemini-2.0-flash-exp:free",
+        "model": "google/gemini-2.0-flash-lite-001",
     },
 }
 
