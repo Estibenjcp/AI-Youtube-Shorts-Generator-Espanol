@@ -1122,16 +1122,52 @@ with st.sidebar:
         key="webhook_enabled",
     )
     webhook_url_input = st.text_input(
-        "URL del webhook" if lang_option == "es" else "Webhook URL",
+        "URL del webhook",
         value=st.session_state.get("webhook_url_saved",
               "https://n8n.digency.lat/webhook/0a98a5c2-e3ec-4aa4-924d-e27ec8893125"),
         placeholder="https://n8n.../webhook/...",
         label_visibility="collapsed",
         key="webhook_url_input",
     )
+    # Guardar URL siempre (no solo cuando está habilitado)
+    st.session_state["webhook_url_saved"] = webhook_url_input
+
     if webhook_enabled:
-        st.session_state["webhook_url_saved"] = webhook_url_input
         st.caption("✅ " + ("Datos + video se enviarán al generar." if lang_option == "es" else "Data + video will be sent on generate."))
+
+    # Botón de prueba
+    if st.button("🧪 " + ("Probar conexión" if lang_option == "es" else "Test connection"),
+                 use_container_width=True, disabled=not webhook_url_input.strip()):
+        import requests as _r
+        _test_payload = {
+            "test": True,
+            "topic": "Test desde AutoShorts AI",
+            "lang": lang_option,
+            "mode": "test",
+            "script_text": "Este es un mensaje de prueba del webhook.",
+            "youtube_title": "Test YouTube Title #Shorts",
+            "youtube_description": "Descripción de prueba.",
+            "tiktok_caption": "Caption de prueba TikTok",
+            "facebook_caption": "Caption de prueba Facebook",
+            "thumbnail_prompt": "Test thumbnail prompt",
+            "video_base64": "",
+            "video_filename": "",
+            "video_mimetype": "video/mp4",
+        }
+        try:
+            with st.spinner("Probando..."):
+                _resp = _r.post(
+                    webhook_url_input.strip(),
+                    json=_test_payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=15,
+                )
+            if _resp.status_code in (200, 201, 202):
+                st.success(f"✅ Conexión OK ({_resp.status_code})")
+            else:
+                st.error(f"❌ Error {_resp.status_code}: {_resp.text[:200]}")
+        except Exception as _e:
+            st.error(f"❌ {_e}")
 
     # ── Export / Import config ────────────────────────────
     st.divider()
@@ -1476,7 +1512,7 @@ if generate_clicked and not st.session_state.running:
     st.session_state.log_lines = []
     st.session_state.log_queue = queue.Queue()
 
-    _wh_url = webhook_url_input if st.session_state.get("webhook_enabled") else ""
+    _wh_url = st.session_state.get("webhook_url_saved", "") if st.session_state.get("webhook_enabled") else ""
     params = {
         "topic": final_topic, "num_scenes": num_scenes,
         "voice": selected_voice, "rate": rate_str,
