@@ -254,6 +254,127 @@ Return STRICT JSON array only, no markdown:
                 for i, s in enumerate(sentences)
             ]
 
+    def generate_testimonio_script(self, topic: str, category: str, lang: str = "es") -> list:
+        """Guion estilo testimonio misterioso — narración lenta, cinematográfica, terror."""
+        import re as _re
+        print(f"👁️ Generando testimonio: {topic}...")
+
+        # Atmospheric Pexels keywords for this mode
+        ATMOSPHERIC_KEYWORDS = [
+            "dark forest night fog",
+            "candle ritual dark room",
+            "haunted abandoned church",
+            "mysterious silhouette shadow",
+            "foggy cemetery night",
+            "occult candles smoke",
+            "creepy shadow wall",
+            "stormy dark night lightning",
+            "old crucifix dark",
+            "eerie fog forest",
+            "abandoned house dark interior",
+            "candlelit room dark",
+            "dark religious altar",
+            "mysterious hooded figure",
+        ]
+
+        if lang == "es":
+            script_prompt = f"""Eres un experto en crear historias de terror y misterio en formato YouTube/TikTok Shorts, estilo Archimosfera.
+
+Debes contar la historia como si fuera un testimonio real de una persona (ex satánica, testigo, sacerdote, víctima, etc.).
+
+Reglas importantes:
+- La narración debe ser lenta, grave y llena de suspense.
+- Elige escenas que coincidan con: bosques oscuros de noche, velas encendidas, iglesias antiguas, siluetas misteriosas, rituales con velas, niebla, tormentas, habitaciones oscuras, crucifijos, ojos en la oscuridad, etc.
+
+Estructura exacta (50-70 segundos):
+1. HOOK (0-5 seg): Afirmación o pregunta muy fuerte con emoji. Ej: "¿Una ex satánica reveló qué pasa realmente en Semana Santa? 😱 Lo que dijo te dejará sin dormir..."
+2. PRESENTACIÓN DEL TESTIGO: "Según una mujer que estuvo años en el satanismo..." o "Un ex miembro de una secta contó..."
+3. DESARROLLO: Cuenta los detalles escalofriantes poco a poco.
+4. CLÍMAX / TWIST: La parte más fuerte y perturbadora.
+5. CIERRE: Consecuencia + CTA fuerte ("¿Vos creés en esto? Comenta SÍ o NO 👇")
+
+Estilo narrativo:
+- Lenguaje conversacional, misterioso y dramático.
+- Usa frases como: "me contó que...", "reveló que...", "nadie se atreve a decir...", "lo más aterrador fue...".
+- Incluye emojis en el texto.
+- Siempre en español neutro latino.
+
+Tema: {topic}
+Categoría: {category}
+
+Devuelve SOLO el texto completo narrado, de corrido, con emojis. Sin JSON, sin títulos de sección."""
+        else:
+            script_prompt = f"""You are an expert at creating horror and mystery stories in YouTube/TikTok Shorts format, Archimosfera style.
+
+Tell the story as if it were a real testimony from a real person (ex-satanist, witness, priest, victim, etc.).
+
+Important rules:
+- Narration must be slow, deep and full of suspense.
+- Choose scenes that match: dark forests at night, lit candles, ancient churches, mysterious silhouettes, candle rituals, fog, storms, dark rooms, crucifixes, eyes in the darkness, etc.
+
+Exact structure (50-70 seconds):
+1. HOOK (0-5 sec): Very strong statement or question with emoji.
+2. WITNESS INTRO: "According to a woman who spent years in satanism..." or "A former cult member revealed..."
+3. DEVELOPMENT: Tell the chilling details gradually.
+4. CLIMAX / TWIST: The strongest and most disturbing part.
+5. CLOSING: Consequence + strong CTA ("Do you believe this? Comment YES or NO 👇")
+
+Narrative style:
+- Conversational, mysterious and dramatic language.
+- Use phrases like: "she told me that...", "revealed that...", "nobody dares to say...", "the scariest part was...".
+- Include emojis. Slow, grave tone.
+
+Topic: {topic}
+Category: {category}
+
+Return ONLY the complete narrated text, straight through, with emojis. No JSON, no section titles."""
+
+        full_script = self._generate(script_prompt).strip()
+        print(f"📜 Testimonio: {len(full_script.split())} words")
+
+        # Convert to scene format with 3 atmospheric visuals per scene
+        import random as _random
+        visual_prompt = f"""You are a horror video editor. Split this script into scenes and assign THREE English Pexels stock video search terms per scene.
+
+Script:
+{full_script}
+
+Rules:
+- Split at natural sentence/phrase breaks
+- Maximum 10 scenes
+- ALL THREE visuals MUST be in ENGLISH, 2-4 words, suitable for dark/atmospheric Pexels search
+- Visuals must be dark, mysterious, atmospheric (dark forest, candles, shadows, fog, etc.)
+- visual_1: matches start of sentence, visual_2: matches end/context, visual_3: extra atmospheric b-roll
+
+Return STRICT JSON array only, no markdown:
+[{{"id":1,"text":"sentence","visual_1":"dark forest night","visual_2":"candle ritual","visual_3":"mysterious shadow fog","mood":"horror"}}]"""
+
+        raw = self._generate(visual_prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id'] = i + 1
+                s.setdefault('mood', 'horror')
+                # Ensure visual_3 always exists
+                if 'visual_3' not in s:
+                    s['visual_3'] = _random.choice(ATMOSPHERIC_KEYWORDS)
+            print(f"✅ {len(scenes)} testimonio scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', full_script) if len(s.strip()) > 8][:10]
+            return [
+                {
+                    "id": i+1, "text": s,
+                    "visual_1": _random.choice(ATMOSPHERIC_KEYWORDS),
+                    "visual_2": _random.choice(ATMOSPHERIC_KEYWORDS),
+                    "visual_3": _random.choice(ATMOSPHERIC_KEYWORDS),
+                    "mood": "horror"
+                }
+                for i, s in enumerate(sentences)
+            ]
+
     def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es") -> list:
         label = "Escribiendo guion" if lang == "es" else "Writing script"
         print(f"📝 {label}: {topic} ({num_scenes} scenes)...")

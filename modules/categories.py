@@ -55,3 +55,11 @@ VIRAL_CATEGORIES = [
     "Conspiraciones Históricas",
     "Mortandad de Animales / Naturaleza",
 ]
+
+TESTIMONIO_CATEGORIES = [
+    "Testimonios Misteriosos",
+    "Historia Oculta y Ocultismo",
+    "Revelaciones Terroríficas",
+    "Misterios Religiosos y Satanismo",
+    "Historias Basadas en Testimonios",
+]

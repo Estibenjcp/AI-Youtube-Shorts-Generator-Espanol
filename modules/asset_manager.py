@@ -125,44 +125,53 @@ class AssetManager:
 
     def get_videos(self, script_data: list) -> list:
         """
-        Downloads TWO videos per scene (A and B).
-        Returns a list of (path_a, path_b) tuples, or None for failed scenes.
+        Downloads TWO or THREE videos per scene (A, B, and optional C for testimonio mode).
+        Returns a list of tuples: (path_a, path_b) or (path_a, path_b, path_c).
         """
-        print("🎥 Starting Double-Feature Video Download...")
+        print("🎥 Starting Video Download...")
         video_pairs = []
 
         for scene in script_data:
             scene_id = scene["id"]
             query_a  = scene.get("visual_1", scene.get("keywords", "abstract"))
             query_b  = scene.get("visual_2", query_a)
+            query_c  = scene.get("visual_3", None)
 
             # Search A
             url_a  = self.search_video(query_a)
             path_a = self.download_video(url_a, f"scene_{scene_id}_a.mp4") if url_a else None
-
-            # Polite delay between requests to avoid connection resets
             time.sleep(1.5)
 
             # Search B
             url_b  = self.search_video(query_b)
             path_b = self.download_video(url_b, f"scene_{scene_id}_b.mp4") if url_b else None
 
+            # Search C (only if visual_3 exists)
+            path_c = None
+            if query_c:
+                time.sleep(1.5)
+                url_c  = self.search_video(query_c)
+                path_c = self.download_video(url_c, f"scene_{scene_id}_c.mp4") if url_c else None
+
             # Self-healing fallbacks
             if not path_a and path_b:
                 path_a = path_b
-                print(f"      ⚠️ Scene {scene_id}: Clip A missing — using Clip B for both.")
             if not path_b and path_a:
                 path_b = path_a
-                print(f"      ⚠️ Scene {scene_id}: Clip B missing — using Clip A for both.")
+            if path_c is None and path_a:
+                pass  # C is optional, no fallback needed
 
             if path_a and path_b:
-                video_pairs.append((path_a, path_b))
-                print(f"   ✅ Scene {scene_id} Ready (A + B).")
+                if path_c:
+                    video_pairs.append((path_a, path_b, path_c))
+                    print(f"   ✅ Scene {scene_id} Ready (A + B + C).")
+                else:
+                    video_pairs.append((path_a, path_b))
+                    print(f"   ✅ Scene {scene_id} Ready (A + B).")
             else:
                 print(f"   ❌ Scene {scene_id} Completely Failed.")
                 video_pairs.append(None)
 
-            # Inter-scene delay
             time.sleep(1)
 
         return video_pairs

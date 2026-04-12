@@ -91,28 +91,52 @@ class Composer:
                     .filter('fps', fps=30, round='up')
                 )
             else:
-                print(f"   ⚙️ Processing Scene {scene_id}: A/B Split Mode")
-                path_a, path_b = video_pair
-                duration_a = total_duration / 2
-                duration_b = (total_duration / 2) + 0.5
+                if len(video_pair) == 3:
+                    print(f"   ⚙️ Processing Scene {scene_id}: A/B/C Testimonio Mode")
+                    path_a, path_b, path_c = video_pair
+                    dur_a = total_duration / 3
+                    dur_b = total_duration / 3
+                    dur_c = total_duration - dur_a - dur_b + 0.5
 
-                stream_a = (
-                    ffmpeg.input(path_a, stream_loop=-1)
-                    .trim(duration=duration_a)
-                    .setpts('PTS-STARTPTS')
-                    .filter('scale', 720, 1280)
-                    .filter('crop', 720, 1280)
-                    .filter('fps', fps=30, round='up')
-                )
-                stream_b = (
-                    ffmpeg.input(path_b, stream_loop=-1)
-                    .trim(duration=duration_b)
-                    .setpts('PTS-STARTPTS')
-                    .filter('scale', 720, 1280)
-                    .filter('crop', 720, 1280)
-                    .filter('fps', fps=30, round='up')
-                )
-                video_stream = ffmpeg.concat(stream_a, stream_b, v=1, a=0)
+                    def _dark_stream(path, dur):
+                        return (
+                            ffmpeg.input(path, stream_loop=-1)
+                            .trim(duration=dur)
+                            .setpts('PTS-STARTPTS')
+                            .filter('scale', 720, 1280, force_original_aspect_ratio='increase')
+                            .filter('crop', 720, 1280)
+                            .filter('fps', fps=30, round='up')
+                            .filter('eq', brightness=-0.06, contrast=1.1, saturation=0.75)
+                        )
+
+                    stream_a = _dark_stream(path_a, dur_a)
+                    stream_b = _dark_stream(path_b, dur_b)
+                    stream_c = _dark_stream(path_c, dur_c)
+                    video_stream = ffmpeg.concat(stream_a, stream_b, stream_c, v=1, a=0)
+
+                else:
+                    print(f"   ⚙️ Processing Scene {scene_id}: A/B Split Mode")
+                    path_a, path_b = video_pair
+                    duration_a = total_duration / 2
+                    duration_b = (total_duration / 2) + 0.5
+
+                    stream_a = (
+                        ffmpeg.input(path_a, stream_loop=-1)
+                        .trim(duration=duration_a)
+                        .setpts('PTS-STARTPTS')
+                        .filter('scale', 720, 1280)
+                        .filter('crop', 720, 1280)
+                        .filter('fps', fps=30, round='up')
+                    )
+                    stream_b = (
+                        ffmpeg.input(path_b, stream_loop=-1)
+                        .trim(duration=duration_b)
+                        .setpts('PTS-STARTPTS')
+                        .filter('scale', 720, 1280)
+                        .filter('crop', 720, 1280)
+                        .filter('fps', fps=30, round='up')
+                    )
+                    video_stream = ffmpeg.concat(stream_a, stream_b, v=1, a=0)
 
             ffmpeg.output(
                 video_stream,

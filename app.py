@@ -11,7 +11,7 @@ import shutil
 import io
 
 from modules.config import load_config, check_config, PROVIDER_DEFAULTS
-from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, VIRAL_CATEGORIES
+from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES
 from dotenv import set_key, load_dotenv
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -827,11 +827,15 @@ UI = {
         "tab_script":        "📝 Guion",
         "tab_copy":          "📣 Copy",
         "tab_thumb":         "🖼️ Miniatura",
-        "restart_btn":       "🔄 Crear Otro Video",
         "viral_mode_info":   "🔥 Guion ultra-viral de 45-60 seg — estructura MrBeast + Dark History. Hook demoledor, giro inesperado y CTA que engancha.",
         "viral_category":    "Categoría del tema",
         "viral_topic":       "Tema (opcional — déjalo vacío para que la IA elija)",
         "viral_topic_ph":    "ej. La conspiración del Proyecto MKUltra...",
+        "testimonio_info":   "👁️ Narra como un testimonio real — estilo terror cinematográfico. 3 clips por escena, tono oscuro y voz grave.",
+        "testimonio_cat":    "Categoría del testimonio",
+        "testimonio_topic":  "Tema (opcional — déjalo vacío para que la IA elija)",
+        "testimonio_topic_ph": "ej. La secta que operaba en las catacumbas de Roma...",
+        "restart_btn":       "🔄 Crear Otro Video",
     },
     "en": {
         "page_title":        "AutoShorts AI 🎬",
@@ -896,11 +900,15 @@ UI = {
         "tab_script":        "📝 Script",
         "tab_copy":          "📣 Copy",
         "tab_thumb":         "🖼️ Thumbnail",
-        "restart_btn":       "🔄 Create Another Video",
         "viral_mode_info":   "🔥 Ultra-viral 45-60 sec script — MrBeast + Dark History structure. Devastating hook, unexpected twist and addictive CTA.",
         "viral_category":    "Topic category",
         "viral_topic":       "Topic (optional — leave blank for AI to choose)",
         "viral_topic_ph":    "e.g. The MKUltra mind control conspiracy...",
+        "testimonio_info":   "👁️ Narrated as a real testimony — cinematic horror style. 3 clips per scene, dark tone and deep voice.",
+        "testimonio_cat":    "Testimony category",
+        "testimonio_topic":  "Topic (optional — leave blank for AI to choose)",
+        "testimonio_topic_ph": "e.g. The cult operating in the catacombs of Rome...",
+        "restart_btn":       "🔄 Create Another Video",
     },
 }
 
@@ -965,6 +973,12 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang)
             script = brain.generate_viral_script(topic, category, lang=pipeline_lang)
+        elif pipeline_mode == "testimonio":
+            topic    = params.get("topic", "").strip()
+            category = params.get("category", "")
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang)
+            script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang)
         else:
             topic  = brain.get_trending_topic(params.get("topic", ""), lang=pipeline_lang)
             script = brain.generate_script(topic, num_scenes=params.get("num_scenes", 9), lang=pipeline_lang)
@@ -1140,9 +1154,9 @@ with st.expander(voice_label_hint, expanded=False):
 # ── Selector de modo ──────────────────────────────────────────────────────────
 
 mode_labels = (
-    ["⚡ Automático", "🗂️ Por Categoría", "🔥 Más Virales"]
+    ["⚡ Automático", "🗂️ Por Categoría", "🔥 Más Virales", "👁️ Testimonio Misterioso"]
     if lang_option == "es"
-    else ["⚡ Automatic", "🗂️ By Category", "🔥 Most Viral"]
+    else ["⚡ Automatic", "🗂️ By Category", "🔥 Most Viral", "👁️ Mystery Testimony"]
 )
 st.markdown(
     f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
@@ -1150,8 +1164,8 @@ st.markdown(
 )
 mode = st.radio(
     "mode",
-    options=["auto", "category", "viral"],
-    format_func=lambda x: {"auto": mode_labels[0], "category": mode_labels[1], "viral": mode_labels[2]}[x],
+    options=["auto", "category", "viral", "testimonio"],
+    format_func=lambda x: {"auto": mode_labels[0], "category": mode_labels[1], "viral": mode_labels[2], "testimonio": mode_labels[3]}[x],
     horizontal=True,
     label_visibility="collapsed",
     key="generation_mode",
@@ -1296,6 +1310,34 @@ elif mode == "viral":
     final_topic   = viral_topic_input.strip()
     final_category = viral_category
     num_scenes    = 9  # no usado en modo viral, la IA decide
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO TESTIMONIO MISTERIOSO
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "testimonio":
+
+    st.markdown(f"<div class='auto-info'>{T['testimonio_info']}</div>", unsafe_allow_html=True)
+
+    st.markdown(f"<div class='step-header'>🎯 {T['testimonio_cat']}</div>", unsafe_allow_html=True)
+    test_category = st.selectbox(
+        "tcat", options=[""] + TESTIMONIO_CATEGORIES,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="test_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {T['testimonio_topic']}</div>", unsafe_allow_html=True)
+    test_topic_input = st.text_input(
+        "ttopic",
+        key="test_topic_input",
+        placeholder=T["testimonio_topic_ph"],
+        label_visibility="collapsed",
+    )
+
+    final_topic    = test_topic_input.strip()
+    final_category = test_category
+    num_scenes     = 9
 
 # ── Generar ───────────────────────────────────────────────────────────────────
 
