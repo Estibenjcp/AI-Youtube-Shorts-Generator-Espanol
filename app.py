@@ -889,6 +889,10 @@ UI = {
         "libro_cat":         "Género del libro",
         "libro_topic":       "Título del libro (opcional — déjalo vacío para que la IA elija)",
         "libro_topic_ph":    "ej. Hábitos Atómicos — James Clear...",
+        "empleo_info":       "💼 Pega la oferta de empleo y la IA la convierte en un video promocional atractivo, sin inventar ni exagerar nada.",
+        "empleo_label":      "Texto de la oferta de empleo",
+        "empleo_ph":         "Pega aquí el texto completo: puesto, empresa, requisitos, salario, beneficios, cómo aplicar...",
+        "empleo_warning":    "Por favor pega el texto de la oferta antes de generar.",
         "restart_btn":       "🔄 Crear Otro Video",
     },
     "en": {
@@ -966,6 +970,10 @@ UI = {
         "libro_cat":         "Book genre",
         "libro_topic":       "Book title (optional — leave blank for AI to choose)",
         "libro_topic_ph":    "e.g. Atomic Habits — James Clear...",
+        "empleo_info":       "💼 Paste the job offer and AI turns it into an attractive promotional video — no invented or exaggerated details.",
+        "empleo_label":      "Job offer text",
+        "empleo_ph":         "Paste the full text here: position, company, requirements, salary, benefits, how to apply...",
+        "empleo_warning":    "Please paste the job offer text before generating.",
         "restart_btn":       "🔄 Create Another Video",
     },
 }
@@ -989,6 +997,7 @@ for key, default in [
     ("video_topic",       ""),
     ("hook_options",      []),
     ("chosen_hook",       ""),
+    ("job_offer_text",    ""),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1057,6 +1066,17 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="libro")
             script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang)
+
+        elif pipeline_mode == "empleo":
+            offer_text = params.get("job_offer_text", "").strip()
+            if not offer_text:
+                log_q.put("ERROR:No se proporcionó texto de oferta de empleo.")
+                return
+            script = brain.generate_job_offer_script(offer_text, lang=pipeline_lang)
+            # Derive a clean topic from the first line of the offer for copy/filename
+            _lines = [l.strip() for l in offer_text.splitlines() if l.strip()]
+            topic  = _lines[0][:70] if _lines else ("Oferta de Empleo" if pipeline_lang == "es" else "Job Offer")
+            print(f"💼 Topic derivado: {topic}")
 
         else:
             chosen_hook = params.get("chosen_hook", "").strip()
@@ -1385,6 +1405,7 @@ _mode_map = (
         "viral":      "🔥 Viral",
         "testimonio": "👁️ Misterio",
         "libro":      "📚 Libro",
+        "empleo":     "💼 Empleo",
     }
     if lang_option == "es"
     else {
@@ -1393,6 +1414,7 @@ _mode_map = (
         "viral":      "🔥 Viral",
         "testimonio": "👁️ Mystery",
         "libro":      "📚 Book",
+        "empleo":     "💼 Job Ad",
     }
 )
 st.markdown(
@@ -1401,7 +1423,7 @@ st.markdown(
 )
 mode = st.radio(
     "mode",
-    options=["auto", "category", "viral", "testimonio", "libro"],
+    options=["auto", "category", "viral", "testimonio", "libro", "empleo"],
     format_func=lambda x: _mode_map[x],
     horizontal=True,
     label_visibility="collapsed",
@@ -1605,6 +1627,33 @@ elif mode == "libro":
     final_category = libro_category
     num_scenes     = 9
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO OFERTA DE EMPLEO
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "empleo":
+
+    st.markdown(f"<div class='auto-info'>{T['empleo_info']}</div>", unsafe_allow_html=True)
+
+    st.markdown(f"<div class='step-header'>📋 {T['empleo_label']}</div>", unsafe_allow_html=True)
+    job_offer_raw = st.text_area(
+        "job_offer",
+        key="job_offer_input",
+        placeholder=T["empleo_ph"],
+        height=260,
+        label_visibility="collapsed",
+    )
+
+    if job_offer_raw.strip():
+        # Use first non-empty line as short topic label (for filename/copy)
+        _first_line = next((l.strip() for l in job_offer_raw.splitlines() if l.strip()), "")
+        final_topic = _first_line[:60]
+    else:
+        final_topic = ""
+
+    final_category = ""
+    num_scenes     = 9
+
 # ── Hook Options ──────────────────────────────────────────────────────────────
 
 _hook_topic    = final_topic or st.session_state.get("selected_topic", "")
@@ -1662,27 +1711,32 @@ if not config_ok:
     st.info(T["config_info"])
 
 if generate_clicked and not st.session_state.running:
-    st.session_state.running   = True
-    st.session_state.status    = "running"
-    st.session_state.log_lines = []
-    st.session_state.log_queue = queue.Queue()
+    # Validación especial para modo empleo
+    if mode == "empleo" and not st.session_state.get("job_offer_input", "").strip():
+        st.warning(T["empleo_warning"])
+    else:
+        st.session_state.running   = True
+        st.session_state.status    = "running"
+        st.session_state.log_lines = []
+        st.session_state.log_queue = queue.Queue()
 
-    # Lee directo del key del widget — Streamlit siempre lo tiene en session_state
-    _wh_enabled = st.session_state.get("webhook_enabled", False)
-    _wh_url = st.session_state.get("webhook_url_input", "").strip() if _wh_enabled else ""
-    params = {
-        "topic": final_topic, "num_scenes": num_scenes,
-        "voice": selected_voice, "rate": rate_str,
-        "use_avatar": use_avatar, "use_subtitles": use_subtitles,
-        "lang": lang_option, "mode": mode,
-        "category": final_category,
-        "webhook_url": _wh_url,
-        "chosen_hook": st.session_state.get("chosen_hook", ""),
-    }
-    t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
-    st.session_state.thread = t
-    t.start()
-    st.rerun()
+        # Lee directo del key del widget — Streamlit siempre lo tiene en session_state
+        _wh_enabled = st.session_state.get("webhook_enabled", False)
+        _wh_url = st.session_state.get("webhook_url_input", "").strip() if _wh_enabled else ""
+        params = {
+            "topic": final_topic, "num_scenes": num_scenes,
+            "voice": selected_voice, "rate": rate_str,
+            "use_avatar": use_avatar, "use_subtitles": use_subtitles,
+            "lang": lang_option, "mode": mode,
+            "category": final_category,
+            "webhook_url": _wh_url,
+            "chosen_hook": st.session_state.get("chosen_hook", ""),
+            "job_offer_text": st.session_state.get("job_offer_input", ""),
+        }
+        t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
+        st.session_state.thread = t
+        t.start()
+        st.rerun()
 
 # ── Progreso ──────────────────────────────────────────────────────────────────
 

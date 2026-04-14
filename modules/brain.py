@@ -613,6 +613,106 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
+    def generate_job_offer_script(self, offer_text: str, lang: str = "es") -> list:
+        """Convierte una oferta de empleo en un guion de video promocional.
+        Preserva TODA la información original — solo la presenta de forma atractiva."""
+        import re as _re
+        label = "Convirtiendo oferta de empleo en guion" if lang == "es" else "Converting job offer to script"
+        print(f"💼 {label}...")
+
+        if lang == "es":
+            prompt = f"""Eres un director creativo especializado en videos de reclutamiento viral para YouTube Shorts y TikTok.
+
+OFERTA DE EMPLEO (texto original del cliente):
+---
+{offer_text}
+---
+
+TAREA: Convierte esta oferta en un guion de video promocional de 8-10 escenas (60-90 segundos).
+
+REGLAS ABSOLUTAS:
+- PROHIBIDO inventar, exagerar o añadir información que NO esté en el texto original.
+- PROHIBIDO omitir datos clave: puesto, empresa, salario (si está), requisitos importantes, beneficios, cómo aplicar.
+- Presenta la información de forma atractiva y emocionante, pero 100% fiel al original.
+- Si el salario está en la oferta, DEBES mencionarlo — es el dato más poderoso.
+- Tono: directo, motivador, habla en 2da persona ("tú", "tu carrera", "si buscas...").
+- Cada escena: máximo 18 palabras. Una idea por escena.
+- PROHIBIDO: emojis, caracteres especiales Unicode, palabras en inglés (excepto nombres propios de empresa).
+
+ESTRUCTURA (8-10 escenas):
+  Escena 1 — GANCHO: El beneficio o dato más atractivo de la oferta (salario, empresa conocida, flexibilidad, crecimiento). Directo e irresistible.
+  Escena 2 — LA EMPRESA: Quién contrata. Breve y positivo.
+  Escena 3 — EL PUESTO: Qué harás. Presentado como una oportunidad emocionante.
+  Escenas 4-5 — REQUISITOS: Los más importantes, presentados como "si eres X, eres ideal".
+  Escenas 6-7 — BENEFICIOS: Salario, prestaciones, horario, remoto, crecimiento — lo que haga brillar la oferta.
+  Escena 8 — CTA: Cómo aplicar. Urgente y claro. "Aplica ahora", "El link está en la descripción", etc.
+
+FORMATO DE SALIDA (JSON estricto, sin markdown):
+[
+  {{"id":1,"text":"texto aqui","visual_1":"professional interview handshake","visual_2":"modern office team","mood":"energetic"}},
+  {{"id":2,"text":"texto aqui","visual_1":"company building exterior","visual_2":"team meeting collaboration","mood":"professional"}}
+]
+
+REGLAS DEL JSON:
+- "text": texto narrado. Máximo 18 palabras. Sin caracteres especiales.
+- "visual_1" y "visual_2": términos de búsqueda EN INGLÉS para Pexels (2-4 palabras). Profesionales: oficina moderna, equipo de trabajo, crecimiento, ciudad, tecnología, personas exitosas.
+- "mood": "energetic", "professional" o "inspiring" según la escena."""
+        else:
+            prompt = f"""You are a creative director specializing in viral recruitment videos for YouTube Shorts and TikTok.
+
+JOB OFFER (original client text):
+---
+{offer_text}
+---
+
+TASK: Convert this job offer into an 8-10 scene promotional video script (60-90 seconds).
+
+ABSOLUTE RULES:
+- FORBIDDEN to invent, exaggerate or add information NOT in the original text.
+- FORBIDDEN to omit key data: position, company, salary (if present), main requirements, benefits, how to apply.
+- Present information in an attractive and exciting way, but 100% faithful to the original.
+- If salary is in the offer, you MUST mention it — it's the most powerful detail.
+- Tone: direct, motivating, speak in 2nd person ("you", "your career", "if you're looking for...").
+- Each scene: maximum 18 words. One idea per scene.
+- FORBIDDEN: emojis, special Unicode characters. ENGLISH ONLY.
+
+STRUCTURE (8-10 scenes):
+  Scene 1 — HOOK: The most attractive benefit or detail in the offer (salary, known company, flexibility, growth). Direct and irresistible.
+  Scene 2 — THE COMPANY: Who's hiring. Brief and positive.
+  Scene 3 — THE ROLE: What you'll do. Presented as an exciting opportunity.
+  Scenes 4-5 — REQUIREMENTS: The most important ones, framed as "if you have X, you're ideal".
+  Scenes 6-7 — BENEFITS: Salary, perks, schedule, remote, growth — whatever makes the offer shine.
+  Scene 8 — CTA: How to apply. Urgent and clear. "Apply now", "Link in the description", etc.
+
+OUTPUT FORMAT (strict JSON, no markdown):
+[
+  {{"id":1,"text":"text here","visual_1":"professional interview handshake","visual_2":"modern office team","mood":"energetic"}},
+  {{"id":2,"text":"text here","visual_1":"company building exterior","visual_2":"team meeting collaboration","mood":"professional"}}
+]
+
+JSON RULES:
+- "text": narrated text. Maximum 18 words. No special characters.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Professional: modern office, team collaboration, career growth, city, technology, successful people.
+- "mood": "energetic", "professional" or "inspiring" based on the scene."""
+
+        raw   = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
+                s.setdefault('mood', 'professional')
+            print(f"✅ {len(scenes)} job offer scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
+            return [
+                {"id": i+1, "text": self._sanitize(s), "visual_1": "professional office team", "visual_2": "career growth success", "mood": "professional"}
+                for i, s in enumerate(sentences)
+            ]
+
     def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es", chosen_hook: str = "") -> list:
         label = "Escribiendo guion" if lang == "es" else "Writing script"
         print(f"📝 {label}: {topic} ({num_scenes} scenes)...")
@@ -775,6 +875,8 @@ Finally, a short contextual subtitle relevant to the topic."
                            "#Mystery #Horror #TrueStory #Unexplained #CreepyFacts"),
             "libro":      ("#ResumenDeLibro #LibrosQueDebesLeer #Lectura #DesarrolloPersonal #LibrosRecomendados",
                            "#BookSummary #BooksToRead #SelfImprovement #BookReview #LearnSomethingNew"),
+            "empleo":     ("#OfertaDeEmpleo #TrabajosDisponibles #BuscandoEmpleo #OportunidadLaboral #VacantesDeEmpleo",
+                           "#JobOffer #NowHiring #JobOpportunity #Careers #JobSearch"),
         }
         hashtags_es, hashtags_en = _ht.get(mode, ("#MentesCuriosas #CienciaYMisterio #HechosCuriosos #DatosImpactantes #SabiaQue",
                                                    "#DidYouKnow #MindBlowing #FunFacts #Science #History"))
