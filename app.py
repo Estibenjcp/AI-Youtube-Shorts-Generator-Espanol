@@ -190,31 +190,13 @@ strong { color: var(--text-primary) !important; }
 /* Círculo coloreado de BaseUI */
 [data-testid="stRadio"] label > div:first-child       { display:none!important; }
 
-/* ── MODE SELECTOR: cuadrícula 2 columnas, alineación uniforme ── */
-div:has(#mode-sel-anchor) + div [data-testid="stRadio"] {
-    padding: 4px !important;
-}
-div:has(#mode-sel-anchor) + div [data-testid="stRadio"] > div {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 7px !important;
-    align-items: stretch !important;
-}
-div:has(#mode-sel-anchor) + div [data-testid="stRadio"] label {
-    flex: 1 1 calc(50% - 7px) !important;
-    min-width: 0 !important;
-    max-width: calc(50% - 4px) !important;
-    min-height: 46px !important;
-    padding: 8px 6px !important;
-    font-size: 0.80rem !important;
+/* ── MODE SELECTOR BUTTONS: compactos y uniformes ── */
+div[data-testid="stSidebar"] .mode-grid-btn button {
+    font-size: 0.82rem !important;
+    padding: 7px 4px !important;
+    min-height: 42px !important;
     white-space: normal !important;
-    word-break: break-word !important;
-    text-align: center !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-sizing: border-box !important;
-    line-height: 1.25 !important;
+    line-height: 1.2 !important;
 }
 
 /* ── STEP HEADERS ── */
@@ -1507,49 +1489,67 @@ with st.expander(voice_label_hint, expanded=False):
             )
             subtitle_style["max_chars"] = _wrap
 
-# ── Selector de modo ──────────────────────────────────────────────────────────
+# ── Selector de modo (grid 2×N de botones) ───────────────────────────────────
 
-_mode_map = (
-    {
-        "auto":       "⚡ Auto",
-        "category":   "🗂️ Categorías",
-        "viral":      "🔥 Viral",
-        "testimonio": "👁️ Misterio",
-        "libro":      "📚 Libro",
-        "empleo":     "💼 Empleo",
-        "guion":      "✍️ Guión",
-    }
+_mode_buttons = (
+    [
+        ("auto",       "⚡ Auto"),
+        ("category",   "🗂️ Categorías"),
+        ("viral",      "🔥 Viral"),
+        ("testimonio", "👁️ Misterio"),
+        ("libro",      "📚 Libro"),
+        ("empleo",     "💼 Empleo"),
+        ("guion",      "✍️ Guión"),
+    ]
     if lang_option == "es"
-    else {
-        "auto":       "⚡ Auto",
-        "category":   "🗂️ Category",
-        "viral":      "🔥 Viral",
-        "testimonio": "👁️ Mystery",
-        "libro":      "📚 Book",
-        "empleo":     "💼 Job Ad",
-        "guion":      "✍️ Script",
-    }
+    else [
+        ("auto",       "⚡ Auto"),
+        ("category",   "🗂️ Category"),
+        ("viral",      "🔥 Viral"),
+        ("testimonio", "👁️ Mystery"),
+        ("libro",      "📚 Book"),
+        ("empleo",     "💼 Job Ad"),
+        ("guion",      "✍️ Script"),
+    ]
 )
+
 st.markdown(
-    f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>"
-    "<span id='mode-sel-anchor' style='display:none'></span>",
+    f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
     unsafe_allow_html=True,
 )
-mode = st.radio(
-    "generation_mode",
-    options=list(_mode_map.keys()),
-    format_func=lambda x: _mode_map[x],
-    label_visibility="collapsed",
-    key="generation_mode",
-)
 
-if mode != st.session_state.get("_last_mode"):
-    st.session_state.topic_suggestions = []
-    st.session_state.selected_topic    = ""
-    st.session_state["hook_step"]      = "idle"
-    st.session_state["hook_options"]   = []
-    st.session_state["chosen_hook"]    = ""
-    st.session_state["_last_mode"]     = mode
+_cur_mode = st.session_state.get("generation_mode", "auto")
+
+def _set_mode(new_mode: str):
+    if st.session_state.get("generation_mode") != new_mode:
+        st.session_state.generation_mode  = new_mode
+        st.session_state.topic_suggestions = []
+        st.session_state.selected_topic    = ""
+        st.session_state.hook_step         = "idle"
+        st.session_state.hook_options      = []
+        st.session_state.chosen_hook       = ""
+
+for _i in range(0, len(_mode_buttons), 2):
+    _col1, _col2 = st.columns(2, gap="small")
+    _mk1, _ml1 = _mode_buttons[_i]
+    with _col1:
+        st.button(
+            _ml1, key=f"mdbtn_{_mk1}",
+            type="primary" if _cur_mode == _mk1 else "secondary",
+            use_container_width=True,
+            on_click=_set_mode, args=(_mk1,),
+        )
+    if _i + 1 < len(_mode_buttons):
+        _mk2, _ml2 = _mode_buttons[_i + 1]
+        with _col2:
+            st.button(
+                _ml2, key=f"mdbtn_{_mk2}",
+                type="primary" if _cur_mode == _mk2 else "secondary",
+                use_container_width=True,
+                on_click=_set_mode, args=(_mk2,),
+            )
+
+mode = st.session_state.get("generation_mode", "auto")
 
 st.markdown("---")
 
