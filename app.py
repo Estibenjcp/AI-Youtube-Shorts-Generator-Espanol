@@ -1054,20 +1054,24 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             script = brain.generate_viral_script(topic, category, lang=pipeline_lang, chosen_hook=chosen_hook)
 
         elif pipeline_mode == "testimonio":
-            topic    = params.get("topic", "").strip()
-            category = params.get("category", "").strip()
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="testimonio")
-            script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang)
+            script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang,
+                                                      chosen_hook=chosen_hook)
 
         elif pipeline_mode == "libro":
-            topic    = params.get("topic", "").strip()
-            category = params.get("category", "").strip()
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="libro")
-            script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang)
+            script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
+                                                        chosen_hook=chosen_hook)
 
         elif pipeline_mode == "empleo":
             offer_text = params.get("job_offer_text", "").strip()
@@ -1715,7 +1719,7 @@ elif mode == "empleo":
 
 # ── Generar / Hook flow ───────────────────────────────────────────────────────
 # Modos donde el hook se inyecta en la Escena 1 del guion
-_HOOK_MODES = {"auto", "category", "viral"}
+_HOOK_MODES = {"auto", "category", "viral", "testimonio", "libro"}
 
 st.markdown("---")
 

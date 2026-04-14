@@ -245,58 +245,119 @@ OUTPUT FORMAT (strict JSON, no markdown):
         return text
 
     def get_hook_options(self, topic: str, category: str, mode: str = "auto", lang: str = "es", n: int = 3) -> list:
-        """Genera N opciones de gancho viral para un tema dado."""
+        """Genera N opciones de gancho viral para un tema dado.
+        Si topic está vacío, usa la categoría como contexto principal."""
+
+        # Construir el contexto de forma robusta — nunca dejar vacío
+        topic   = (topic   or "").strip()
+        category = (category or "").strip()
+
+        if topic and category:
+            ctx = f"{topic} (categoría: {category})" if lang == "es" else f"{topic} (category: {category})"
+        elif topic:
+            ctx = topic
+        elif category:
+            ctx = category
+        else:
+            ctx = "contenido viral misterioso" if lang == "es" else "viral mystery content"
+
+        # Tipos de hook por modo
+        if mode == "testimonio":
+            types_es = (
+                "- TIPO A: cifra impactante + hecho perturbador ('17 personas desaparecieron la misma noche. Nadie explica como.')\n"
+                "- TIPO B: revelacion del testigo ('Lo que este ex-miembro revelo sobre [X] cambio todo.')\n"
+                "- TIPO C: secreto oculto ('Nadie habla de lo que paso realmente en [X].')\n"
+            )
+            types_en = (
+                "- TYPE A: shocking number + disturbing fact ('17 people vanished the same night. No one explains how.')\n"
+                "- TYPE B: witness reveal ('What this ex-member revealed about [X] changed everything.')\n"
+                "- TYPE C: hidden secret ('Nobody talks about what really happened at [X].')\n"
+            )
+            tone_es = "oscuro y perturbador, estilo testimonio real de horror"
+            tone_en = "dark and disturbing, real horror testimony style"
+        elif mode == "libro":
+            types_es = (
+                "- TIPO A: verdad incomoda del libro ('La mayoria trabaja mas duro pero gana menos. Este libro explica por que.')\n"
+                "- TIPO B: creencia que el libro destruye ('Todo lo que te ensenaron sobre [X] esta equivocado, segun este libro.')\n"
+                "- TIPO C: dato que el libro revela ('Lo que nadie te cuenta sobre [X] esta en este libro.')\n"
+            )
+            types_en = (
+                "- TYPE A: uncomfortable truth from the book ('Most people work harder but earn less. This book explains why.')\n"
+                "- TYPE B: belief the book destroys ('Everything you were taught about [X] is wrong, according to this book.')\n"
+                "- TYPE C: what the book reveals ('What nobody tells you about [X] is in this book.')\n"
+            )
+            tone_es = "inspirador e intrigante, que motive a leer el libro"
+            tone_en = "inspiring and intriguing, motivating to read the book"
+        else:  # auto, category, viral
+            types_es = (
+                "- TIPO A (Numero shockeante): cifra + consecuencia brutal ('40.000 personas murieron en 48 horas. Nadie lo investigo.')\n"
+                "- TIPO B (Controversia): 'Todo lo que sabes sobre [X] esta completamente equivocado.'\n"
+                "- TIPO C (Curiosidad): 'Nadie habla de lo que paso realmente con [X].'\n"
+            )
+            types_en = (
+                "- TYPE A (Shocking number): stat + brutal consequence ('40,000 people died in 48 hours. Nobody investigated.')\n"
+                "- TYPE B (Controversy): 'Everything you know about [X] is completely wrong.'\n"
+                "- TYPE C (Curiosity): 'Nobody is talking about what really happened with [X].'\n"
+            )
+            tone_es = "viral e impactante, estilo MrBeast + Dark History"
+            tone_en = "viral and impactful, MrBeast + Dark History style"
+
         if lang == "es":
             prompt = f"""Eres experto en ganchos virales para YouTube Shorts. El espectador decide si sigue viendo en 1.7 segundos.
 
-Tema: "{topic}"
-Categoria: "{category}"
+Contexto del video: "{ctx}"
+Tono requerido: {tone_es}
 
-Genera exactamente {n} opciones de HOOK distintas para la primera escena. Cada una debe ser de un tipo diferente:
-- TIPO A (Numero impactante): cifra shockeante + consecuencia brutal en una sola frase
-- TIPO B (Controversia): afirmacion que contradice lo que la gente cree sobre el tema
-- TIPO C (Curiosidad): "Nadie habla de..." o "Lo que no te cuentan sobre..."
-- TIPO D (Pregunta trampa): pregunta que hace imposible no seguir viendo
-
-REGLAS ESTRICTAS:
+TAREA: Genera exactamente {n} hooks distintos para la Escena 1. Cada uno de un tipo diferente:
+{types_es}
+REGLAS ABSOLUTAS:
 - Maximo 12 palabras por hook
-- Sin emojis ni caracteres especiales
-- Especifico al tema, no generico
-- Cada hook debe generar curiosidad INMEDIATA
+- Sin emojis, sin caracteres especiales, sin comillas rizadas
+- Concreto y especifico al contexto — PROHIBIDO ser generico
+- Cada hook debe crear curiosidad INMEDIATA e IRRESISTIBLE
+- PROHIBIDO responder con explicaciones, solo el JSON
 
-Devuelve JSON estricto sin markdown:
-["hook 1", "hook 2", "hook 3"]"""
+FORMATO (JSON estricto, sin markdown, sin texto extra):
+["hook A aqui", "hook B aqui", "hook C aqui"]"""
         else:
             prompt = f"""You are an expert in viral hooks for YouTube Shorts. The viewer decides in 1.7 seconds.
 
-Topic: "{topic}"
-Category: "{category}"
+Video context: "{ctx}"
+Required tone: {tone_en}
 
-Generate exactly {n} HOOK options for the first scene, each a different type:
-- TYPE A (Shocking number): mind-blowing stat + brutal consequence in one sentence
-- TYPE B (Controversy): statement that contradicts what people believe about the topic
-- TYPE C (Curiosity): "Nobody is talking about..." or "What they don't tell you about..."
-- TYPE D (Trap question): question that makes it impossible not to keep watching
-
-STRICT RULES:
+TASK: Generate exactly {n} distinct hooks for Scene 1. Each a different type:
+{types_en}
+ABSOLUTE RULES:
 - Maximum 12 words per hook
-- No emojis or special characters
-- Specific to the topic, not generic
-- Must create IMMEDIATE curiosity
+- No emojis, no special characters, no curly quotes
+- Concrete and specific to the context — GENERIC hooks are FORBIDDEN
+- Each hook must create IMMEDIATE and IRRESISTIBLE curiosity
+- FORBIDDEN to respond with explanations, only the JSON
 
-Return strict JSON, no markdown:
-["hook 1", "hook 2", "hook 3"]"""
+FORMAT (strict JSON, no markdown, no extra text):
+["hook A here", "hook B here", "hook C here"]"""
 
         raw   = self._generate(prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()
+        # Strip any leading text before the JSON array
+        bracket = clean.find('[')
+        if bracket > 0:
+            clean = clean[bracket:]
         try:
             hooks = json.loads(clean)
             if isinstance(hooks, list):
-                return [self._sanitize(h.strip()) for h in hooks if isinstance(h, str)][:n]
+                result = [self._sanitize(h.strip()) for h in hooks if isinstance(h, str) and len(h.strip()) > 5]
+                if result:
+                    return result[:n]
         except Exception:
             pass
-        lines = [l.strip().strip('"').strip("'").strip('-').strip() for l in clean.splitlines() if l.strip()]
-        return [self._sanitize(l) for l in lines if len(l) > 5][:n] or [topic]
+        # Fallback: extract quoted strings
+        import re as _re
+        quoted = _re.findall(r'"([^"]{10,})"', raw)
+        if quoted:
+            return [self._sanitize(q) for q in quoted[:n]]
+        lines = [l.strip().strip('"').strip("'").strip('-').strip() for l in raw.splitlines() if len(l.strip()) > 10]
+        return [self._sanitize(l) for l in lines if len(l) > 10][:n] or [ctx[:60]]
 
     def generate_viral_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "") -> list:
         """Genera un guion viral ultra-retención (45-60 seg) con estructura MrBeast/Dark History.
@@ -401,7 +462,7 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_testimonio_script(self, topic: str, category: str, lang: str = "es") -> list:
+    def generate_testimonio_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "") -> list:
         """Guion estilo testimonio misterioso — narración lenta, cinematográfica, terror.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -440,7 +501,7 @@ Reglas de estilo:
 - En espanol neutro latino.
 
 Tema: {topic}
-Categoria: {category}
+Categoria: {category}{f'{chr(10)}HOOK PRE-SELECCIONADO (OBLIGATORIO usar este texto EXACTO en Escena 1): "{chosen_hook}"' if chosen_hook else ""}
 
 FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
 [
@@ -518,7 +579,7 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_book_summary_script(self, book: str, category: str, lang: str = "es") -> list:
+    def generate_book_summary_script(self, book: str, category: str, lang: str = "es", chosen_hook: str = "") -> list:
         """Resumen de libro de 60 seg — enseña, aplica y motiva a leer.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -547,7 +608,7 @@ REGLAS CRITICAS PARA SONAR HUMANO:
 - PROHIBIDO: caracteres especiales Unicode. Solo letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion.
 
 Libro: {book}
-Categoria: {category}
+Categoria: {category}{f'{chr(10)}HOOK PRE-SELECCIONADO (OBLIGATORIO usar este texto EXACTO en Escena 1): "{chosen_hook}"' if chosen_hook else ""}
 
 FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
 [
