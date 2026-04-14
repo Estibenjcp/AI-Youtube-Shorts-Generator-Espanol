@@ -986,6 +986,9 @@ for key, default in [
     ("lang",              "es"),
     ("webhook_enabled",   False),
     ("webhook_url_input", "https://n8n.digency.lat/webhook/0a98a5c2-e3ec-4aa4-924d-e27ec8893125"),
+    ("video_topic",       ""),
+    ("hook_options",      []),
+    ("chosen_hook",       ""),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1031,12 +1034,13 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         pipeline_mode = params.get("mode", "auto")
 
         if pipeline_mode == "viral":
-            topic    = params.get("topic", "").strip()
-            category = params.get("category", "").strip()
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="viral")
-            script = brain.generate_viral_script(topic, category, lang=pipeline_lang)
+            script = brain.generate_viral_script(topic, category, lang=pipeline_lang, chosen_hook=chosen_hook)
 
         elif pipeline_mode == "testimonio":
             topic    = params.get("topic", "").strip()
@@ -1055,9 +1059,11 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang)
 
         else:
+            chosen_hook = params.get("chosen_hook", "").strip()
             topic  = brain.get_trending_topic(params.get("topic", ""),
                                               lang=pipeline_lang, mode="auto")
-            script = brain.generate_script(topic, num_scenes=params.get("num_scenes", 9), lang=pipeline_lang)
+            script = brain.generate_script(topic, num_scenes=params.get("num_scenes", 9),
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
 
         if not script:
             log_q.put("ERROR:Script generation failed.")
@@ -1087,16 +1093,16 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 shutil.rmtree(p)
                 os.makedirs(p, exist_ok=True)
 
-        copy_data    = brain.generate_copy(topic, script, lang=pipeline_lang)
+        copy_data    = brain.generate_copy(topic, script, lang=pipeline_lang, mode=pipeline_mode)
         thumb_prompt = brain.generate_thumbnail_prompt(topic, script, lang=pipeline_lang)
 
         log_q.put(f"COPY:{__import__('json').dumps(copy_data)}")
         log_q.put(f"THUMB:{thumb_prompt}")
         log_q.put(f"SCRIPT:{__import__('json').dumps(script)}")
+        log_q.put(f"TOPIC:{topic}")
 
         # ── Enviar a webhook n8n ──────────────────────────────
         webhook_url = params.get("webhook_url", "").strip()
-        log_q.put(f"🔗 Webhook URL en params: '{webhook_url[:40] if webhook_url else 'VACÍO'}'")
         if webhook_url:
             try:
                 import requests as _req, base64 as _b64
@@ -1368,7 +1374,7 @@ with st.expander(voice_label_hint, expanded=False):
     rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
 
     use_avatar    = st.toggle(T["avatar_toggle"],    value=False, help=T["avatar_help"],    key="avatar_toggle")
-    use_subtitles = st.toggle(T["subtitles_toggle"], value=False, help=T["subtitles_help"], key="subs_toggle")
+    use_subtitles = st.toggle(T["subtitles_toggle"], value=True, help=T["subtitles_help"], key="subs_toggle")
 
 # ── Selector de modo ──────────────────────────────────────────────────────────
 
@@ -1587,6 +1593,50 @@ elif mode == "libro":
     final_category = libro_category
     num_scenes     = 9
 
+# ── Hook Options ──────────────────────────────────────────────────────────────
+
+_hook_topic    = final_topic or st.session_state.get("selected_topic", "")
+_hook_category = final_category or ""
+_can_hooks     = bool(_hook_topic) and not st.session_state.running and config_ok
+
+_hook_expander_lbl = "🎣 Ver opciones de Hook viral" if lang_option == "es" else "🎣 See viral Hook options"
+with st.expander(_hook_expander_lbl, expanded=False):
+    st.caption(
+        "Genera 3 ganchos alternativos para elegir antes de producir el video."
+        if lang_option == "es" else
+        "Generate 3 alternative hooks to choose before producing the video."
+    )
+    if st.button(
+        "⚡ " + ("Generar opciones de hook" if lang_option == "es" else "Generate hook options"),
+        disabled=not _can_hooks, key="hook_options_btn", use_container_width=True
+    ):
+        with st.spinner("Generando hooks..." if lang_option == "es" else "Generating hooks..."):
+            try:
+                from modules.brain import ContentBrain as _HB
+                _hooks = _HB().get_hook_options(_hook_topic, _hook_category, mode, lang_option, n=3)
+                st.session_state["hook_options"] = _hooks
+                st.session_state["chosen_hook"]  = ""
+                st.rerun()
+            except Exception as _he:
+                st.error(str(_he))
+
+    _hook_opts = st.session_state.get("hook_options", [])
+    if _hook_opts:
+        _chosen = st.session_state.get("chosen_hook", "")
+        st.caption("Elige el hook que más te guste:" if lang_option == "es" else "Choose the hook you like most:")
+        for _hi, _hk in enumerate(_hook_opts):
+            _is_chosen = (_chosen == _hk)
+            if st.button(
+                f"{'✓ ' if _is_chosen else ''}{_hk}",
+                key=f"hook_opt_{_hi}",
+                type="primary" if _is_chosen else "secondary",
+                use_container_width=True
+            ):
+                st.session_state["chosen_hook"] = _hk
+                st.rerun()
+        if _chosen:
+            st.success(f"{'Hook seleccionado' if lang_option == 'es' else 'Selected hook'}: **{_chosen}**")
+
 # ── Generar ───────────────────────────────────────────────────────────────────
 
 st.markdown("---")
@@ -1615,6 +1665,7 @@ if generate_clicked and not st.session_state.running:
         "lang": lang_option, "mode": mode,
         "category": final_category,
         "webhook_url": _wh_url,
+        "chosen_hook": st.session_state.get("chosen_hook", ""),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
@@ -1647,6 +1698,8 @@ if st.session_state.status in ("running", "done", "error"):
         elif line.startswith("SCRIPT:"):
             try: st.session_state.script_data = __import__('json').loads(line[7:])
             except: pass
+        elif line.startswith("TOPIC:"):
+            st.session_state.video_topic = line[6:]
 
     current_stage = 0
     for line in st.session_state.log_lines:
@@ -1742,9 +1795,11 @@ if st.session_state.status == "done":
     with tab_video:
         if os.path.exists(FINAL_VIDEO_PATH):
             st.video(FINAL_VIDEO_PATH)
+            _vid_topic = st.session_state.get("video_topic", "")
+            _vid_fname = (re.sub(r'[^\w\s-]', '', _vid_topic).strip().replace(' ', '_')[:40] + ".mp4") if _vid_topic else "final_short.mp4"
             with open(FINAL_VIDEO_PATH, "rb") as f:
                 st.download_button(label=T["download_mp4"], data=f,
-                                   file_name="final_short.mp4", mime="video/mp4",
+                                   file_name=_vid_fname, mime="video/mp4",
                                    use_container_width=True)
         else:
             st.warning(T["video_not_found"])

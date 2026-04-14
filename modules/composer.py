@@ -48,11 +48,11 @@ class Composer:
         # FFmpeg requires forward slashes even on Windows
         return path.replace('\\', '/')
 
-    def _apply_subtitle(self, stream, text_file_path: str):
+    def _apply_subtitle(self, stream, text_file_path: str, fontsize: int = 40):
         """Adds subtitle overlay using a textfile — avoids all escaping issues."""
         kwargs = dict(
             textfile=text_file_path,
-            fontsize=40,
+            fontsize=fontsize,
             fontcolor='white',
             x='(w-text_w)/2',
             y='h*0.82',
@@ -295,7 +295,7 @@ class Composer:
         a_stream = input0.audio
 
         if valid_subs.get(0):
-            v_stream = self._apply_subtitle(v_stream, valid_subs[0])
+            v_stream = self._apply_subtitle(v_stream, valid_subs[0], fontsize=54)
 
         current_dur = self.get_duration(valid_paths[0])
 

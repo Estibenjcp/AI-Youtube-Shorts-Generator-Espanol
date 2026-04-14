@@ -82,7 +82,16 @@ class AudioEngine:
         text = re.sub(r',\s*,', ',', text)
         return text.strip()
 
-    async def generate_audio(self, text, output_filename, retries=3):
+    @staticmethod
+    def _adjust_rate(rate_str: str, delta: int) -> str:
+        """Adjust a TTS rate string by delta percentage points. E.g. '+10%' + 8 → '+18%'"""
+        m = re.match(r'([+-]?\d+)%', rate_str.strip())
+        if m:
+            val = int(m.group(1)) + delta
+            return f"+{val}%" if val >= 0 else f"{val}%"
+        return rate_str
+
+    async def generate_audio(self, text, output_filename, retries=3, rate_override=None):
         """
         Generates MP3 with retry logic to handle connection drops.
         After generation, verifies the file has valid duration.
@@ -92,7 +101,8 @@ class AudioEngine:
 
         for attempt in range(retries):
             try:
-                communicate = edge_tts.Communicate(text, self.voice, rate=self.rate)
+                effective_rate = rate_override if rate_override is not None else self.rate
+                communicate = edge_tts.Communicate(text, self.voice, rate=effective_rate)
                 await communicate.save(output_path)
 
                 # Verify the file is valid BEFORE normalization
@@ -108,7 +118,7 @@ class AudioEngine:
                 if post_duration <= 0:
                     # Normalization corrupted it — regenerate clean copy
                     print(f"      ⚠️ File corrupted by normalization — regenerating clean copy...")
-                    communicate2 = edge_tts.Communicate(text, self.voice, rate=self.rate)
+                    communicate2 = edge_tts.Communicate(text, self.voice, rate=effective_rate)
                     await communicate2.save(output_path)
 
                 return output_path
@@ -131,8 +141,9 @@ class AudioEngine:
 
     async def process_script(self, script_data):
         print(f"🎙️ Starting Audio Generation for {len(script_data)} scenes...")
+        total_scenes = len(script_data)
 
-        for scene in script_data:
+        for idx, scene in enumerate(script_data):
             scene_id = scene['id']
             text = self._clean_text(scene.get('text', ''))
             if not text:
@@ -140,8 +151,16 @@ class AudioEngine:
                 continue
             filename = f"voice_{scene_id}.mp3"
 
+            # Hook scenes (1-2): +8% faster → urgency; CTA (last): -5% → clarity
+            if idx < 2:
+                scene_rate = self._adjust_rate(self.rate, +8)
+            elif idx >= total_scenes - 1:
+                scene_rate = self._adjust_rate(self.rate, -5)
+            else:
+                scene_rate = self.rate
+
             try:
-                file_path = await self.generate_audio(text, filename)
+                file_path = await self.generate_audio(text, filename, rate_override=scene_rate)
                 duration  = self.get_audio_duration(file_path)
 
                 if duration <= 0:

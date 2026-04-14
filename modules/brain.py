@@ -244,7 +244,61 @@ OUTPUT FORMAT (strict JSON, no markdown):
             text = text.replace(char, rep)
         return text
 
-    def generate_viral_script(self, topic: str, category: str, lang: str = "es") -> list:
+    def get_hook_options(self, topic: str, category: str, mode: str = "auto", lang: str = "es", n: int = 3) -> list:
+        """Genera N opciones de gancho viral para un tema dado."""
+        if lang == "es":
+            prompt = f"""Eres experto en ganchos virales para YouTube Shorts. El espectador decide si sigue viendo en 1.7 segundos.
+
+Tema: "{topic}"
+Categoria: "{category}"
+
+Genera exactamente {n} opciones de HOOK distintas para la primera escena. Cada una debe ser de un tipo diferente:
+- TIPO A (Numero impactante): cifra shockeante + consecuencia brutal en una sola frase
+- TIPO B (Controversia): afirmacion que contradice lo que la gente cree sobre el tema
+- TIPO C (Curiosidad): "Nadie habla de..." o "Lo que no te cuentan sobre..."
+- TIPO D (Pregunta trampa): pregunta que hace imposible no seguir viendo
+
+REGLAS ESTRICTAS:
+- Maximo 12 palabras por hook
+- Sin emojis ni caracteres especiales
+- Especifico al tema, no generico
+- Cada hook debe generar curiosidad INMEDIATA
+
+Devuelve JSON estricto sin markdown:
+["hook 1", "hook 2", "hook 3"]"""
+        else:
+            prompt = f"""You are an expert in viral hooks for YouTube Shorts. The viewer decides in 1.7 seconds.
+
+Topic: "{topic}"
+Category: "{category}"
+
+Generate exactly {n} HOOK options for the first scene, each a different type:
+- TYPE A (Shocking number): mind-blowing stat + brutal consequence in one sentence
+- TYPE B (Controversy): statement that contradicts what people believe about the topic
+- TYPE C (Curiosity): "Nobody is talking about..." or "What they don't tell you about..."
+- TYPE D (Trap question): question that makes it impossible not to keep watching
+
+STRICT RULES:
+- Maximum 12 words per hook
+- No emojis or special characters
+- Specific to the topic, not generic
+- Must create IMMEDIATE curiosity
+
+Return strict JSON, no markdown:
+["hook 1", "hook 2", "hook 3"]"""
+
+        raw   = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+        try:
+            hooks = json.loads(clean)
+            if isinstance(hooks, list):
+                return [self._sanitize(h.strip()) for h in hooks if isinstance(h, str)][:n]
+        except Exception:
+            pass
+        lines = [l.strip().strip('"').strip("'").strip('-').strip() for l in clean.splitlines() if l.strip()]
+        return [self._sanitize(l) for l in lines if len(l) > 5][:n] or [topic]
+
+    def generate_viral_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "") -> list:
         """Genera un guion viral ultra-retención (45-60 seg) con estructura MrBeast/Dark History.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -259,7 +313,13 @@ Tu objetivo es crear Shorts que generen maxima retencion y shares (estilo MrBeas
 REGLAS OBLIGATORIAS:
 - Duracion total: 45-60 segundos (maximo 140-160 palabras en total sumando todos los campos "text").
 - Estructura EXACTA en el orden de las escenas:
-  Escena 1: HOOK - Pregunta impactante, numero shockeante o afirmacion loca.
+  Escena 1: HOOK VIRAL (CRITICO - maximo 12 palabras, el espectador decide en 1.7 seg):
+    Elige OBLIGATORIAMENTE uno de estos 4 tipos:
+    TIPO A-NUMERO: "[CIFRA] [personas/dias/años] [consecuencia brutal]." Ej: "40.000 personas murieron en 48 horas. Nadie lo investigo."
+    TIPO B-CONTROVERSIA: "Todo lo que sabes sobre [ELEMENTO ESPECIFICO DEL TEMA] esta completamente equivocado."
+    TIPO C-CURIOSIDAD: "Nadie esta hablando de lo que paso realmente con [ELEMENTO DEL TEMA]."
+    TIPO D-PREGUNTA TRAMPA: "¿Que harias si descubrieras que [AFIRMACION IMPACTANTE Y ESPECIFICA]?"
+    El hook debe ser IMPOSIBLE de ignorar.
   Escenas 2-3: CONTEXTO RAPIDO - Situacion historica en 1-2 frases.
   Escenas 4-7: EL GIRO / LA MORTANDAD / EL NEAR MISS - Detalle brutal, dato desconocido, consecuencia terrorifica.
   Escena 8: TWIST FINAL - Revelacion impactante, ironia o "lo que paso despues".
@@ -270,7 +330,7 @@ REGLAS OBLIGATORIAS:
 - En espanol neutro latino. Nunca digas "hoy te voy a contar" ni "vamos a hablar de".
 
 Tema: {topic}
-Categoria: {category}
+Categoria: {category}{f'{chr(10)}HOOK PRE-SELECCIONADO (OBLIGATORIO usar este texto EXACTO en Escena 1): "{chosen_hook}"' if chosen_hook else ""}
 
 FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
 [
@@ -292,7 +352,13 @@ MANDATORY RULES:
 - LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
 - Total duration: 45-60 seconds (maximum 140-160 words total across all "text" fields).
 - EXACT scene structure:
-  Scene 1: HOOK - Shocking question, mind-blowing number or crazy statement.
+  Scene 1: VIRAL HOOK (CRITICAL - max 12 words, viewer decides in 1.7 sec):
+    MANDATORY — pick ONE of these 4 hook types:
+    TYPE A-NUMBER: "[SHOCKING NUMBER] [people/days/years] [brutal consequence]." E.g.: "40,000 people died in 48 hours. Nobody investigated."
+    TYPE B-CONTROVERSY: "Everything you know about [SPECIFIC TOPIC ELEMENT] is completely wrong."
+    TYPE C-CURIOSITY: "Nobody is talking about what really happened with [SPECIFIC ELEMENT]."
+    TYPE D-TRAP QUESTION: "What would you do if you found out that [SHOCKING SPECIFIC STATEMENT]?"
+    The hook must be IMPOSSIBLE to scroll past.
   Scenes 2-3: QUICK CONTEXT - Historical situation in 1-2 sentences.
   Scenes 4-7: THE TWIST / NEAR MISS - Brutal detail, unknown fact, terrifying consequence.
   Scene 8: FINAL TWIST - Shocking revelation, irony or "what happened after".
@@ -303,7 +369,7 @@ MANDATORY RULES:
 - Never say "today I'm going to tell you" or "we're going to talk about".
 
 Topic: {topic}
-Category: {category}
+Category: {category}{f'{chr(10)}PRE-SELECTED HOOK (MANDATORY — use this EXACT text in Scene 1): "{chosen_hook}"' if chosen_hook else ""}
 
 OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
 [
@@ -355,7 +421,12 @@ JSON RULES:
 Debes contar la historia como si fuera un testimonio real de una persona (ex satanica, testigo, sacerdote, victima, etc.).
 
 Estructura exacta (50-70 segundos en total):
-  Escena 1 - HOOK: Afirmacion o pregunta muy fuerte que paralice al espectador.
+  Escena 1 - HOOK PERTURBADOR (maximo 12 palabras, el espectador decide en 1.7 seg):
+    OBLIGATORIO — uno de estos tipos:
+    TIPO A: "[CIFRA] personas/casos [hecho perturbador]." Ej: "17 miembros de una secta murieron la misma noche. Nadie explica como."
+    TIPO B: "Lo que [testigo/ex-miembro] revelo sobre [ELEMENTO ESPECIFICO] cambio todo."
+    TIPO C: "Nadie habla de lo que paso realmente en [LUGAR/EVENTO ESPECIFICO DEL TEMA]."
+    TIPO D: "¿Que harias si descubrieras que [HECHO PERTURBADOR CONCRETO]?"
   Escenas 2-3 - TESTIGO: Presentacion del testimoniante ("Segun una mujer que estuvo anos en el satanismo...").
   Escenas 4-7 - DESARROLLO: Detalles escalofriantes contados poco a poco.
   Escena 8 - CLIMAX: La parte mas fuerte y perturbadora.
@@ -388,7 +459,12 @@ REGLAS DEL JSON:
 Tell the story as if it were a real testimony from a real person (ex-satanist, witness, priest, victim, etc.).
 
 Exact structure (50-70 seconds total):
-  Scene 1 - HOOK: Very strong statement or question that freezes the viewer.
+  Scene 1 - DISTURBING HOOK (max 12 words, viewer decides in 1.7 sec):
+    MANDATORY — one of these types:
+    TYPE A: "[NUMBER] people/cases [disturbing fact]." E.g.: "17 cult members died the same night. Nobody explains how."
+    TYPE B: "What [witness/ex-member/priest] revealed about [SPECIFIC ELEMENT] changed everything."
+    TYPE C: "Nobody is talking about what really happened at [SPECIFIC PLACE/EVENT]."
+    TYPE D: "What would you do if you found out that [DISTURBING CONCRETE FACT]?"
   Scenes 2-3 - WITNESS: Introduce the person giving testimony ("According to a woman who spent years in satanism...").
   Scenes 4-7 - DEVELOPMENT: Tell the chilling details gradually.
   Scene 8 - CLIMAX: The strongest and most disturbing part.
@@ -537,7 +613,7 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es") -> list:
+    def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es", chosen_hook: str = "") -> list:
         label = "Escribiendo guion" if lang == "es" else "Writing script"
         print(f"📝 {label}: {topic} ({num_scenes} scenes)...")
 
@@ -556,7 +632,8 @@ Necesitamos DOS videos de stock diferentes por cada escena.
 - **Perspectiva:** Estrictamente **3ª Persona** ("Los científicos descubrieron...", "El océano esconde...").
 - **Tono:** Cautivador, rápido, lógico. Sin relleno. Cada oración debe generar curiosidad.
 - **Estructura:** Exactamente {num_scenes} escenas en total.
-- **Flujo:** Gancho (hook) -> Contexto -> Mecanismo (cómo funciona) -> Giro inesperado -> Cierre memorable.
+- **Flujo:** Gancho -> Contexto -> Mecanismo -> Giro inesperado -> Cierre memorable.
+- **HOOK CRITICO (Escena 1, maximo 12 palabras):** OBLIGATORIO uno de: (A) Numero shockeante + consecuencia brutal, (B) "Todo lo que sabes sobre X esta mal", (C) "Nadie habla de lo que paso con X", (D) Pregunta trampa imposible de ignorar.{f' HOOK PRE-SELECCIONADO (usar EXACTO): "{chosen_hook}"' if chosen_hook else ""}
 
 ### 2. REQUISITOS VISUALES (Doble visual por escena):
 - Para CADA escena, proporciona DOS términos de búsqueda distintos:
@@ -589,7 +666,8 @@ We need TWO different stock videos for every single scene.
 - **Perspective:** Strictly **3rd Person** ("Scientists found...", "The ocean hides...").
 - **Tone:** Engaging, fast-paced, logical. No fluff. Every sentence must build curiosity.
 - **Structure:** Exactly {num_scenes} scenes total.
-- **Flow:** Hook -> Context -> Mechanism (How it works) -> Twist -> Memorable Outro.
+- **Flow:** Hook -> Context -> Mechanism -> Twist -> Memorable Outro.
+- **CRITICAL HOOK (Scene 1, max 12 words):** MANDATORY one of: (A) Shocking number + brutal consequence, (B) "Everything you know about X is wrong", (C) "Nobody is talking about what happened with X", (D) Impossible-to-ignore trap question.{f' PRE-SELECTED HOOK (use EXACT text): "{chosen_hook}"' if chosen_hook else ""}
 
 ### 2. VISUAL REQUIREMENTS (Dual Visuals):
 - For EVERY scene, provide TWO distinct search terms:
@@ -683,11 +761,23 @@ Finally, a short contextual subtitle relevant to the topic."
 """
         return self._generate(prompt).strip()
 
-    def generate_copy(self, topic: str, script: list, lang: str = "es") -> dict:
+    def generate_copy(self, topic: str, script: list, lang: str = "es", mode: str = "auto") -> dict:
         label = "Generando copy para redes sociales" if lang == "es" else "Generating social media copy"
         print(f"✍️ {label}...")
         hook = script[0]['text'] if script else ""
         last = script[-1]['text'] if script else ""
+
+        # Hashtag pools optimizados por modo
+        _ht = {
+            "viral":      ("#HistoriaOscura #MisteriosSinResolver #HechosImpactantes #CatastrofesHistoricas #DarkHistory",
+                           "#DarkHistory #BizarreScience #MysteryFacts #Unexplained #DidYouKnow"),
+            "testimonio": ("#Misterio #HistoriaOculta #Testimonios #TerrorReal #MisteriosInexplicables",
+                           "#Mystery #Horror #TrueStory #Unexplained #CreepyFacts"),
+            "libro":      ("#ResumenDeLibro #LibrosQueDebesLeer #Lectura #DesarrolloPersonal #LibrosRecomendados",
+                           "#BookSummary #BooksToRead #SelfImprovement #BookReview #LearnSomethingNew"),
+        }
+        hashtags_es, hashtags_en = _ht.get(mode, ("#MentesCuriosas #CienciaYMisterio #HechosCuriosos #DatosImpactantes #SabiaQue",
+                                                   "#DidYouKnow #MindBlowing #FunFacts #Science #History"))
 
         if lang == "es":
             prompt = f"""
@@ -713,14 +803,14 @@ Genera copy optimizado para cada plataforma en español latino.
 ### 3. CAPTION DE TIKTOK:
 - LÍNEA 1: gancho con la PALABRA CLAVE PRINCIPAL del tema (dato impactante o afirmación sorprendente).
 - LÍNEA 2: 1 oración conversacional que amplía la curiosidad.
-- LÍNEA 3: CTA — pregunta que invite a interacción o pida la Parte 2.
-- HASHTAGS: 3 a 5 hashtags de nicho en español.
+- LÍNEA 3: CTA — pregunta directa que invite a comentar (ej: "¿Lo sabías? Comenta abajo 👇").
+- HASHTAGS: Usa EXACTAMENTE estos (ya optimizados para el nicho): {hashtags_es}
 
 ### 4. CAPTION DE FACEBOOK REELS:
 - LÍNEA 1: afirmación impactante con la palabra clave principal (sin preguntas).
 - LÍNEA 2: 1 oración conversacional de contexto.
-- LÍNEA 3: CTA — invita a comentar o compartir.
-- HASHTAGS: EXACTAMENTE 3 hashtags en español.
+- LÍNEA 3: CTA — pregunta que invite a comentar (ej: "¿Tú lo sabías? Comenta SÍ o NO").
+- HASHTAGS: Usa 3 de estos (ya optimizados): {hashtags_es}
 
 ### SALIDA (JSON estricto, sin markdown). Usa \\n para saltos de línea:
 {{
@@ -754,14 +844,14 @@ Generate platform-optimized copy for YouTube Shorts, TikTok, and Facebook Reels.
 ### 3. TIKTOK CAPTION:
 - LINE 1: hook containing the PRIMARY KEYWORD (shocking fact or surprising statement).
 - LINE 2: 1 short conversational sentence expanding curiosity.
-- LINE 3: CTA — question inviting engagement or asking for Part 2.
-- HASHTAGS: 3 to 5 niche hashtags.
+- LINE 3: CTA — direct question inviting engagement (e.g. "Did you know this? Comment below 👇").
+- HASHTAGS: Use EXACTLY these (already optimized for the niche): {hashtags_en}
 
 ### 4. FACEBOOK REELS CAPTION:
 - LINE 1: strongest hook — shocking statement with main keyword (no questions).
 - LINE 2: 1 natural conversational sentence adding context.
-- LINE 3: CTA — invites comment or share.
-- HASHTAGS: EXACTLY 3 hashtags.
+- LINE 3: CTA — question inviting comment (e.g. "Did you know? Comment YES or NO").
+- HASHTAGS: Use 3 of these (already optimized): {hashtags_en}
 
 ### OUTPUT (strict JSON, no markdown). Use \\n for line breaks:
 {{
