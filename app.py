@@ -1019,6 +1019,7 @@ for key, default in [
     ("video_topic",       ""),
     ("hook_options",      []),
     ("chosen_hook",       ""),
+    ("_pending_topic_desc", ""),
     ("job_offer_text",    ""),
     ("guion_raw_text",    ""),
     ("generation_mode",   "auto"),
@@ -1857,23 +1858,40 @@ if _hook_step == "idle":
         elif mode == "guion" and not st.session_state.get("guion_raw_input", "").strip():
             st.warning(T["guion_warning"])
 
-        # Modos con hook: generar opciones primero
+        # Modos con hook: resolver tema → descripción → hooks
         elif mode in _HOOK_MODES:
             _ht = final_topic or st.session_state.get("selected_topic", "")
             _hc = final_category or ""
-            with st.spinner("🎣 " + ("Generando opciones de gancho..." if lang_option == "es" else "Generating hook options...")):
-                try:
-                    from modules.brain import ContentBrain as _HB
-                    _hooks = _HB().get_hook_options(_ht, _hc, mode, lang_option, n=3)
-                    st.session_state["hook_options"]    = _hooks
-                    st.session_state["chosen_hook"]     = ""
-                    st.session_state["hook_step"]       = "selecting"
-                    # Guardar params para no perder el contexto al rerun
-                    st.session_state["_pending_topic"]    = final_topic
-                    st.session_state["_pending_category"] = final_category
-                    st.session_state["_pending_scenes"]   = num_scenes
-                except Exception as _he:
-                    st.error(str(_he))
+            _is_es_hook = lang_option == "es"
+            try:
+                from modules.brain import ContentBrain as _HB
+                _brain_h = _HB()
+
+                # Paso 1: resolver tema + descripción
+                with st.spinner("🎯 " + ("Resolviendo tema del video..." if _is_es_hook else "Resolving video topic...")):
+                    _td = _brain_h.get_topic_and_description(_ht, _hc, mode, lang_option)
+                    _resolved_topic = _td["topic"]
+                    _topic_desc     = _td["description"]
+                    st.session_state["_pending_topic"]      = _resolved_topic
+                    st.session_state["_pending_topic_desc"] = _topic_desc
+                    st.session_state["_pending_category"]   = _hc
+                    st.session_state["_pending_scenes"]     = num_scenes
+
+                # Paso 2: generar ganchos
+                with st.spinner("🎣 " + ("Generando opciones de gancho..." if _is_es_hook else "Generating hook options...")):
+                    _hooks = _brain_h.get_hook_options(_resolved_topic, _hc, mode, lang_option, n=3)
+                    st.session_state["hook_options"] = _hooks
+                    st.session_state["chosen_hook"]  = ""
+                    st.session_state["hook_step"]    = "selecting"
+
+            except Exception as _he:
+                _msg = str(_he)
+                if "NotFound" in _msg or "404" in _msg or "model" in _msg.lower():
+                    st.error("❌ Modelo de IA no encontrado. Verifica **AI_MODEL** en los Secrets de Streamlit Cloud.")
+                elif "auth" in _msg.lower() or "401" in _msg or "403" in _msg:
+                    st.error("❌ Clave de API inválida. Verifica **AI_API_KEY** en los Secrets.")
+                else:
+                    st.error(f"❌ Error: {_msg[:200]}")
             st.rerun()
 
         # Modos sin hook: lanzar directamente
@@ -1883,6 +1901,22 @@ if _hook_step == "idle":
 # ── PASO 2: selección de hook ────────────────────────────────────────────────
 elif _hook_step == "selecting":
     _is_es = lang_option == "es"
+
+    # ── Tarjeta del tema resuelto ─────────────────────────────────────────────
+    _show_topic = st.session_state.get("_pending_topic", "") or final_topic
+    _show_desc  = st.session_state.get("_pending_topic_desc", "")
+    if _show_topic:
+        st.markdown(
+            f"<div style='background:#f0f4ff;border:1px solid #c7d2fe;border-left:4px solid #6366f1;"
+            f"border-radius:8px;padding:12px 16px;margin-bottom:14px;'>"
+            f"<div style='font-size:0.75rem;font-weight:700;color:#6366f1;text-transform:uppercase;"
+            f"letter-spacing:.06em;margin-bottom:4px;'>{'🎯 Tema del video' if _is_es else '🎯 Video topic'}</div>"
+            f"<div style='font-size:1rem;font-weight:700;color:#1e1b4b;margin-bottom:{'6px' if _show_desc else '0'};'>{_show_topic}</div>"
+            + (f"<div style='font-size:0.83rem;color:#4b5563;line-height:1.45;'>{_show_desc}</div>" if _show_desc else "")
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+
     st.markdown(f"### 🎣 {'Elige el gancho para tu video' if _is_es else 'Pick your video hook'}")
     st.caption(
         "El gancho es la primera frase — los primeros 2 segundos que deciden si el espectador sigue viendo o hace scroll. "
@@ -1927,13 +1961,20 @@ elif _hook_step == "selecting":
             disabled=not _can_confirm,
             type="primary", use_container_width=True, key="hook_confirm"
         ):
-            st.session_state["hook_step"] = "idle"
+            # Leer hook elegido ANTES de limpiar
+            _chosen_hook_val = st.session_state.get("chosen_hook", "")
+
+            # Limpiar estado de hooks para que no queden en pantalla
+            st.session_state["hook_step"]            = "idle"
+            st.session_state["hook_options"]         = []
+            st.session_state["chosen_hook"]          = ""
+            st.session_state["_pending_topic_desc"]  = ""
+
             # Restaurar contexto guardado
             _ft = st.session_state.pop("_pending_topic", final_topic)
             _fc = st.session_state.pop("_pending_category", final_category)
             _fn = st.session_state.pop("_pending_scenes", num_scenes)
-            # Sobrescribir final_topic/category/scenes con los pendientes
-            # (no podemos reasignar variables locales, usamos params directamente)
+
             st.session_state.running   = True
             st.session_state.status    = "running"
             st.session_state.log_lines = []
@@ -1948,7 +1989,7 @@ elif _hook_step == "selecting":
                 "lang": lang_option, "mode": mode,
                 "category": _fc,
                 "webhook_url": _wh_url,
-                "chosen_hook": st.session_state.get("chosen_hook", ""),
+                "chosen_hook": _chosen_hook_val,
                 "job_offer_text": st.session_state.get("job_offer_input", ""),
             }
             _t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, _params), daemon=True)

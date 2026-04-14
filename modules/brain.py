@@ -244,6 +244,49 @@ OUTPUT FORMAT (strict JSON, no markdown):
             text = text.replace(char, rep)
         return text
 
+    def get_topic_and_description(self, manual_topic: str = "", category: str = "",
+                                   mode: str = "auto", lang: str = "es") -> dict:
+        """Resuelve el tema final y genera una descripción breve de 1-2 oraciones.
+        Retorna {"topic": str, "description": str}"""
+        # Step 1: resolve topic (uses existing logic with category/mode fallback)
+        topic = self.get_trending_topic(manual_topic, lang=lang,
+                                        category_hint=category, mode=mode)
+
+        # Step 2: generate a 1-2 sentence teaser about the video
+        _tone_hint = {
+            "viral":      ("oscuro, impactante, histórico" if lang == "es" else "dark, shocking, historical"),
+            "testimonio": ("misterioso, perturbador, cinematográfico" if lang == "es" else "mysterious, disturbing, cinematic"),
+            "libro":      ("inspirador, revelador, educativo" if lang == "es" else "inspiring, revealing, educational"),
+            "auto":       ("viral, curioso, impactante" if lang == "es" else "viral, curious, shocking"),
+            "category":   ("viral, curioso, impactante" if lang == "es" else "viral, curious, shocking"),
+        }.get(mode, ("interesante, impactante" if lang == "es" else "interesting, impactful"))
+
+        if lang == "es":
+            prompt = (
+                f"Tema del video: \"{topic}\"\n\n"
+                f"Escribe exactamente 2 oraciones cortas (maximo 35 palabras en total) que describan:\n"
+                f"1. El hecho o dato central que revelara el video.\n"
+                f"2. Por que es impactante o fascinante para el espectador.\n\n"
+                f"Tono: {_tone_hint}.\n"
+                f"PROHIBIDO: preguntas retorica, emojis, spoilers completos, caracteres especiales.\n"
+                f"Responde SOLO las 2 oraciones, sin introduccion ni explicacion."
+            )
+        else:
+            prompt = (
+                f"Video topic: \"{topic}\"\n\n"
+                f"Write exactly 2 short sentences (maximum 35 words total) describing:\n"
+                f"1. The central fact or revelation the video will uncover.\n"
+                f"2. Why it's shocking or fascinating for the viewer.\n\n"
+                f"Tone: {_tone_hint}.\n"
+                f"FORBIDDEN: rhetorical questions, emojis, complete spoilers, special characters.\n"
+                f"Respond ONLY with the 2 sentences, no intro or explanation."
+            )
+
+        description = self._sanitize(self._generate(prompt).strip())
+        print(f"🎯 Topic resolved: {topic}")
+        print(f"📝 Description: {description}")
+        return {"topic": topic, "description": description}
+
     def get_hook_options(self, topic: str, category: str, mode: str = "auto", lang: str = "es", n: int = 3) -> list:
         """Genera N opciones de gancho viral para un tema dado.
         Si topic está vacío, usa la categoría como contexto principal."""
