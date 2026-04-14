@@ -1024,6 +1024,9 @@ for key, default in [
     ("guion_raw_text",    ""),
     ("generation_mode",   "auto"),
     ("hook_step",         "idle"),
+    ("tts_engine",        "edge_tts"),
+    ("vox_voice_desc",    ""),
+    ("vox_mood_enabled",  True),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1131,7 +1134,21 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             return
 
         log_q.put("STAGE:Audio")
-        audio_engine = AudioEngine(voice=params.get("voice", "es-ES-AlvaroNeural"), rate=params.get("rate", "+10%"))
+        _tts_choice = params.get("tts_engine", "edge_tts")
+        if _tts_choice == "voxcpm":
+            from modules.audio import VoxCPMAudioEngine
+            audio_engine = VoxCPMAudioEngine(
+                voice_description = params.get("vox_voice_desc", ""),
+                lang              = pipeline_lang,
+                mood_enabled      = params.get("vox_mood_enabled", True),
+                reference_audio   = params.get("vox_clone_ref", ""),
+            )
+            log_q.put("🤖 [VoxCPM] Motor de voz local activado (mood-adaptive)")
+        else:
+            audio_engine = AudioEngine(
+                voice = params.get("voice", "es-ES-AlvaroNeural"),
+                rate  = params.get("rate", "+10%"),
+            )
         script = asyncio.run(audio_engine.process_script(script))
 
         log_q.put("STAGE:Assets")
@@ -1397,46 +1414,129 @@ if _voice_lang_key not in st.session_state:
 
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
-    _voice_options = list(VOICES.keys())
-    _default_idx   = _voice_options.index(default_voice) if default_voice in _voice_options else 0
-    voice_label = st.selectbox(
-        T["narrator_voice"],
-        options=_voice_options,
-        index=_default_idx,
-        key="voice_select",
+
+    # ── Motor TTS ─────────────────────────────────────────────────────────
+    _tts_labels = {
+        "edge_tts": "☁️ Edge TTS (nube, rápido)" if lang_option == "es" else "☁️ Edge TTS (cloud, fast)",
+        "voxcpm":   "🤖 VoxCPM 2B (local, GPU)" if lang_option == "es" else "🤖 VoxCPM 2B (local, GPU)",
+    }
+    tts_engine = st.radio(
+        "Motor TTS" if lang_option == "es" else "TTS Engine",
+        options=list(_tts_labels.keys()),
+        format_func=lambda x: _tts_labels[x],
+        horizontal=True,
+        index=0 if st.session_state.get("tts_engine", "edge_tts") == "edge_tts" else 1,
+        key="tts_engine_radio",
     )
-    selected_voice = VOICES[voice_label]
+    st.session_state["tts_engine"] = tts_engine
 
-    col_prev, col_spin = st.columns([1, 2])
-    with col_prev:
-        preview_clicked = st.button(T["preview_btn"], use_container_width=True, key="preview_btn_main")
-    with col_spin:
-        preview_status = st.empty()
+    st.markdown("---")
 
-    if preview_clicked:
-        preview_path = os.path.join(os.path.dirname(__file__), "assets", "temp", "voice_preview.mp3")
-        os.makedirs(os.path.dirname(preview_path), exist_ok=True)
-        preview_status.caption(T["generating"])
+    if tts_engine == "edge_tts":
+        # ── Edge TTS controls (existing) ──────────────────────────────────
+        _voice_options = list(VOICES.keys())
+        _default_idx   = _voice_options.index(default_voice) if default_voice in _voice_options else 0
+        voice_label = st.selectbox(
+            T["narrator_voice"],
+            options=_voice_options,
+            index=_default_idx,
+            key="voice_select",
+        )
+        selected_voice = VOICES[voice_label]
 
-        def _gen_preview(voice, text, path):
-            import asyncio, edge_tts
-            async def _run():
-                await edge_tts.Communicate(text, voice, rate="+10%").save(path)
-            asyncio.run(_run())
+        col_prev, col_spin = st.columns([1, 2])
+        with col_prev:
+            preview_clicked = st.button(T["preview_btn"], use_container_width=True, key="preview_btn_main")
+        with col_spin:
+            preview_status = st.empty()
 
-        import threading as _t
-        _t.Thread(target=_gen_preview, args=(selected_voice, T["preview_text"], preview_path), daemon=True).start()
-        import time as _time; _time.sleep(4)
-        preview_status.empty()
-        if os.path.exists(preview_path):
-            st.audio(preview_path, format="audio/mp3")
+        if preview_clicked:
+            preview_path = os.path.join(os.path.dirname(__file__), "assets", "temp", "voice_preview.mp3")
+            os.makedirs(os.path.dirname(preview_path), exist_ok=True)
+            preview_status.caption(T["generating"])
 
-    rate_pct = st.slider(T["speech_rate"], min_value=-30, max_value=50, value=10, step=5,
-                         format="%+d%%", help=T["speech_help"], key="rate_slider")
-    rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
+            def _gen_preview(voice, text, path):
+                import asyncio, edge_tts
+                async def _run():
+                    await edge_tts.Communicate(text, voice, rate="+10%").save(path)
+                asyncio.run(_run())
+
+            import threading as _t
+            _t.Thread(target=_gen_preview, args=(selected_voice, T["preview_text"], preview_path), daemon=True).start()
+            import time as _time; _time.sleep(4)
+            preview_status.empty()
+            if os.path.exists(preview_path):
+                st.audio(preview_path, format="audio/mp3")
+
+        rate_pct = st.slider(T["speech_rate"], min_value=-30, max_value=50, value=10, step=5,
+                             format="%+d%%", help=T["speech_help"], key="rate_slider")
+        rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
+
+    else:
+        # ── VoxCPM controls ───────────────────────────────────────────────
+        selected_voice = ""   # not used by VoxCPM
+        rate_str       = "+0%"
+
+        # Check availability
+        _vox_ok = False
+        try:
+            import voxcpm as _vox_check  # noqa
+            _vox_ok = True
+        except ImportError:
+            pass
+
+        if _vox_ok:
+            st.success("✅ VoxCPM instalado y listo." if lang_option == "es" else "✅ VoxCPM installed and ready.")
+        else:
+            st.error("❌ VoxCPM no encontrado. Instala con:" if lang_option == "es" else "❌ VoxCPM not found. Install with:")
+            st.code("pip install voxcpm soundfile", language="bash")
+
+        # Mood-adaptive toggle
+        vox_mood = st.toggle(
+            "🎭 Voz adaptada al mood de cada escena" if lang_option == "es" else "🎭 Mood-adaptive voice per scene",
+            value=st.session_state.get("vox_mood_enabled", True),
+            key="vox_mood_toggle",
+            help=(
+                "Cada escena usa una descripción de voz diferente según su mood (dramatic, calm, exciting…)"
+                if lang_option == "es" else
+                "Each scene uses a different voice description based on its mood (dramatic, calm, exciting…)"
+            ),
+        )
+        st.session_state["vox_mood_enabled"] = vox_mood
+
+        if not vox_mood:
+            # Manual global description
+            vox_desc = st.text_input(
+                "Descripción de voz global" if lang_option == "es" else "Global voice description",
+                value=st.session_state.get("vox_voice_desc", ""),
+                key="vox_voice_desc_input",
+                placeholder="(narrador masculino, voz grave y dramática, español neutro latino)",
+            )
+            st.session_state["vox_voice_desc"] = vox_desc
+        else:
+            st.session_state["vox_voice_desc"] = ""
+            # Show mood → voice preview
+            from modules.audio import VoxCPMAudioEngine as _VEng
+            _mood_map = _VEng.MOOD_VOICES.get(lang_option, _VEng.MOOD_VOICES["es"])
+            with st.expander("👁️ Ver voces por mood" if lang_option == "es" else "👁️ View voices by mood", expanded=False):
+                for _m, _d in _mood_map.items():
+                    st.caption(f"**{_m}** → {_d}")
+
+        # Optional: voice cloning reference
+        _clone_label = "🎤 Audio de referencia para clonar tu voz (opcional)" if lang_option == "es" else "🎤 Reference audio for voice cloning (optional)"
+        vox_clone_file = st.file_uploader(_clone_label, type=["wav", "mp3"], key="vox_clone_upload")
+        if vox_clone_file is not None:
+            _clone_path = os.path.join(os.path.dirname(__file__), "assets", "temp", "voice_ref" + os.path.splitext(vox_clone_file.name)[1])
+            os.makedirs(os.path.dirname(_clone_path), exist_ok=True)
+            with open(_clone_path, "wb") as _cf:
+                _cf.write(vox_clone_file.read())
+            st.session_state["vox_clone_ref"] = _clone_path
+            st.success("✅ Referencia guardada." if lang_option == "es" else "✅ Reference saved.")
+        else:
+            st.session_state.setdefault("vox_clone_ref", "")
 
     use_avatar    = st.toggle(T["avatar_toggle"],    value=False, help=T["avatar_help"],    key="avatar_toggle")
-    use_subtitles = st.toggle(T["subtitles_toggle"], value=True, help=T["subtitles_help"], key="subs_toggle")
+    use_subtitles = st.toggle(T["subtitles_toggle"], value=True,  help=T["subtitles_help"], key="subs_toggle")
 
     # ── Configuración de subtítulos (visible solo si están activados) ──────────
     subtitle_style = {}
@@ -1830,6 +1930,10 @@ def _launch_pipeline():
         "chosen_hook": st.session_state.get("chosen_hook", ""),
         "job_offer_text": st.session_state.get("job_offer_input", ""),
         "guion_raw_text": st.session_state.get("guion_raw_input", ""),
+        "tts_engine":      st.session_state.get("tts_engine", "edge_tts"),
+        "vox_voice_desc":  st.session_state.get("vox_voice_desc", ""),
+        "vox_mood_enabled": st.session_state.get("vox_mood_enabled", True),
+        "vox_clone_ref":   st.session_state.get("vox_clone_ref", ""),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
@@ -1991,6 +2095,10 @@ elif _hook_step == "selecting":
                 "webhook_url": _wh_url,
                 "chosen_hook": _chosen_hook_val,
                 "job_offer_text": st.session_state.get("job_offer_input", ""),
+                "tts_engine":      st.session_state.get("tts_engine", "edge_tts"),
+                "vox_voice_desc":  st.session_state.get("vox_voice_desc", ""),
+                "vox_mood_enabled": st.session_state.get("vox_mood_enabled", True),
+                "vox_clone_ref":   st.session_state.get("vox_clone_ref", ""),
             }
             _t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, _params), daemon=True)
             st.session_state.thread = _t
