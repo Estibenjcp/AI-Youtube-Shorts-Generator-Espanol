@@ -1378,10 +1378,22 @@ with st.expander(voice_label_hint, expanded=False):
 
 # ── Selector de modo ──────────────────────────────────────────────────────────
 
-mode_labels = (
-    ["⚡ Automático", "🗂️ Por Categoría", "🔥 Más Virales", "👁️ Testimonio Misterioso", "📚 Resumen de Libro"]
+_mode_map = (
+    {
+        "auto":       "⚡ Auto",
+        "category":   "🗂️ Categorías",
+        "viral":      "🔥 Viral",
+        "testimonio": "👁️ Misterio",
+        "libro":      "📚 Libro",
+    }
     if lang_option == "es"
-    else ["⚡ Automatic", "🗂️ By Category", "🔥 Most Viral", "👁️ Mystery Testimony", "📚 Book Summary"]
+    else {
+        "auto":       "⚡ Auto",
+        "category":   "🗂️ Category",
+        "viral":      "🔥 Viral",
+        "testimonio": "👁️ Mystery",
+        "libro":      "📚 Book",
+    }
 )
 st.markdown(
     f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
@@ -1390,7 +1402,7 @@ st.markdown(
 mode = st.radio(
     "mode",
     options=["auto", "category", "viral", "testimonio", "libro"],
-    format_func=lambda x: {"auto": mode_labels[0], "category": mode_labels[1], "viral": mode_labels[2], "testimonio": mode_labels[3], "libro": mode_labels[4]}[x],
+    format_func=lambda x: _mode_map[x],
     horizontal=True,
     label_visibility="collapsed",
     key="generation_mode",
