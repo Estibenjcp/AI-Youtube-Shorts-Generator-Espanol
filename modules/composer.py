@@ -56,10 +56,15 @@ class Composer:
     def _clean_sub_text(text: str) -> str:
         """Strip Unicode chars that fonts can't render (avoids □ boxes)."""
         import re as _re
+        # Strip carriage returns first (Windows CRLF → LF)
+        text = text.replace('\r\n', '\n').replace('\r', '')
         replacements = {
             '\u2026': ',', '\u2014': '-', '\u2013': '-',
             '\u201c': '"', '\u201d': '"', '\u2018': "'", '\u2019': "'",
             '\u00ab': '"', '\u00bb': '"', '\u2022': '-', '\u00b7': '-',
+            '\u00e1': 'a', '\u00e9': 'e', '\u00ed': 'i', '\u00f3': 'o', '\u00fa': 'u',
+            '\u00c1': 'A', '\u00c9': 'E', '\u00cd': 'I', '\u00d3': 'O', '\u00da': 'U',
+            '\u00f1': 'n', '\u00d1': 'N', '\u00fc': 'u', '\u00dc': 'U',
         }
         for ch, rep in replacements.items():
             text = text.replace(ch, rep)
@@ -68,10 +73,14 @@ class Composer:
         return _re.sub(r'\s+', ' ', text).strip()
 
     def _write_sub_file(self, text: str, index: int, max_chars: int = 28) -> str:
-        """Cleans text, wraps it, writes to a temp file. Returns forward-slash path."""
+        """Cleans text, wraps it, writes to a temp file with LF-only line endings.
+        Returns forward-slash path for FFmpeg."""
         path = os.path.join(self.temp_dir, f"sub_{index}.txt")
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(self._wrap_text_file(self._clean_sub_text(text), max_chars=max_chars))
+        content = self._wrap_text_file(self._clean_sub_text(text), max_chars=max_chars)
+        # Use newline='\n' to prevent Python on Windows from writing \r\n
+        # (FFmpeg drawtext reads \r as a glyph → shows □)
+        with open(path, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(content)
         return path.replace('\\', '/')
 
     def _base_drawtext_kwargs(self, s: dict) -> dict:
