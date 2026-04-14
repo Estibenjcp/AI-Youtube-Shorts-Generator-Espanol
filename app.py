@@ -998,6 +998,8 @@ for key, default in [
     ("hook_options",      []),
     ("chosen_hook",       ""),
     ("job_offer_text",    ""),
+    ("generation_mode",   "auto"),
+    ("hook_step",         "idle"),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1476,21 +1478,20 @@ st.markdown(
     f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
     unsafe_allow_html=True,
 )
-_mc1, _mc2, _mc3 = st.columns(3)
-with _mc1:
-    if st.button(_mode_map["auto"],       key="mb_auto",       use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="auto"       else "secondary"): st.session_state["generation_mode"]="auto";       st.rerun()
-    if st.button(_mode_map["category"],   key="mb_category",   use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="category"   else "secondary"): st.session_state["generation_mode"]="category";   st.rerun()
-with _mc2:
-    if st.button(_mode_map["viral"],      key="mb_viral",      use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="viral"      else "secondary"): st.session_state["generation_mode"]="viral";      st.rerun()
-    if st.button(_mode_map["testimonio"], key="mb_testimonio", use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="testimonio" else "secondary"): st.session_state["generation_mode"]="testimonio"; st.rerun()
-with _mc3:
-    if st.button(_mode_map["libro"],      key="mb_libro",      use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="libro"      else "secondary"): st.session_state["generation_mode"]="libro";      st.rerun()
-    if st.button(_mode_map["empleo"],     key="mb_empleo",     use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="empleo"     else "secondary"): st.session_state["generation_mode"]="empleo";     st.rerun()
-mode = st.session_state.get("generation_mode", "auto")
+mode = st.radio(
+    "generation_mode",
+    options=list(_mode_map.keys()),
+    format_func=lambda x: _mode_map[x],
+    label_visibility="collapsed",
+    key="generation_mode",
+)
 
 if mode != st.session_state.get("_last_mode"):
     st.session_state.topic_suggestions = []
     st.session_state.selected_topic    = ""
+    st.session_state["hook_step"]      = "idle"
+    st.session_state["hook_options"]   = []
+    st.session_state["chosen_hook"]    = ""
     st.session_state["_last_mode"]     = mode
 
 st.markdown("---")
@@ -1712,112 +1713,155 @@ elif mode == "empleo":
     final_category = ""
     num_scenes     = 9
 
-# ── Hook Options (solo para modos donde chosen_hook se usa en el guion) ───────
-
+# ── Generar / Hook flow ───────────────────────────────────────────────────────
+# Modos donde el hook se inyecta en la Escena 1 del guion
 _HOOK_MODES = {"auto", "category", "viral"}
 
-if mode in _HOOK_MODES:
-    _hook_topic    = final_topic or st.session_state.get("selected_topic", "")
-    _hook_category = final_category or ""
-
-    _hook_expander_lbl = "🎣 Hook viral — elige tu apertura" if lang_option == "es" else "🎣 Viral Hook — pick your opener"
-    with st.expander(_hook_expander_lbl, expanded=False):
-        if lang_option == "es":
-            st.caption(
-                "**¿Qué es un Hook?** Es la primera frase del video (1-2 seg). "
-                "Si no engancha al instante, el espectador hace scroll. "
-                "Genera 3 opciones y elige la más poderosa antes de producir el video."
-            )
-        else:
-            st.caption(
-                "**What is a Hook?** It's the first sentence of the video (1-2 sec). "
-                "If it doesn't grab instantly, the viewer scrolls away. "
-                "Generate 3 options and pick the most powerful one before producing."
-            )
-
-        if not _hook_topic:
-            st.info(
-                "Escribe un tema arriba para generar opciones de hook."
-                if lang_option == "es" else
-                "Enter a topic above to generate hook options."
-            )
-        elif st.session_state.running:
-            st.info("Generando video..." if lang_option == "es" else "Generating video...")
-        elif not config_ok:
-            st.info("Configura tus claves de API primero." if lang_option == "es" else "Set up your API keys first.")
-        else:
-            if st.button(
-                "⚡ " + ("Generar 3 opciones de hook" if lang_option == "es" else "Generate 3 hook options"),
-                key="hook_options_btn", use_container_width=True, type="secondary"
-            ):
-                with st.spinner("Analizando el tema y generando hooks..." if lang_option == "es" else "Analysing topic and generating hooks..."):
-                    try:
-                        from modules.brain import ContentBrain as _HB
-                        _hooks = _HB().get_hook_options(_hook_topic, _hook_category, mode, lang_option, n=3)
-                        st.session_state["hook_options"] = _hooks
-                        st.session_state["chosen_hook"]  = ""
-                        st.rerun()
-                    except Exception as _he:
-                        st.error(str(_he))
-
-        _hook_opts = st.session_state.get("hook_options", [])
-        if _hook_opts:
-            _chosen = st.session_state.get("chosen_hook", "")
-            st.caption("Toca el hook que más te guste:" if lang_option == "es" else "Tap the hook you like most:")
-            for _hi, _hk in enumerate(_hook_opts):
-                _is_chosen = (_chosen == _hk)
-                _label = ("A", "B", "C", "D")[_hi] if _hi < 4 else str(_hi + 1)
-                if st.button(
-                    f"{'✓ ' if _is_chosen else ''}{_label}. {_hk}",
-                    key=f"hook_opt_{_hi}",
-                    type="primary" if _is_chosen else "secondary",
-                    use_container_width=True
-                ):
-                    st.session_state["chosen_hook"] = _hk
-                    st.rerun()
-            if _chosen:
-                st.success(f"{'Seleccionado' if lang_option == 'es' else 'Selected'}: **{_chosen}**")
-
-# ── Generar ───────────────────────────────────────────────────────────────────
-
 st.markdown("---")
-st.markdown("<div class='generate-btn'>", unsafe_allow_html=True)
-generate_clicked = st.button(T["generate_btn"],
-    disabled=st.session_state.running or not config_ok,
-    type="primary", use_container_width=True)
-st.markdown("</div>", unsafe_allow_html=True)
 
-if not config_ok:
-    st.info(T["config_info"])
+def _launch_pipeline():
+    """Inicia el pipeline en un thread y hace rerun."""
+    st.session_state.running   = True
+    st.session_state.status    = "running"
+    st.session_state.log_lines = []
+    st.session_state.log_queue = queue.Queue()
+    _wh_enabled = st.session_state.get("webhook_enabled", False)
+    _wh_url = st.session_state.get("webhook_url_input", "").strip() if _wh_enabled else ""
+    params = {
+        "topic": final_topic, "num_scenes": num_scenes,
+        "voice": selected_voice, "rate": rate_str,
+        "use_avatar": use_avatar, "use_subtitles": use_subtitles,
+        "subtitle_style": subtitle_style,
+        "lang": lang_option, "mode": mode,
+        "category": final_category,
+        "webhook_url": _wh_url,
+        "chosen_hook": st.session_state.get("chosen_hook", ""),
+        "job_offer_text": st.session_state.get("job_offer_input", ""),
+    }
+    t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
+    st.session_state.thread = t
+    t.start()
+    st.rerun()
 
-if generate_clicked and not st.session_state.running:
-    # Validación especial para modo empleo
-    if mode == "empleo" and not st.session_state.get("job_offer_input", "").strip():
-        st.warning(T["empleo_warning"])
-    else:
-        st.session_state.running   = True
-        st.session_state.status    = "running"
-        st.session_state.log_lines = []
-        st.session_state.log_queue = queue.Queue()
+_hook_step = st.session_state.get("hook_step", "idle")
 
-        # Lee directo del key del widget — Streamlit siempre lo tiene en session_state
-        _wh_enabled = st.session_state.get("webhook_enabled", False)
-        _wh_url = st.session_state.get("webhook_url_input", "").strip() if _wh_enabled else ""
-        params = {
-            "topic": final_topic, "num_scenes": num_scenes,
-            "voice": selected_voice, "rate": rate_str,
-            "use_avatar": use_avatar, "use_subtitles": use_subtitles,
-            "subtitle_style": subtitle_style,
-            "lang": lang_option, "mode": mode,
-            "category": final_category,
-            "webhook_url": _wh_url,
-            "chosen_hook": st.session_state.get("chosen_hook", ""),
-            "job_offer_text": st.session_state.get("job_offer_input", ""),
-        }
-        t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
-        st.session_state.thread = t
-        t.start()
-        st.rerun()
+# ── PASO 1: botón principal de generación ────────────────────────────────────
+if _hook_step == "idle":
+    st.markdown("<div class='generate-btn'>", unsafe_allow_html=True)
+    generate_clicked = st.button(T["generate_btn"],
+        disabled=st.session_state.running or not config_ok,
+        type="primary", use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if not config_ok:
+        st.info(T["config_info"])
+
+    if generate_clicked and not st.session_state.running:
+        # Validación modo empleo
+        if mode == "empleo" and not st.session_state.get("job_offer_input", "").strip():
+            st.warning(T["empleo_warning"])
+
+        # Modos con hook: generar opciones primero
+        elif mode in _HOOK_MODES:
+            _ht = final_topic or st.session_state.get("selected_topic", "")
+            _hc = final_category or ""
+            with st.spinner("🎣 " + ("Generando opciones de gancho..." if lang_option == "es" else "Generating hook options...")):
+                try:
+                    from modules.brain import ContentBrain as _HB
+                    _hooks = _HB().get_hook_options(_ht, _hc, mode, lang_option, n=3)
+                    st.session_state["hook_options"]    = _hooks
+                    st.session_state["chosen_hook"]     = ""
+                    st.session_state["hook_step"]       = "selecting"
+                    # Guardar params para no perder el contexto al rerun
+                    st.session_state["_pending_topic"]    = final_topic
+                    st.session_state["_pending_category"] = final_category
+                    st.session_state["_pending_scenes"]   = num_scenes
+                except Exception as _he:
+                    st.error(str(_he))
+            st.rerun()
+
+        # Modos sin hook: lanzar directamente
+        else:
+            _launch_pipeline()
+
+# ── PASO 2: selección de hook ────────────────────────────────────────────────
+elif _hook_step == "selecting":
+    _is_es = lang_option == "es"
+    st.markdown(f"### 🎣 {'Elige el gancho para tu video' if _is_es else 'Pick your video hook'}")
+    st.caption(
+        "El gancho es la primera frase — los primeros 2 segundos que deciden si el espectador sigue viendo o hace scroll. "
+        "Elige el que más impacte para tu tema."
+        if _is_es else
+        "The hook is the first sentence — the 2 seconds that decide whether the viewer stays or scrolls away. "
+        "Pick the one that hits hardest for your topic."
+    )
+
+    _hook_opts = st.session_state.get("hook_options", [])
+    _chosen    = st.session_state.get("chosen_hook", "")
+    _types_es  = ["A — Número shockeante", "B — Controversia", "C — Curiosidad", "D — Pregunta trampa"]
+    _types_en  = ["A — Shocking number",   "B — Controversy",  "C — Curiosity",  "D — Trap question"]
+    _type_lbls = _types_es if _is_es else _types_en
+
+    for _hi, _hk in enumerate(_hook_opts):
+        _is_chosen = (_chosen == _hk)
+        _lbl = _type_lbls[_hi] if _hi < len(_type_lbls) else f"Opción {_hi+1}"
+        st.markdown(f"**{_lbl}**")
+        if st.button(
+            f"{'✓ ' if _is_chosen else ''}{_hk}",
+            key=f"hook_sel_{_hi}",
+            type="primary" if _is_chosen else "secondary",
+            use_container_width=True,
+        ):
+            st.session_state["chosen_hook"] = _hk
+            st.rerun()
+
+    st.markdown("")
+    _col_a, _col_b = st.columns(2)
+    with _col_a:
+        if st.button("↩ " + ("Cambiar tema" if _is_es else "Change topic"),
+                     use_container_width=True, type="secondary", key="hook_back"):
+            st.session_state["hook_step"]    = "idle"
+            st.session_state["hook_options"] = []
+            st.session_state["chosen_hook"]  = ""
+            st.rerun()
+    with _col_b:
+        _can_confirm = bool(_chosen) and not st.session_state.running
+        if st.button(
+            "🎬 " + ("Producir video" if _is_es else "Produce video"),
+            disabled=not _can_confirm,
+            type="primary", use_container_width=True, key="hook_confirm"
+        ):
+            st.session_state["hook_step"] = "idle"
+            # Restaurar contexto guardado
+            _ft = st.session_state.pop("_pending_topic", final_topic)
+            _fc = st.session_state.pop("_pending_category", final_category)
+            _fn = st.session_state.pop("_pending_scenes", num_scenes)
+            # Sobrescribir final_topic/category/scenes con los pendientes
+            # (no podemos reasignar variables locales, usamos params directamente)
+            st.session_state.running   = True
+            st.session_state.status    = "running"
+            st.session_state.log_lines = []
+            st.session_state.log_queue = queue.Queue()
+            _wh_enabled = st.session_state.get("webhook_enabled", False)
+            _wh_url = st.session_state.get("webhook_url_input", "").strip() if _wh_enabled else ""
+            _params = {
+                "topic": _ft, "num_scenes": _fn,
+                "voice": selected_voice, "rate": rate_str,
+                "use_avatar": use_avatar, "use_subtitles": use_subtitles,
+                "subtitle_style": subtitle_style,
+                "lang": lang_option, "mode": mode,
+                "category": _fc,
+                "webhook_url": _wh_url,
+                "chosen_hook": st.session_state.get("chosen_hook", ""),
+                "job_offer_text": st.session_state.get("job_offer_input", ""),
+            }
+            _t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, _params), daemon=True)
+            st.session_state.thread = _t
+            _t.start()
+            st.rerun()
+
+    if not _chosen:
+        st.info("Selecciona uno de los ganchos arriba para continuar." if _is_es else "Select one of the hooks above to continue.")
 
 # ── Progreso ──────────────────────────────────────────────────────────────────
 
