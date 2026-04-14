@@ -11,7 +11,12 @@ import shutil
 import io
 
 from modules.config import load_config, check_config, PROVIDER_DEFAULTS
-from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES, BOOK_CATEGORIES, BOOK_CATEGORIES_EN
+from modules.categories import (
+    TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN,
+    VIRAL_CATEGORIES, VIRAL_CATEGORIES_EN,
+    TESTIMONIO_CATEGORIES, TESTIMONIO_CATEGORIES_EN,
+    BOOK_CATEGORIES, BOOK_CATEGORIES_EN,
+)
 from dotenv import set_key, load_dotenv
 
 # ── Page config ──────────────────────────────────────────────────────────────
@@ -1667,8 +1672,9 @@ elif mode == "viral":
     st.markdown(f"<div class='auto-info'>{T['viral_mode_info']}</div>", unsafe_allow_html=True)
 
     st.markdown(f"<div class='step-header'>🎯 {T['viral_category']}</div>", unsafe_allow_html=True)
+    _viral_cats = VIRAL_CATEGORIES if lang_option == "es" else VIRAL_CATEGORIES_EN
     viral_category = st.selectbox(
-        "vcat", options=[""] + VIRAL_CATEGORIES,
+        "vcat", options=[""] + _viral_cats,
         format_func=lambda x: T["category_placeholder"] if x == "" else x,
         label_visibility="collapsed",
         key="viral_cat_select",
@@ -1695,8 +1701,9 @@ elif mode == "testimonio":
     st.markdown(f"<div class='auto-info'>{T['testimonio_info']}</div>", unsafe_allow_html=True)
 
     st.markdown(f"<div class='step-header'>🎯 {T['testimonio_cat']}</div>", unsafe_allow_html=True)
+    _test_cats = TESTIMONIO_CATEGORIES if lang_option == "es" else TESTIMONIO_CATEGORIES_EN
     test_category = st.selectbox(
-        "tcat", options=[""] + TESTIMONIO_CATEGORIES,
+        "tcat", options=[""] + _test_cats,
         format_func=lambda x: T["category_placeholder"] if x == "" else x,
         label_visibility="collapsed",
         key="test_cat_select",

@@ -56,12 +56,36 @@ VIRAL_CATEGORIES = [
     "Mortandad de Animales / Naturaleza",
 ]
 
+VIRAL_CATEGORIES_EN = [
+    "Dark History",
+    "Near Misses and Narrowly Avoided Catastrophes",
+    "Historic Mass Deaths",
+    "Unsolved Mysteries",
+    "Natural Catastrophes",
+    "War Secrets and Hidden Operations",
+    "Shocking Nuclear Facts",
+    "Forgotten Epidemics and Plagues",
+    "Betrayals That Changed History",
+    "Events That Nearly Ended the World",
+    "Macabre Curiosities",
+    "Historical Conspiracies",
+    "Mass Animal Deaths and Nature Anomalies",
+]
+
 TESTIMONIO_CATEGORIES = [
     "Testimonios Misteriosos",
     "Historia Oculta y Ocultismo",
     "Revelaciones Terroríficas",
     "Misterios Religiosos y Satanismo",
     "Historias Basadas en Testimonios",
+]
+
+TESTIMONIO_CATEGORIES_EN = [
+    "Mysterious Testimonies",
+    "Hidden History and Occultism",
+    "Terrifying Revelations",
+    "Religious Mysteries and Satanism",
+    "Stories Based on Real Testimonies",
 ]
 
 # Categorías exclusivas del modo "Resumen de Libro"
