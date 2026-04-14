@@ -1712,49 +1712,71 @@ elif mode == "empleo":
     final_category = ""
     num_scenes     = 9
 
-# ── Hook Options ──────────────────────────────────────────────────────────────
+# ── Hook Options (solo para modos donde chosen_hook se usa en el guion) ───────
 
-_hook_topic    = final_topic or st.session_state.get("selected_topic", "")
-_hook_category = final_category or ""
-_can_hooks     = bool(_hook_topic) and not st.session_state.running and config_ok
+_HOOK_MODES = {"auto", "category", "viral"}
 
-_hook_expander_lbl = "🎣 Ver opciones de Hook viral" if lang_option == "es" else "🎣 See viral Hook options"
-with st.expander(_hook_expander_lbl, expanded=False):
-    st.caption(
-        "Genera 3 ganchos alternativos para elegir antes de producir el video."
-        if lang_option == "es" else
-        "Generate 3 alternative hooks to choose before producing the video."
-    )
-    if st.button(
-        "⚡ " + ("Generar opciones de hook" if lang_option == "es" else "Generate hook options"),
-        disabled=not _can_hooks, key="hook_options_btn", use_container_width=True
-    ):
-        with st.spinner("Generando hooks..." if lang_option == "es" else "Generating hooks..."):
-            try:
-                from modules.brain import ContentBrain as _HB
-                _hooks = _HB().get_hook_options(_hook_topic, _hook_category, mode, lang_option, n=3)
-                st.session_state["hook_options"] = _hooks
-                st.session_state["chosen_hook"]  = ""
-                st.rerun()
-            except Exception as _he:
-                st.error(str(_he))
+if mode in _HOOK_MODES:
+    _hook_topic    = final_topic or st.session_state.get("selected_topic", "")
+    _hook_category = final_category or ""
 
-    _hook_opts = st.session_state.get("hook_options", [])
-    if _hook_opts:
-        _chosen = st.session_state.get("chosen_hook", "")
-        st.caption("Elige el hook que más te guste:" if lang_option == "es" else "Choose the hook you like most:")
-        for _hi, _hk in enumerate(_hook_opts):
-            _is_chosen = (_chosen == _hk)
+    _hook_expander_lbl = "🎣 Hook viral — elige tu apertura" if lang_option == "es" else "🎣 Viral Hook — pick your opener"
+    with st.expander(_hook_expander_lbl, expanded=False):
+        if lang_option == "es":
+            st.caption(
+                "**¿Qué es un Hook?** Es la primera frase del video (1-2 seg). "
+                "Si no engancha al instante, el espectador hace scroll. "
+                "Genera 3 opciones y elige la más poderosa antes de producir el video."
+            )
+        else:
+            st.caption(
+                "**What is a Hook?** It's the first sentence of the video (1-2 sec). "
+                "If it doesn't grab instantly, the viewer scrolls away. "
+                "Generate 3 options and pick the most powerful one before producing."
+            )
+
+        if not _hook_topic:
+            st.info(
+                "Escribe un tema arriba para generar opciones de hook."
+                if lang_option == "es" else
+                "Enter a topic above to generate hook options."
+            )
+        elif st.session_state.running:
+            st.info("Generando video..." if lang_option == "es" else "Generating video...")
+        elif not config_ok:
+            st.info("Configura tus claves de API primero." if lang_option == "es" else "Set up your API keys first.")
+        else:
             if st.button(
-                f"{'✓ ' if _is_chosen else ''}{_hk}",
-                key=f"hook_opt_{_hi}",
-                type="primary" if _is_chosen else "secondary",
-                use_container_width=True
+                "⚡ " + ("Generar 3 opciones de hook" if lang_option == "es" else "Generate 3 hook options"),
+                key="hook_options_btn", use_container_width=True, type="secondary"
             ):
-                st.session_state["chosen_hook"] = _hk
-                st.rerun()
-        if _chosen:
-            st.success(f"{'Hook seleccionado' if lang_option == 'es' else 'Selected hook'}: **{_chosen}**")
+                with st.spinner("Analizando el tema y generando hooks..." if lang_option == "es" else "Analysing topic and generating hooks..."):
+                    try:
+                        from modules.brain import ContentBrain as _HB
+                        _hooks = _HB().get_hook_options(_hook_topic, _hook_category, mode, lang_option, n=3)
+                        st.session_state["hook_options"] = _hooks
+                        st.session_state["chosen_hook"]  = ""
+                        st.rerun()
+                    except Exception as _he:
+                        st.error(str(_he))
+
+        _hook_opts = st.session_state.get("hook_options", [])
+        if _hook_opts:
+            _chosen = st.session_state.get("chosen_hook", "")
+            st.caption("Toca el hook que más te guste:" if lang_option == "es" else "Tap the hook you like most:")
+            for _hi, _hk in enumerate(_hook_opts):
+                _is_chosen = (_chosen == _hk)
+                _label = ("A", "B", "C", "D")[_hi] if _hi < 4 else str(_hi + 1)
+                if st.button(
+                    f"{'✓ ' if _is_chosen else ''}{_label}. {_hk}",
+                    key=f"hook_opt_{_hi}",
+                    type="primary" if _is_chosen else "secondary",
+                    use_container_width=True
+                ):
+                    st.session_state["chosen_hook"] = _hk
+                    st.rerun()
+            if _chosen:
+                st.success(f"{'Seleccionado' if lang_option == 'es' else 'Selected'}: **{_chosen}**")
 
 # ── Generar ───────────────────────────────────────────────────────────────────
 
