@@ -190,6 +190,31 @@ strong { color: var(--text-primary) !important; }
 /* Círculo coloreado de BaseUI */
 [data-testid="stRadio"] label > div:first-child       { display:none!important; }
 
+/* ── MODE SELECTOR: grid 2×3 (sobrescribe nowrap solo en este radio) ── */
+div:has(#mode-sel-anchor) + div [data-testid="stRadio"] {
+    padding: 6px !important;
+}
+div:has(#mode-sel-anchor) + div [data-testid="stRadio"] > div {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+}
+div:has(#mode-sel-anchor) + div [data-testid="stRadio"] label {
+    flex: 1 1 calc(33.33% - 6px) !important;
+    min-width: 90px !important;
+    max-width: calc(33.33% - 2px) !important;
+    padding: 10px 6px !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap !important;
+}
+@media (max-width: 480px) {
+    div:has(#mode-sel-anchor) + div [data-testid="stRadio"] label {
+        flex: 1 1 calc(50% - 6px) !important;
+        max-width: calc(50% - 2px) !important;
+        font-size: 0.78rem !important;
+        padding: 9px 4px !important;
+    }
+}
+
 /* ── STEP HEADERS ── */
 .step-header {
     display: flex;
@@ -1482,7 +1507,8 @@ _mode_map = (
     }
 )
 st.markdown(
-    f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
+    f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>"
+    "<span id='mode-sel-anchor' style='display:none'></span>",
     unsafe_allow_html=True,
 )
 mode = st.radio(
