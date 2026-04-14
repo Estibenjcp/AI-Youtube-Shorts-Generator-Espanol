@@ -26,8 +26,20 @@ class Composer:
 
     _WINDOWS_FONT = r'C:\Windows\Fonts\arial.ttf'
 
+    # Default subtitle style — all keys can be overridden via the style dict
+    _DEFAULT_STYLE = {
+        "fontsize":    44,
+        "fontcolor":   "white",
+        "y":           "h*0.82",
+        "borderw":     3,
+        "bordercolor": "black",
+        "box":         0,
+        "boxcolor":    "black@0.4",
+        "max_chars":   28,
+    }
+
     @staticmethod
-    def _wrap_text_file(text: str, max_chars: int = 30) -> str:
+    def _wrap_text_file(text: str, max_chars: int = 28) -> str:
         """Wraps text with real newlines for writing to a temp file."""
         words = text.split()
         lines, current = [], []
@@ -40,25 +52,30 @@ class Composer:
             lines.append(' '.join(current))
         return '\n'.join(lines)
 
-    def _write_sub_file(self, text: str, index: int) -> str:
+    def _write_sub_file(self, text: str, index: int, max_chars: int = 28) -> str:
         """Writes scene text to a temp file and returns its path (forward slashes)."""
         path = os.path.join(self.temp_dir, f"sub_{index}.txt")
         with open(path, 'w', encoding='utf-8') as f:
-            f.write(self._wrap_text_file(text))
+            f.write(self._wrap_text_file(text, max_chars=max_chars))
         # FFmpeg requires forward slashes even on Windows
         return path.replace('\\', '/')
 
-    def _apply_subtitle(self, stream, text_file_path: str, fontsize: int = 40):
-        """Adds subtitle overlay using a textfile — avoids all escaping issues."""
+    def _apply_subtitle(self, stream, text_file_path: str, style: dict = None):
+        """Adds subtitle overlay using a textfile. Style dict overrides defaults."""
+        s = {**self._DEFAULT_STYLE, **(style or {})}
         kwargs = dict(
             textfile=text_file_path,
-            fontsize=fontsize,
-            fontcolor='white',
+            fontsize=s["fontsize"],
+            fontcolor=s["fontcolor"],
             x='(w-text_w)/2',
-            y='h*0.82',
-            borderw=3,
-            bordercolor='black',
+            y=s["y"],
+            borderw=s["borderw"],
+            bordercolor=s["bordercolor"],
         )
+        if s.get("box"):
+            kwargs["box"]      = 1
+            kwargs["boxcolor"] = s["boxcolor"]
+            kwargs["boxborderw"] = 8
         if os.path.exists(self._WINDOWS_FONT):
             kwargs['fontfile'] = self._WINDOWS_FONT.replace('\\', '/')
         return stream.filter('drawtext', **kwargs)
@@ -214,10 +231,12 @@ class Composer:
         output_filename: str = "final_short.mp4",
         script_data=None,
         use_subtitles: bool = False,
+        subtitle_style: dict = None,
     ):
         """
         Stitches rendered scenes with xfade transitions.
         Optionally burns subtitles from script_data onto each scene.
+        subtitle_style: dict with keys fontsize, fontcolor, y, borderw, bordercolor, box, boxcolor, max_chars.
         """
         print("🎬 Stitching final video...")
         output_path = os.path.join(self.final_dir, output_filename)
@@ -267,12 +286,16 @@ class Composer:
             except Exception as e:
                 print(f"⚠️ Could not normalize outro: {e} — skipping.")
 
+        # Merge user style with defaults
+        _style = {**self._DEFAULT_STYLE, **(subtitle_style or {})}
+
         # Pre-create subtitle text files before building the filter graph
         sub_files = {}
         if use_subtitles and script_data:
             for i, scene in enumerate(script_data):
                 if i < len(video_paths):
-                    sub_files[i] = self._write_sub_file(scene.get('text', ''), i)
+                    sub_files[i] = self._write_sub_file(scene.get('text', ''), i,
+                                                        max_chars=_style["max_chars"])
 
         # Pre-filter: drop any clip whose duration cannot be probed or is too short for xfade
         v_trans = 0.5
@@ -295,7 +318,7 @@ class Composer:
         a_stream = input0.audio
 
         if valid_subs.get(0):
-            v_stream = self._apply_subtitle(v_stream, valid_subs[0], fontsize=54)
+            v_stream = self._apply_subtitle(v_stream, valid_subs[0], style=_style)
 
         current_dur = self.get_duration(valid_paths[0])
 
@@ -305,7 +328,7 @@ class Composer:
             next_dur  = self.get_duration(valid_paths[i])
 
             if valid_subs.get(i):
-                next_v = self._apply_subtitle(next_v, valid_subs[i])
+                next_v = self._apply_subtitle(next_v, valid_subs[i], style=_style)
 
             v_trans = 0.5   # video xfade duration
             a_trans = 0.05  # audio crossfade — near-instant cut, no pop, no overlap

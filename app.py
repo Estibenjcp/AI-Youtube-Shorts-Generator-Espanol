@@ -1105,7 +1105,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             return
 
         composer.concatenate_with_transitions(final_scene_paths, script_data=script,
-                                              use_subtitles=params.get("use_subtitles", False))
+                                              use_subtitles=params.get("use_subtitles", False),
+                                              subtitle_style=params.get("subtitle_style", {}))
 
         for folder in ["audio_clips", "video_clips", "temp"]:
             p = os.path.join(os.path.dirname(__file__), "assets", folder)
@@ -1395,6 +1396,60 @@ with st.expander(voice_label_hint, expanded=False):
 
     use_avatar    = st.toggle(T["avatar_toggle"],    value=False, help=T["avatar_help"],    key="avatar_toggle")
     use_subtitles = st.toggle(T["subtitles_toggle"], value=True, help=T["subtitles_help"], key="subs_toggle")
+
+    # ── Configuración de subtítulos (visible solo si están activados) ──────────
+    subtitle_style = {}
+    if use_subtitles:
+        _is_es = lang_option == "es"
+        with st.expander("🎨 " + ("Estilo de subtítulos" if _is_es else "Subtitle Style"), expanded=False):
+
+            _size_opts = (["Pequeño", "Mediano", "Grande", "Extra"] if _is_es
+                          else ["Small", "Medium", "Large", "Extra"])
+            _size_map  = dict(zip(_size_opts, [32, 44, 56, 72]))
+            _size_sel  = st.select_slider(
+                "Tamaño" if _is_es else "Size",
+                options=_size_opts, value=_size_opts[2], key="sub_size"
+            )
+            subtitle_style["fontsize"] = _size_map[_size_sel]
+
+            _color_opts = (["Blanco", "Amarillo", "Cian", "Verde"] if _is_es
+                           else ["White", "Yellow", "Cyan", "Green"])
+            _color_map  = dict(zip(_color_opts, ["white", "yellow", "00FFFF", "00FF88"]))
+            _color_sel  = st.radio(
+                "Color" if _is_es else "Color",
+                options=_color_opts, horizontal=True, index=0, key="sub_color",
+                label_visibility="visible"
+            )
+            subtitle_style["fontcolor"] = _color_map[_color_sel]
+
+            _pos_opts = (["Arriba", "Centro", "Abajo"] if _is_es
+                         else ["Top", "Center", "Bottom"])
+            _pos_map  = dict(zip(_pos_opts, ["h*0.05", "(h-text_h)/2", "h*0.82"]))
+            _pos_sel  = st.radio(
+                "Posición" if _is_es else "Position",
+                options=_pos_opts, horizontal=True, index=2, key="sub_pos",
+                label_visibility="visible"
+            )
+            subtitle_style["y"] = _pos_map[_pos_sel]
+
+            _outline = st.slider(
+                "Borde (grosor)" if _is_es else "Outline (thickness)",
+                min_value=0, max_value=6, value=3, key="sub_outline"
+            )
+            subtitle_style["borderw"] = _outline
+
+            _bg = st.toggle(
+                "Fondo semitransparente" if _is_es else "Semi-transparent background",
+                value=False, key="sub_bg"
+            )
+            subtitle_style["box"]      = 1 if _bg else 0
+            subtitle_style["boxcolor"] = "black@0.45"
+
+            _wrap = st.slider(
+                "Palabras por línea" if _is_es else "Words per line",
+                min_value=12, max_value=40, value=28, step=2, key="sub_wrap"
+            )
+            subtitle_style["max_chars"] = _wrap
 
 # ── Selector de modo ──────────────────────────────────────────────────────────
 
@@ -1730,6 +1785,7 @@ if generate_clicked and not st.session_state.running:
             "topic": final_topic, "num_scenes": num_scenes,
             "voice": selected_voice, "rate": rate_str,
             "use_avatar": use_avatar, "use_subtitles": use_subtitles,
+            "subtitle_style": subtitle_style,
             "lang": lang_option, "mode": mode,
             "category": final_category,
             "webhook_url": _wh_url,
