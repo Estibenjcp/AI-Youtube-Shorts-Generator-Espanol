@@ -1409,6 +1409,7 @@ with st.expander(voice_label_hint, expanded=False):
         _is_es = lang_option == "es"
         with st.expander("🎨 " + ("Estilo de subtítulos" if _is_es else "Subtitle Style"), expanded=False):
 
+            # Tamaño
             _size_opts = (["Pequeño", "Mediano", "Grande", "Extra"] if _is_es
                           else ["Small", "Medium", "Large", "Extra"])
             _size_map  = dict(zip(_size_opts, [32, 44, 56, 72]))
@@ -1418,6 +1419,7 @@ with st.expander(voice_label_hint, expanded=False):
             )
             subtitle_style["fontsize"] = _size_map[_size_sel]
 
+            # Color de texto
             _color_opts = (["Blanco", "Amarillo", "Cian", "Verde"] if _is_es
                            else ["White", "Yellow", "Cyan", "Green"])
             _color_map  = dict(zip(_color_opts, ["white", "yellow", "00FFFF", "00FF88"]))
@@ -1428,22 +1430,22 @@ with st.expander(voice_label_hint, expanded=False):
             )
             subtitle_style["fontcolor"] = _color_map[_color_sel]
 
-            _pos_opts = (["Arriba", "Centro", "Abajo"] if _is_es
-                         else ["Top", "Center", "Bottom"])
-            _pos_map  = dict(zip(_pos_opts, ["h*0.05", "(h-text_h)/2", "h*0.82"]))
-            _pos_sel  = st.radio(
-                "Posición" if _is_es else "Position",
-                options=_pos_opts, horizontal=True, index=2, key="sub_pos",
-                label_visibility="visible"
+            # Posición vertical — slider de 0% (arriba) a 92% (abajo)
+            _y_pct = st.slider(
+                ("Posición vertical (0 = arriba · 85 = abajo)" if _is_es
+                 else "Vertical position (0 = top · 85 = bottom)"),
+                min_value=0, max_value=92, value=78, step=1, key="sub_y_pct"
             )
-            subtitle_style["y"] = _pos_map[_pos_sel]
+            subtitle_style["y"] = f"h*{_y_pct/100:.2f}"
 
+            # Borde
             _outline = st.slider(
                 "Borde (grosor)" if _is_es else "Outline (thickness)",
                 min_value=0, max_value=6, value=3, key="sub_outline"
             )
             subtitle_style["borderw"] = _outline
 
+            # Fondo
             _bg = st.toggle(
                 "Fondo semitransparente" if _is_es else "Semi-transparent background",
                 value=False, key="sub_bg"
@@ -1451,9 +1453,10 @@ with st.expander(voice_label_hint, expanded=False):
             subtitle_style["box"]      = 1 if _bg else 0
             subtitle_style["boxcolor"] = "black@0.45"
 
+            # Palabras por línea
             _wrap = st.slider(
                 "Palabras por línea" if _is_es else "Words per line",
-                min_value=12, max_value=40, value=28, step=2, key="sub_wrap"
+                min_value=10, max_value=36, value=22, step=2, key="sub_wrap"
             )
             subtitle_style["max_chars"] = _wrap
 

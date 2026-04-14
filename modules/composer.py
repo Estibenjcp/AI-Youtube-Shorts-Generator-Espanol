@@ -52,19 +52,31 @@ class Composer:
             lines.append(' '.join(current))
         return '\n'.join(lines)
 
+    @staticmethod
+    def _clean_sub_text(text: str) -> str:
+        """Strip Unicode chars that fonts can't render (avoids □ boxes)."""
+        import re as _re
+        replacements = {
+            '\u2026': ',', '\u2014': '-', '\u2013': '-',
+            '\u201c': '"', '\u201d': '"', '\u2018': "'", '\u2019': "'",
+            '\u00ab': '"', '\u00bb': '"', '\u2022': '-', '\u00b7': '-',
+        }
+        for ch, rep in replacements.items():
+            text = text.replace(ch, rep)
+        # Drop any remaining non-ASCII
+        text = _re.sub(r'[^\x00-\x7F]', '', text)
+        return _re.sub(r'\s+', ' ', text).strip()
+
     def _write_sub_file(self, text: str, index: int, max_chars: int = 28) -> str:
-        """Writes scene text to a temp file and returns its path (forward slashes)."""
+        """Cleans text, wraps it, writes to a temp file. Returns forward-slash path."""
         path = os.path.join(self.temp_dir, f"sub_{index}.txt")
         with open(path, 'w', encoding='utf-8') as f:
-            f.write(self._wrap_text_file(text, max_chars=max_chars))
-        # FFmpeg requires forward slashes even on Windows
+            f.write(self._wrap_text_file(self._clean_sub_text(text), max_chars=max_chars))
         return path.replace('\\', '/')
 
-    def _apply_subtitle(self, stream, text_file_path: str, style: dict = None):
-        """Adds subtitle overlay using a textfile. Style dict overrides defaults."""
-        s = {**self._DEFAULT_STYLE, **(style or {})}
+    def _base_drawtext_kwargs(self, s: dict) -> dict:
+        """Shared drawtext kwargs from a resolved style dict."""
         kwargs = dict(
-            textfile=text_file_path,
             fontsize=s["fontsize"],
             fontcolor=s["fontcolor"],
             x='(w-text_w)/2',
@@ -73,12 +85,46 @@ class Composer:
             bordercolor=s["bordercolor"],
         )
         if s.get("box"):
-            kwargs["box"]      = 1
-            kwargs["boxcolor"] = s["boxcolor"]
+            kwargs["box"]        = 1
+            kwargs["boxcolor"]   = s["boxcolor"]
             kwargs["boxborderw"] = 8
         if os.path.exists(self._WINDOWS_FONT):
             kwargs['fontfile'] = self._WINDOWS_FONT.replace('\\', '/')
-        return stream.filter('drawtext', **kwargs)
+        return kwargs
+
+    def _apply_timed_subtitle(self, stream, text: str, clip_idx: int,
+                               clip_duration: float, style: dict = None):
+        """Progressive subtitles: splits text into 2-3 timed chunks.
+        Each chunk appears for its portion of the clip duration."""
+        s = {**self._DEFAULT_STYLE, **(style or {})}
+        clean = self._clean_sub_text(text)
+        if not clean:
+            return stream
+
+        words    = clean.split()
+        n_words  = len(words)
+        n_chunks = 1 if n_words <= 7 else (2 if n_words <= 20 else 3)
+
+        # Build word-count chunks
+        size   = max(1, n_words // n_chunks)
+        chunks = [' '.join(words[i*size:(i+1)*size]) for i in range(n_chunks - 1)]
+        chunks.append(' '.join(words[(n_chunks - 1)*size:]))
+        chunks = [c for c in chunks if c.strip()]
+
+        seg        = clip_duration / len(chunks)
+        base_kw    = self._base_drawtext_kwargs(s)
+        max_chars  = s.get("max_chars", 28)
+
+        for ci, chunk in enumerate(chunks):
+            t0 = ci * seg
+            t1 = (ci + 1) * seg + 0.06   # tiny overlap → no blank flash between chunks
+            sub_file = self._write_sub_file(chunk, clip_idx * 10 + ci, max_chars=max_chars)
+            kw = {**base_kw,
+                  'textfile': sub_file,
+                  'enable':   f'between(t,{t0:.3f},{t1:.3f})'}
+            stream = stream.filter('drawtext', **kw)
+
+        return stream
 
     # ── Scene rendering ───────────────────────────────────────────────────────
 
@@ -289,46 +335,50 @@ class Composer:
         # Merge user style with defaults
         _style = {**self._DEFAULT_STYLE, **(subtitle_style or {})}
 
-        # Pre-create subtitle text files before building the filter graph
-        sub_files = {}
+        # Collect raw scene texts (indexed by original video position)
+        sub_texts = {}
         if use_subtitles and script_data:
             for i, scene in enumerate(script_data):
                 if i < len(video_paths):
-                    sub_files[i] = self._write_sub_file(scene.get('text', ''), i,
-                                                        max_chars=_style["max_chars"])
+                    sub_texts[i] = scene.get('text', '')
 
         # Pre-filter: drop any clip whose duration cannot be probed or is too short for xfade
-        v_trans = 0.5
+        v_trans      = 0.5
         valid_paths  = []
-        valid_subs   = {}
+        valid_texts  = {}   # new_idx → raw text
         for orig_i, vp in enumerate(video_paths):
             d = self.get_duration(vp)
             if d <= v_trans:
                 print(f"   ⚠️ Skipping clip {orig_i} in stitch — duration {d:.2f}s too short.")
                 continue
-            valid_subs[len(valid_paths)] = sub_files.get(orig_i)
+            valid_texts[len(valid_paths)] = sub_texts.get(orig_i, '')
             valid_paths.append(vp)
 
         if not valid_paths:
             print("❌ No valid clips left after duration check.")
             return None
 
-        input0   = ffmpeg.input(valid_paths[0])
-        v_stream = input0.video
-        a_stream = input0.audio
-
-        if valid_subs.get(0):
-            v_stream = self._apply_subtitle(v_stream, valid_subs[0], style=_style)
-
+        input0      = ffmpeg.input(valid_paths[0])
+        v_stream    = input0.video
+        a_stream    = input0.audio
         current_dur = self.get_duration(valid_paths[0])
+
+        if use_subtitles and valid_texts.get(0):
+            v_stream = self._apply_timed_subtitle(v_stream, valid_texts[0],
+                                                  clip_idx=0,
+                                                  clip_duration=current_dur,
+                                                  style=_style)
 
         for i in range(1, len(valid_paths)):
             next_clip = ffmpeg.input(valid_paths[i])
             next_v    = next_clip.video
             next_dur  = self.get_duration(valid_paths[i])
 
-            if valid_subs.get(i):
-                next_v = self._apply_subtitle(next_v, valid_subs[i], style=_style)
+            if use_subtitles and valid_texts.get(i):
+                next_v = self._apply_timed_subtitle(next_v, valid_texts[i],
+                                                    clip_idx=i,
+                                                    clip_duration=next_dur,
+                                                    style=_style)
 
             v_trans = 0.5   # video xfade duration
             a_trans = 0.05  # audio crossfade — near-instant cut, no pop, no overlap
