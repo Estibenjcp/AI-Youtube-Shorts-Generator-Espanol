@@ -190,29 +190,31 @@ strong { color: var(--text-primary) !important; }
 /* Círculo coloreado de BaseUI */
 [data-testid="stRadio"] label > div:first-child       { display:none!important; }
 
-/* ── MODE SELECTOR: grid 2×3 (sobrescribe nowrap solo en este radio) ── */
+/* ── MODE SELECTOR: cuadrícula 2 columnas, alineación uniforme ── */
 div:has(#mode-sel-anchor) + div [data-testid="stRadio"] {
-    padding: 6px !important;
+    padding: 4px !important;
 }
 div:has(#mode-sel-anchor) + div [data-testid="stRadio"] > div {
+    display: flex !important;
     flex-wrap: wrap !important;
-    gap: 6px !important;
+    gap: 7px !important;
+    align-items: stretch !important;
 }
 div:has(#mode-sel-anchor) + div [data-testid="stRadio"] label {
-    flex: 1 1 calc(33.33% - 6px) !important;
-    min-width: 90px !important;
-    max-width: calc(33.33% - 2px) !important;
-    padding: 10px 6px !important;
-    font-size: 0.82rem !important;
-    white-space: nowrap !important;
-}
-@media (max-width: 480px) {
-    div:has(#mode-sel-anchor) + div [data-testid="stRadio"] label {
-        flex: 1 1 calc(50% - 6px) !important;
-        max-width: calc(50% - 2px) !important;
-        font-size: 0.78rem !important;
-        padding: 9px 4px !important;
-    }
+    flex: 1 1 calc(50% - 7px) !important;
+    min-width: 0 !important;
+    max-width: calc(50% - 4px) !important;
+    min-height: 46px !important;
+    padding: 8px 6px !important;
+    font-size: 0.80rem !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    line-height: 1.25 !important;
 }
 
 /* ── STEP HEADERS ── */
@@ -918,6 +920,10 @@ UI = {
         "empleo_label":      "Texto de la oferta de empleo",
         "empleo_ph":         "Pega aquí el texto completo: puesto, empresa, requisitos, salario, beneficios, cómo aplicar...",
         "empleo_warning":    "Por favor pega el texto de la oferta antes de generar.",
+        "guion_info":        "✍️ Pega cualquier texto — noticia, chisme, dato curioso, reflexión o pensamiento — y la IA detecta el tono y lo convierte en un Short viral.",
+        "guion_label":       "Tu texto (noticia, chisme, reflexión, lo que sea...)",
+        "guion_ph":          "Pega aquí la noticia, el chisme, tu opinión, el dato curioso... La IA adaptará el tono automáticamente.",
+        "guion_warning":     "Por favor pega o escribe tu texto antes de generar.",
         "restart_btn":       "🔄 Crear Otro Video",
     },
     "en": {
@@ -999,6 +1005,10 @@ UI = {
         "empleo_label":      "Job offer text",
         "empleo_ph":         "Paste the full text here: position, company, requirements, salary, benefits, how to apply...",
         "empleo_warning":    "Please paste the job offer text before generating.",
+        "guion_info":        "✍️ Paste any text — news, gossip, fun fact, reflection or thought — and the AI detects the tone and turns it into a viral Short.",
+        "guion_label":       "Your text (news, gossip, reflection, anything...)",
+        "guion_ph":          "Paste your news article, gossip, opinion, fun fact... The AI will auto-detect the tone.",
+        "guion_warning":     "Please paste or write your text before generating.",
         "restart_btn":       "🔄 Create Another Video",
     },
 }
@@ -1023,6 +1033,7 @@ for key, default in [
     ("hook_options",      []),
     ("chosen_hook",       ""),
     ("job_offer_text",    ""),
+    ("guion_raw_text",    ""),
     ("generation_mode",   "auto"),
     ("hook_step",         "idle"),
 ]:
@@ -1108,6 +1119,17 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             _lines = [l.strip() for l in offer_text.splitlines() if l.strip()]
             topic  = _lines[0][:70] if _lines else ("Oferta de Empleo" if pipeline_lang == "es" else "Job Offer")
             print(f"💼 Topic derivado: {topic}")
+
+        elif pipeline_mode == "guion":
+            guion_text = params.get("guion_raw_text", "").strip()
+            if not guion_text:
+                log_q.put("ERROR:No se proporcionó texto para el guion libre.")
+                return
+            script = brain.generate_freeform_script(guion_text, lang=pipeline_lang)
+            # Derive topic from first non-empty line for copy/filename
+            _lines = [l.strip() for l in guion_text.splitlines() if l.strip()]
+            topic  = _lines[0][:70] if _lines else ("Guion Libre" if pipeline_lang == "es" else "Freeform Script")
+            print(f"✍️ Topic derivado: {topic}")
 
         else:
             chosen_hook = params.get("chosen_hook", "").strip()
@@ -1495,6 +1517,7 @@ _mode_map = (
         "testimonio": "👁️ Misterio",
         "libro":      "📚 Libro",
         "empleo":     "💼 Empleo",
+        "guion":      "✍️ Guión",
     }
     if lang_option == "es"
     else {
@@ -1504,6 +1527,7 @@ _mode_map = (
         "testimonio": "👁️ Mystery",
         "libro":      "📚 Book",
         "empleo":     "💼 Job Ad",
+        "guion":      "✍️ Script",
     }
 )
 st.markdown(
@@ -1746,9 +1770,36 @@ elif mode == "empleo":
     final_category = ""
     num_scenes     = 9
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO GUIÓN LIBRE
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "guion":
+
+    st.markdown(f"<div class='auto-info'>{T['guion_info']}</div>", unsafe_allow_html=True)
+
+    st.markdown(f"<div class='step-header'>✍️ {T['guion_label']}</div>", unsafe_allow_html=True)
+    guion_raw = st.text_area(
+        "guion_text",
+        key="guion_raw_input",
+        placeholder=T["guion_ph"],
+        height=280,
+        label_visibility="collapsed",
+    )
+
+    if guion_raw.strip():
+        _first_guion_line = next((l.strip() for l in guion_raw.splitlines() if l.strip()), "")
+        final_topic = _first_guion_line[:60]
+    else:
+        final_topic = ""
+
+    final_category = ""
+    num_scenes     = 9
+
 # ── Generar / Hook flow ───────────────────────────────────────────────────────
 # Modos donde el hook se inyecta en la Escena 1 del guion
 _HOOK_MODES = {"auto", "category", "viral", "testimonio", "libro"}
+# "empleo" y "guion" no usan hooks — el texto ya viene definido por el usuario
 
 st.markdown("---")
 
@@ -1770,6 +1821,7 @@ def _launch_pipeline():
         "webhook_url": _wh_url,
         "chosen_hook": st.session_state.get("chosen_hook", ""),
         "job_offer_text": st.session_state.get("job_offer_input", ""),
+        "guion_raw_text": st.session_state.get("guion_raw_input", ""),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
@@ -1793,6 +1845,10 @@ if _hook_step == "idle":
         # Validación modo empleo
         if mode == "empleo" and not st.session_state.get("job_offer_input", "").strip():
             st.warning(T["empleo_warning"])
+
+        # Validación modo guion
+        elif mode == "guion" and not st.session_state.get("guion_raw_input", "").strip():
+            st.warning(T["guion_warning"])
 
         # Modos con hook: generar opciones primero
         elif mode in _HOOK_MODES:

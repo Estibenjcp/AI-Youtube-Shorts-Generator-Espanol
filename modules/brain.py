@@ -774,6 +774,102 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
+    def generate_freeform_script(self, raw_text: str, lang: str = "es") -> list:
+        """Convierte texto libre (noticias, chismes, reflexiones, curiosidades) en un
+        guion de YouTube Shorts adaptado al tono del texto original."""
+        import re as _re
+        label = "Adaptando texto libre a guion viral" if lang == "es" else "Adapting freeform text to viral script"
+        print(f"✍️ {label}...")
+
+        if lang == "es":
+            prompt = f"""Eres un experto creador de contenido viral para YouTube Shorts en español latino.
+
+TEXTO DEL USUARIO:
+---
+{raw_text[:4000]}
+---
+
+TAREA:
+1. Detecta el TONO del texto (noticia, chisme/entretenimiento, reflexion personal, dato curioso, opinion, humor, otro).
+2. Adapta ese contenido para YouTube Shorts — dinamico, rapido, viral — SIN inventar informacion nueva.
+3. Preserva todos los hechos, nombres y datos clave del texto original.
+4. Adapta el estilo de narracion al tono detectado:
+   - Noticia: voz de reportero, datos precisos, urgencia ("Segun reportes...", "Esto acaba de ocurrir...")
+   - Chisme/entretenimiento: conversacional, emocionante, ganchos ("Y lo que nadie sabe es...", "Pero aqui lo interesante...")
+   - Reflexion/opinion: cercana, emotiva, pausada ("Piensalo asi...", "Esto me hizo pensar...")
+   - Dato curioso: asombro, impacto, revelacion ("Lo que pocos saben es...", "Resulta que...")
+   - Humor: ligero, ganchos, ritmo rapido
+5. Genera entre 7 y 10 escenas cortas y dinamicas.
+6. La primera escena SIEMPRE debe ser el GANCHO mas poderoso del texto.
+7. PROHIBIDO: emojis, caracteres Unicode especiales, inventar informacion.
+8. Maximo 20 palabras por escena.
+
+FORMATO JSON (sin markdown):
+[
+  {{"id":1,"text":"texto narrado aqui","visual_1":"english pexels search","visual_2":"alternative english search","mood":"exciting|dramatic|calm|mysterious|informative|fun"}},
+  ...
+]
+
+Reglas del JSON:
+- "text": espanol latino neutro, maximo 20 palabras, sin simbolos especiales.
+- "visual_1" y "visual_2": terminos de busqueda EN INGLES para Pexels (2-4 palabras).
+- "mood": segun el tono de cada escena.
+
+Responde SOLO el JSON, sin explicaciones."""
+        else:
+            prompt = f"""You are an expert viral content creator for YouTube Shorts.
+
+USER TEXT:
+---
+{raw_text[:4000]}
+---
+
+TASK:
+1. Detect the TONE of the text (news, gossip/entertainment, personal reflection, fun fact, opinion, humor, other).
+2. Adapt the content for YouTube Shorts — dynamic, fast, viral — WITHOUT inventing new information.
+3. Preserve all facts, names and key data from the original text.
+4. Adapt narration style to the detected tone:
+   - News: reporter voice, precise data, urgency ("According to reports...", "This just happened...")
+   - Gossip/entertainment: conversational, exciting, hooks ("And what nobody knows is...", "But here's the interesting part...")
+   - Reflection/opinion: close, emotional, paced ("Think about it this way...", "This made me realize...")
+   - Fun fact: amazement, impact, revelation ("What few people know is...", "It turns out that...")
+   - Humor: light, hooks, fast pace
+5. Generate between 7 and 10 short dynamic scenes.
+6. The first scene MUST always be the most powerful HOOK from the text.
+7. FORBIDDEN: emojis, special Unicode characters, inventing information.
+8. Maximum 20 words per scene.
+
+JSON FORMAT (no markdown):
+[
+  {{"id":1,"text":"narrated text here","visual_1":"english pexels search","visual_2":"alternative english search","mood":"exciting|dramatic|calm|mysterious|informative|fun"}},
+  ...
+]
+
+Rules:
+- "text": English, maximum 20 words, no special characters.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words).
+- "mood": matching the tone of each scene.
+
+Respond ONLY with the JSON, no explanations."""
+
+        raw   = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
+                s.setdefault('mood', 'informative')
+            print(f"✅ {len(scenes)} freeform scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
+            return [
+                {"id": i+1, "text": self._sanitize(s), "visual_1": "people talking news", "visual_2": "interesting facts world", "mood": "informative"}
+                for i, s in enumerate(sentences)
+            ]
+
     def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es", chosen_hook: str = "") -> list:
         label = "Escribiendo guion" if lang == "es" else "Writing script"
         print(f"📝 {label}: {topic} ({num_scenes} scenes)...")
@@ -938,6 +1034,8 @@ Finally, a short contextual subtitle relevant to the topic."
                            "#BookSummary #BooksToRead #SelfImprovement #BookReview #LearnSomethingNew"),
             "empleo":     ("#OfertaDeEmpleo #TrabajosDisponibles #BuscandoEmpleo #OportunidadLaboral #VacantesDeEmpleo",
                            "#JobOffer #NowHiring #JobOpportunity #Careers #JobSearch"),
+            "guion":      ("#NoticiasVirales #Trending #LoCurioso #SabiaQue #HechosDelDia",
+                           "#ViralNews #Trending #DidYouKnow #RandomFacts #InterestingFacts"),
         }
         hashtags_es, hashtags_en = _ht.get(mode, ("#MentesCuriosas #CienciaYMisterio #HechosCuriosos #DatosImpactantes #SabiaQue",
                                                    "#DidYouKnow #MindBlowing #FunFacts #Science #History"))
