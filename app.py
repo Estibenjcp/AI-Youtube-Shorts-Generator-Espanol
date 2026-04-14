@@ -1421,14 +1421,17 @@ st.markdown(
     f"<p class='section-label'>{'Modo de generación' if lang_option == 'es' else 'Generation mode'}</p>",
     unsafe_allow_html=True,
 )
-mode = st.radio(
-    "mode",
-    options=["auto", "category", "viral", "testimonio", "libro", "empleo"],
-    format_func=lambda x: _mode_map[x],
-    horizontal=True,
-    label_visibility="collapsed",
-    key="generation_mode",
-)
+_mc1, _mc2, _mc3 = st.columns(3)
+with _mc1:
+    if st.button(_mode_map["auto"],       key="mb_auto",       use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="auto"       else "secondary"): st.session_state["generation_mode"]="auto";       st.rerun()
+    if st.button(_mode_map["category"],   key="mb_category",   use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="category"   else "secondary"): st.session_state["generation_mode"]="category";   st.rerun()
+with _mc2:
+    if st.button(_mode_map["viral"],      key="mb_viral",      use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="viral"      else "secondary"): st.session_state["generation_mode"]="viral";      st.rerun()
+    if st.button(_mode_map["testimonio"], key="mb_testimonio", use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="testimonio" else "secondary"): st.session_state["generation_mode"]="testimonio"; st.rerun()
+with _mc3:
+    if st.button(_mode_map["libro"],      key="mb_libro",      use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="libro"      else "secondary"): st.session_state["generation_mode"]="libro";      st.rerun()
+    if st.button(_mode_map["empleo"],     key="mb_empleo",     use_container_width=True, type="primary" if st.session_state.get("generation_mode","auto")=="empleo"     else "secondary"): st.session_state["generation_mode"]="empleo";     st.rerun()
+mode = st.session_state.get("generation_mode", "auto")
 
 if mode != st.session_state.get("_last_mode"):
     st.session_state.topic_suggestions = []
