@@ -1522,6 +1522,55 @@ with st.expander(voice_label_hint, expanded=False):
                 for _m, _d in _mood_map.items():
                     st.caption(f"**{_m}** → {_d}")
 
+        # ── Preview de voz VoxCPM ─────────────────────────────────────────
+        _prev_text_vox = (
+            "Hola, esta es mi voz. El video que estás a punto de crear será increíble."
+            if lang_option == "es" else
+            "Hello, this is my voice. The video you are about to create will be incredible."
+        )
+        _col_vp, _col_vs = st.columns([1, 2])
+        with _col_vp:
+            _vox_preview_clicked = st.button(
+                "▶ Escuchar" if lang_option == "es" else "▶ Listen",
+                use_container_width=True, key="vox_preview_btn",
+                disabled=not _vox_ok,
+            )
+        with _col_vs:
+            _vox_prev_status = st.empty()
+
+        if _vox_preview_clicked and _vox_ok:
+            _vox_prev_status.caption("Generando muestra..." if lang_option == "es" else "Generating sample...")
+            _vox_prev_path = os.path.join(os.path.dirname(__file__), "assets", "temp", "vox_preview.wav")
+            os.makedirs(os.path.dirname(_vox_prev_path), exist_ok=True)
+
+            # Choose voice: manual desc, or the "dramatic" mood as representative sample
+            _prev_desc = st.session_state.get("vox_voice_desc", "").strip()
+            if not _prev_desc:
+                from modules.audio import VoxCPMAudioEngine as _VEP
+                _prev_desc = _VEP.MOOD_VOICES.get(lang_option, _VEP.MOOD_VOICES["es"]).get("dramatic", "")
+
+            def _gen_vox_preview(desc, text, path):
+                try:
+                    from voxcpm import VoxCPM as _VC
+                    import soundfile as _sf
+                    _m = _VC.from_pretrained("openbmb/VoxCPM2")
+                    _wav = _m.generate(f"{desc} {text}", cfg_value=2.0)
+                    _sf.write(path, _wav, 48000)
+                except Exception as _e:
+                    print(f"VoxCPM preview error: {_e}")
+
+            import threading as _vt
+            _vt.Thread(target=_gen_vox_preview,
+                       args=(_prev_desc, _prev_text_vox, _vox_prev_path), daemon=True).start()
+            import time as _vtime
+            _vox_prev_status.caption("⏳ Procesando (~30s primera vez)..." if lang_option == "es" else "⏳ Processing (~30s first time)...")
+            _vtime.sleep(35)
+            _vox_prev_status.empty()
+            if os.path.exists(_vox_prev_path) and os.path.getsize(_vox_prev_path) > 1000:
+                st.audio(_vox_prev_path, format="audio/wav")
+            else:
+                st.warning("No se generó el audio. Verifica que VoxCPM está funcionando." if lang_option == "es" else "Audio not generated. Check VoxCPM is working.")
+
         # Optional: voice cloning reference
         _clone_label = "🎤 Audio de referencia para clonar tu voz (opcional)" if lang_option == "es" else "🎤 Reference audio for voice cloning (optional)"
         vox_clone_file = st.file_uploader(_clone_label, type=["wav", "mp3"], key="vox_clone_upload")
