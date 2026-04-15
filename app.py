@@ -1031,6 +1031,8 @@ for key, default in [
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
     ("vox_mood_enabled",  True),
+    ("ai_video_style",    "cinematic"),
+    ("novela_theme",      ""),
     ("gtts_rate",         1.0),
     ("gtts_pitch",        0.0),
     ("gtts_lang_code",    "es-US"),
@@ -1132,6 +1134,19 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             topic  = _lines[0][:70] if _lines else ("Guion Libre" if pipeline_lang == "es" else "Freeform Script")
             print(f"✍️ Topic derivado: {topic}")
 
+        elif pipeline_mode == "novela":
+            novela_theme = params.get("novela_theme", "").strip()
+            if not novela_theme:
+                log_q.put("ERROR:Por favor describe el tema de la mini historia.")
+                return
+            log_q.put("🎬 [Mininovela] Generando biblia creativa...")
+            bible = brain.generate_miniseries_bible(novela_theme, lang=pipeline_lang)
+            topic = bible.get("title", novela_theme[:60])
+            log_q.put(f"🎬 [Mininovela] Historia: {topic} ({bible.get('genre','')})")
+            log_q.put(f"🎭 Personajes: {', '.join(c['name'] for c in bible.get('characters',[]))}")
+            log_q.put("📝 [Mininovela] Escribiendo guión por escenas...")
+            script = brain.generate_miniseries_script(bible, lang=pipeline_lang, num_scenes=8)
+
         else:
             chosen_hook = params.get("chosen_hook", "").strip()
             topic  = brain.get_trending_topic(params.get("topic", ""),
@@ -1172,8 +1187,29 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         script = asyncio.run(audio_engine.process_script(script))
 
         log_q.put("STAGE:Assets")
-        asset_manager = AssetManager()
-        assets_map    = asset_manager.get_videos(script)
+        _video_src = params.get("video_source", "pexels")
+        if _video_src == "ai_video":
+            from modules.ai_video import AIVideoEngine
+            _ai_vid_engine = AIVideoEngine(
+                provider     = params.get("ai_video_provider", "fal"),
+                api_key      = params.get("ai_video_key", ""),
+                model        = params.get("ai_video_model", ""),
+                style        = params.get("ai_video_style", "cinematic"),
+                max_parallel = 2,
+            )
+            log_q.put(f"🤖 [AI Video] Proveedor: {params.get('ai_video_provider','fal').upper()} · Estilo: {params.get('ai_video_style','cinematic')}")
+            log_q.put("⏳ Generando clips de video con IA (puede tardar varios minutos)...")
+            assets_map = asyncio.run(_ai_vid_engine.process_script(script))
+            # Fallback to Pexels for any scene that failed AI generation
+            _failed_scenes = [s for s in script if s["id"] not in assets_map]
+            if _failed_scenes:
+                log_q.put(f"⚠️ {len(_failed_scenes)} escenas sin clip IA — usando Pexels como respaldo...")
+                asset_manager = AssetManager()
+                _fallback_map = asset_manager.get_videos(_failed_scenes)
+                assets_map.update(_fallback_map)
+        else:
+            asset_manager = AssetManager()
+            assets_map    = asset_manager.get_videos(script)
 
         log_q.put("STAGE:Composer")
         composer = Composer(use_avatar=params.get("use_avatar", False))
@@ -1573,6 +1609,38 @@ if _voice_lang_key not in st.session_state:
     # New language — clear any stale voice_select state
     st.session_state.pop("voice_select", None)
     st.session_state[_voice_lang_key] = True
+
+# ── Estilo de Video IA (solo visible si video_source == "ai_video") ───────────
+if st.session_state.get("video_source", "pexels") == "ai_video":
+    from modules.ai_video import VIDEO_STYLES
+    _vs_exp_label = "🎨 Estilo de Video IA" if lang_option == "es" else "🎨 AI Video Style"
+    with st.expander(_vs_exp_label, expanded=False):
+        _style_keys = list(VIDEO_STYLES.keys())
+        _style_labels_map = {k: (v["label"] if lang_option == "es" else v["label_en"]) for k, v in VIDEO_STYLES.items()}
+        _cur_style = st.session_state.get("ai_video_style", "cinematic")
+        _style_cols = st.columns(2, gap="small")
+        for _sci, _sk in enumerate(_style_keys):
+            with _style_cols[_sci % 2]:
+                _sactive = (_cur_style == _sk)
+                st.markdown(
+                    f"""<div style="background:{'#6366f1' if _sactive else '#f3f4f6'};
+                    color:{'#fff' if _sactive else '#374151'};border-radius:8px;
+                    padding:8px;text-align:center;font-size:0.8rem;
+                    font-weight:{'700' if _sactive else '500'};
+                    border:2px solid {'#6366f1' if _sactive else '#e5e7eb'};
+                    margin-bottom:4px">{_style_labels_map[_sk]}</div>""",
+                    unsafe_allow_html=True,
+                )
+                if st.button("✓" if _sactive else ("Elegir" if lang_option == "es" else "Select"),
+                             key=f"vstyle_{_sk}", use_container_width=True,
+                             type="primary" if _sactive else "secondary"):
+                    st.session_state["ai_video_style"] = _sk
+                    st.rerun()
+        st.caption(
+            f"🎬 Estilo activo: **{_style_labels_map.get(_cur_style, _cur_style)}** · {VIDEO_STYLES.get(_cur_style, {}).get('suffix', '')[:60]}..."
+            if lang_option == "es" else
+            f"🎬 Active style: **{_style_labels_map.get(_cur_style, _cur_style)}** · {VIDEO_STYLES.get(_cur_style, {}).get('suffix', '')[:60]}..."
+        )
 
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
@@ -2021,6 +2089,7 @@ _mode_buttons = (
         ("libro",      "📚 Libro"),
         ("empleo",     "💼 Empleo"),
         ("guion",      "✍️ Guión"),
+        ("novela",     "🎬 Mininovela"),
     ]
     if lang_option == "es"
     else [
@@ -2031,6 +2100,7 @@ _mode_buttons = (
         ("libro",      "📚 Book"),
         ("empleo",     "💼 Job Ad"),
         ("guion",      "✍️ Script"),
+        ("novela",     "🎬 Miniseries"),
     ]
 )
 
@@ -2335,6 +2405,65 @@ elif mode == "guion":
     final_category = ""
     num_scenes     = 9
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO MININOVELA (solo con AI Video)
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "novela":
+    _is_ai = st.session_state.get("video_source", "pexels") == "ai_video"
+    if not _is_ai:
+        st.warning(
+            "🎬 El modo Mininovela requiere **Video con IA** como fuente de video. "
+            "Selecciona **🤖 Video con IA** arriba para activarlo."
+            if lang_option == "es" else
+            "🎬 Miniseries mode requires **AI Video** as video source. "
+            "Select **🤖 AI Video** above to enable it."
+        )
+        final_topic    = ""
+        final_category = ""
+        num_scenes     = 8
+    else:
+        st.markdown(
+            "<div class='auto-info'>"
+            + ("🎬 Describe el tema de tu mini historia y la IA crea personajes, escenario, guión y video completo. Solo funciona con Video IA."
+               if lang_option == "es" else
+               "🎬 Describe your mini story theme and the AI creates characters, setting, full script and video. AI Video only.")
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # Badges
+        _nov_style = st.session_state.get("ai_video_style", "cinematic")
+        st.markdown(
+            "<div style='display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap'>"
+            f"<span style='background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>🎬 8 escenas</span>"
+            f"<span style='background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>⏱️ ~60-90 segundos</span>"
+            f"<span style='background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>🤖 Video IA</span>"
+            f"<span style='background:#ede9fe;color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>🎨 {_nov_style.title()}</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f"<div class='step-header'>🎭 {'Tema o concepto de la historia' if lang_option == 'es' else 'Story theme or concept'}</div>",
+            unsafe_allow_html=True,
+        )
+        novela_theme = st.text_area(
+            "novela_theme_area",
+            key="novela_theme_input",
+            placeholder=(
+                "ej. Una doctora descubre que su hospital oculta experimentos ilegales en pacientes comatosos..."
+                if lang_option == "es" else
+                "e.g. A doctor discovers her hospital is running illegal experiments on comatose patients..."
+            ),
+            height=120,
+            label_visibility="collapsed",
+        )
+
+        final_topic    = novela_theme.strip()[:100] if novela_theme.strip() else ""
+        final_category = ""
+        num_scenes     = 8
+
 # ── Generar / Hook flow ───────────────────────────────────────────────────────
 # Modos donde el hook se inyecta en la Escena 1 del guion
 _HOOK_MODES = {"auto", "category", "viral", "testimonio", "libro"}
@@ -2374,6 +2503,8 @@ def _launch_pipeline():
         "ai_video_provider":os.getenv("AI_VIDEO_PROVIDER", "fal"),
         "ai_video_key":     os.getenv("AI_VIDEO_KEY", ""),
         "ai_video_model":   os.getenv("AI_VIDEO_MODEL", ""),
+        "ai_video_style":   st.session_state.get("ai_video_style", "cinematic"),
+        "novela_theme":     st.session_state.get("novela_theme_input", ""),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
@@ -2544,6 +2675,8 @@ elif _hook_step == "selecting":
                 "gtts_lang_code":   st.session_state.get("gtts_lang_code", "es-US"),
                 "gtts_rate":        st.session_state.get("gtts_rate", 1.0),
                 "gtts_pitch":       st.session_state.get("gtts_pitch", 0.0),
+                "ai_video_style":   st.session_state.get("ai_video_style", "cinematic"),
+                "novela_theme":     st.session_state.get("novela_theme_input", ""),
             }
             _t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, _params), daemon=True)
             st.session_state.thread = _t

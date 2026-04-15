@@ -1243,6 +1243,283 @@ Generate platform-optimized copy for YouTube Shorts, TikTok, and Facebook Reels.
                 "facebook_caption": clean,
             }
 
+    # ------------------------------------------------------------------
+    # MININOVELA METHODS
+    # ------------------------------------------------------------------
+
+    def generate_miniseries_bible(self, theme: str, lang: str = "es") -> dict:
+        """Generate the creative bible (story foundation) for a mini-series."""
+        if lang == "es":
+            prompt = f"""Eres el director creativo de una mini serie viral para YouTube Shorts en español latino.
+
+TEMA DEL USUARIO: "{theme}"
+
+TAREA: Crea la biblia creativa completa para una mini historia de 8 escenas (~60-90 segundos).
+
+REGLAS:
+- El tema del usuario es el punto de partida. Desarrolla una historia original pero fiel al tema.
+- 2-3 personajes máximo (más es confuso en 60 segundos).
+- Escenario concreto y específico (no vago).
+- Descripción física de personajes OPTIMIZADA para prompts de video IA (en inglés, detallada).
+- Arco narrativo completo: setup → conflicto → clímax → resolución.
+- Tono que maximice retención: drama, giro inesperado, emoción fuerte.
+- Idioma de la narración: español latino neutro.
+- Las descripciones físicas de personajes DEBEN estar en INGLÉS (para los prompts de video IA).
+
+FORMATO DE SALIDA (JSON estricto, sin markdown):
+{{
+  "title": "título impactante en español",
+  "genre": "thriller | drama | romance | comedia | suspenso | horror",
+  "setting": "descripción concreta del lugar y época (ej: mansión colonial, Santo Domingo, noche de tormenta, 2024)",
+  "setting_visual": "english visual description of the setting for AI video prompts",
+  "characters": [
+    {{
+      "name": "Nombre del personaje",
+      "role": "protagonist | antagonist | supporting",
+      "age": 35,
+      "physical": "detailed english description for AI video: Hispanic female, 35 years old, long dark curly hair, red dress, intense brown eyes, elegant posture",
+      "personality": "descripción breve en español de su personalidad y motivación"
+    }}
+  ],
+  "arc": {{
+    "setup": "situación inicial en 1-2 oraciones",
+    "conflict": "el conflicto principal en 1-2 oraciones",
+    "climax": "el momento de máxima tensión en 1-2 oraciones",
+    "resolution": "cómo termina en 1-2 oraciones"
+  }},
+  "narrator_style": "tercera persona omnisciente, tono dramático y urgente"
+}}"""
+        else:
+            prompt = f"""You are the creative director of a viral mini-series for YouTube Shorts.
+
+USER THEME: "{theme}"
+
+TASK: Create the complete creative bible for an 8-scene mini-story (~60-90 seconds).
+
+RULES:
+- The user's theme is the starting point. Develop an original story faithful to the theme.
+- Maximum 2-3 characters (more is confusing in 60 seconds).
+- Concrete and specific setting (not vague).
+- Character physical descriptions OPTIMIZED for AI video prompts (in English, detailed).
+- Complete narrative arc: setup → conflict → climax → resolution.
+- Tone that maximizes retention: drama, unexpected twist, strong emotion.
+- Narration language: English.
+- Character physical descriptions MUST be in ENGLISH (for AI video prompts).
+
+OUTPUT FORMAT (strict JSON, no markdown):
+{{
+  "title": "impactful title in English",
+  "genre": "thriller | drama | romance | comedy | suspense | horror",
+  "setting": "concrete description of place and era (e.g., colonial mansion, New York, stormy night, 2024)",
+  "setting_visual": "english visual description of the setting for AI video prompts",
+  "characters": [
+    {{
+      "name": "Character Name",
+      "role": "protagonist | antagonist | supporting",
+      "age": 35,
+      "physical": "detailed english description for AI video: Hispanic female, 35 years old, long dark curly hair, red dress, intense brown eyes, elegant posture",
+      "personality": "brief description of their personality and motivation"
+    }}
+  ],
+  "arc": {{
+    "setup": "initial situation in 1-2 sentences",
+    "conflict": "the main conflict in 1-2 sentences",
+    "climax": "the moment of maximum tension in 1-2 sentences",
+    "resolution": "how it ends in 1-2 sentences"
+  }},
+  "narrator_style": "third person omniscient, dramatic and urgent tone"
+}}"""
+
+        raw = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+        try:
+            import json as _j
+            result = _j.loads(clean)
+        except Exception:
+            result = {
+                "title": theme,
+                "genre": "drama",
+                "setting": "",
+                "setting_visual": "",
+                "characters": [],
+                "arc": {
+                    "setup": "",
+                    "conflict": "",
+                    "climax": "",
+                    "resolution": "",
+                },
+                "narrator_style": "tercera persona omnisciente, tono dramático y urgente",
+            }
+
+        print(f"🎬 [Mininovela] Biblia creativa generada: {result.get('title', 'Sin título')}")
+        return result
+
+    def generate_miniseries_script(self, bible: dict, lang: str = "es", num_scenes: int = 8) -> list:
+        """Generate the scene-by-scene script for the mini-series using its bible."""
+        title = bible.get("title", "")
+        genre = bible.get("genre", "")
+        setting = bible.get("setting", "")
+        setting_visual = bible.get("setting_visual", setting)
+        arc = bible.get("arc", {})
+
+        char_list = "\n".join(
+            f"- {c['name']} ({c['role']}): {c['physical']} | Personalidad: {c['personality']}"
+            for c in bible.get("characters", [])
+        )
+
+        if lang == "es":
+            prompt = f"""Eres el guionista de la mini serie "{title}" ({genre}).
+
+BIBLIA DE LA HISTORIA:
+Escenario: {setting}
+Descripción visual del escenario: {setting_visual}
+
+PERSONAJES:
+{char_list}
+
+ARCO NARRATIVO:
+- Setup: {arc.get('setup', '')}
+- Conflicto: {arc.get('conflict', '')}
+- Clímax: {arc.get('climax', '')}
+- Resolución: {arc.get('resolution', '')}
+
+TAREA: Escribe exactamente {num_scenes} escenas para YouTube Shorts.
+
+REGLAS DE NARRACIÓN:
+- Idioma: español latino neutro, 3ra persona.
+- Cada "text" es la NARRACIÓN en voz en off (lo que dice el narrador). Máximo 15 palabras.
+- Sin diálogos en el "text" — solo narración descriptiva y dramática.
+- Cada escena: una sola idea poderosa. Sin relleno.
+- Flujo: Escena 1 (gancho explosivo) → Escenas 2-3 (setup y personajes) → Escenas 4-6 (conflicto escalando) → Escena 7 (clímax) → Escena 8 (resolución o giro final).
+
+REGLAS DE VIDEO (MUY IMPORTANTE para IA):
+- "visual_1": término de búsqueda EN INGLÉS (Pexels fallback), 3-4 palabras.
+- "visual_2": segundo término EN INGLÉS, 3-4 palabras.
+- "video_prompt": prompt COMPLETO en INGLÉS para generación de video IA.
+  FORMATO del video_prompt: "[Acción visual]. [Personajes presentes con descripción física completa si hay]. [Escenario visual]. [Atmósfera/iluminación]. Cinematic, 9:16 vertical, no text overlays."
+  CRÍTICO: Si hay personajes en la escena, SIEMPRE incluye su descripción física completa del personaje de la biblia.
+- "characters_in_scene": array con nombres de personajes presentes (puede ser vacío []).
+- "mood": energetic | dramatic | mysterious | calm | inspiring | professional | exciting
+
+ESTRUCTURA OBLIGATORIA:
+- Escena 1 — GANCHO: La imagen o situación más impactante de la historia. Hook visual puro.
+- Escenas 2-3 — INTRODUCCIÓN: Presenta el escenario y los personajes clave.
+- Escenas 4-6 — DESARROLLO Y CONFLICTO: La situación escala, tensión crece.
+- Escena 7 — CLÍMAX: El momento de máxima tensión o el giro.
+- Escena 8 — RESOLUCIÓN / GANCHO FINAL: Cierre impactante o pregunta que enganche.
+
+FORMATO DE SALIDA (JSON estricto, sin markdown, exactamente {num_scenes} elementos):
+[
+  {{
+    "id": 1,
+    "text": "narración aquí, máximo 15 palabras",
+    "visual_1": "english pexels search term",
+    "visual_2": "english pexels search term 2",
+    "video_prompt": "Complete english AI video generation prompt with character descriptions if present. Setting description. Atmosphere. Cinematic, 9:16 vertical, no text.",
+    "characters_in_scene": ["Nombre1"],
+    "mood": "dramatic"
+  }}
+]"""
+        else:
+            prompt = f"""You are the screenwriter for the mini-series "{title}" ({genre}).
+
+STORY BIBLE:
+Setting: {setting}
+Visual setting description: {setting_visual}
+
+CHARACTERS:
+{char_list}
+
+NARRATIVE ARC:
+- Setup: {arc.get('setup', '')}
+- Conflict: {arc.get('conflict', '')}
+- Climax: {arc.get('climax', '')}
+- Resolution: {arc.get('resolution', '')}
+
+TASK: Write exactly {num_scenes} scenes for YouTube Shorts.
+
+NARRATION RULES:
+- Language: English, third person.
+- Each "text" is the VOICE-OVER NARRATION (what the narrator says). Maximum 15 words.
+- No dialogue in "text" — only descriptive and dramatic narration.
+- Each scene: one powerful idea. No filler.
+- Flow: Scene 1 (explosive hook) → Scenes 2-3 (setup and characters) → Scenes 4-6 (escalating conflict) → Scene 7 (climax) → Scene 8 (resolution or final twist).
+
+VIDEO RULES (VERY IMPORTANT for AI):
+- "visual_1": English search term (Pexels fallback), 3-4 words.
+- "visual_2": second English term, 3-4 words.
+- "video_prompt": COMPLETE English prompt for AI video generation.
+  FORMAT: "[Visual action]. [Characters present with full physical description if any]. [Visual setting]. [Atmosphere/lighting]. Cinematic, 9:16 vertical, no text overlays."
+  CRITICAL: If characters are in the scene, ALWAYS include their full physical description from the bible.
+- "characters_in_scene": array with names of characters present (can be empty []).
+- "mood": energetic | dramatic | mysterious | calm | inspiring | professional | exciting
+
+MANDATORY STRUCTURE:
+- Scene 1 — HOOK: The most impactful image or situation of the story. Pure visual hook.
+- Scenes 2-3 — INTRODUCTION: Introduce the setting and key characters.
+- Scenes 4-6 — DEVELOPMENT & CONFLICT: The situation escalates, tension grows.
+- Scene 7 — CLIMAX: The moment of maximum tension or the twist.
+- Scene 8 — RESOLUTION / FINAL HOOK: Impactful close or engaging question.
+
+OUTPUT FORMAT (strict JSON, no markdown, exactly {num_scenes} elements):
+[
+  {{
+    "id": 1,
+    "text": "narration here, maximum 15 words",
+    "visual_1": "english pexels search term",
+    "visual_2": "english pexels search term 2",
+    "video_prompt": "Complete english AI video generation prompt with character descriptions if present. Setting description. Atmosphere. Cinematic, 9:16 vertical, no text.",
+    "characters_in_scene": ["Character1"],
+    "mood": "dramatic"
+  }}
+]"""
+
+        raw = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+        try:
+            import json as _j
+            scenes = _j.loads(clean)
+            if not isinstance(scenes, list):
+                raise ValueError("Response is not a JSON array")
+        except Exception:
+            # Fallback: build minimal scenes from the arc
+            arc_texts = [
+                arc.get("setup", ""),
+                arc.get("conflict", ""),
+                arc.get("climax", ""),
+                arc.get("resolution", ""),
+            ]
+            scenes = []
+            for i in range(num_scenes):
+                arc_text = arc_texts[min(i, len(arc_texts) - 1)] if arc_texts else ""
+                scenes.append({
+                    "id": i + 1,
+                    "text": arc_text if arc_text else f"Scene {i + 1}",
+                    "visual_1": "cinematic drama",
+                    "visual_2": "dramatic scene",
+                    "video_prompt": f"{setting_visual}. Cinematic, 9:16 vertical, no text.",
+                    "characters_in_scene": [],
+                    "mood": "dramatic",
+                })
+
+        # Sanitize text, fill missing fields, cap at num_scenes
+        default_mood = "dramatic"
+        sanitized = []
+        for scene in scenes[:num_scenes]:
+            if not isinstance(scene, dict):
+                continue
+            scene["text"] = self._sanitize(scene.get("text", ""))
+            scene.setdefault("id", len(sanitized) + 1)
+            scene.setdefault("visual_1", "cinematic drama")
+            scene.setdefault("visual_2", "dramatic scene")
+            scene.setdefault("video_prompt", f"{setting_visual}. Cinematic, 9:16 vertical, no text.")
+            scene.setdefault("characters_in_scene", [])
+            scene.setdefault("mood", default_mood)
+            sanitized.append(scene)
+
+        print(f"✅ [Mininovela] {len(sanitized)} escenas generadas para \"{title}\"")
+        return sanitized
+
 
 if __name__ == "__main__":
     brain = ContentBrain()
