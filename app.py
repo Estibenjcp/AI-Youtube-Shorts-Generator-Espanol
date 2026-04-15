@@ -1502,115 +1502,183 @@ with st.expander(voice_label_hint, expanded=False):
 
         from modules.audio import GoogleTTSAudioEngine as _GTTS
 
-        # Load saved Google TTS API key
-        _gtts_key_saved = os.getenv("GOOGLE_TTS_KEY", "")
-        gtts_api_key = st.text_input(
-            "🔑 Google Cloud TTS API Key" if lang_option == "es" else "🔑 Google Cloud TTS API Key",
-            value=_gtts_key_saved,
-            type="password",
-            placeholder="AIza...",
-            key="gtts_api_key_input",
-            help=(
-                "Obtén tu clave en console.cloud.google.com → APIs → Cloud Text-to-Speech"
+        # ── Two-column layout: left = API config  |  right = voice settings ──
+        _gl, _gr = st.columns([3, 2], gap="medium")
+
+        with _gl:
+            # API Key input
+            _gtts_key_saved = os.getenv("GOOGLE_TTS_KEY", "")
+            gtts_api_key = st.text_input(
+                "🔑 Google Cloud TTS API Key",
+                value=_gtts_key_saved,
+                type="password",
+                placeholder="AIza...",
+                key="gtts_api_key_input",
+                help=(
+                    "Obtén tu clave en console.cloud.google.com → APIs → Cloud Text-to-Speech"
+                    if lang_option == "es" else
+                    "Get your key at console.cloud.google.com → APIs → Cloud Text-to-Speech"
+                ),
+            )
+            if gtts_api_key and gtts_api_key != _gtts_key_saved:
+                set_key(ENV_PATH, "GOOGLE_TTS_KEY", gtts_api_key)
+                load_dotenv(ENV_PATH, override=True)
+
+            # API Test button + status
+            _atc1, _atc2 = st.columns([1, 2])
+            with _atc1:
+                _api_test_btn = st.button(
+                    "🔍 Probar API" if lang_option == "es" else "🔍 Test API",
+                    disabled=not bool(gtts_api_key),
+                    use_container_width=True,
+                    key="gtts_test_api_btn",
+                )
+            with _atc2:
+                _api_status = st.empty()
+
+            if _api_test_btn and gtts_api_key:
+                with st.spinner("Verificando..." if lang_option == "es" else "Verifying..."):
+                    try:
+                        import requests as _req_test
+                        _tr = _req_test.post(
+                            _GTTS._URL,
+                            params={"key": gtts_api_key},
+                            json={
+                                "input": {"text": "ok"},
+                                "voice": {"languageCode": "es-US", "name": "es-US-Neural2-B"},
+                                "audioConfig": {"audioEncoding": "MP3"},
+                            },
+                            timeout=10,
+                        )
+                        if _tr.status_code == 200:
+                            _api_status.success("✅ API válida" if lang_option == "es" else "✅ API valid")
+                        else:
+                            _err_msg = _tr.json().get("error", {}).get("message", str(_tr.status_code))
+                            _api_status.error(f"❌ {_err_msg}")
+                    except Exception as _te:
+                        _api_status.error(f"❌ {_te}")
+
+            st.caption(
+                "💡 **Neural2**: 1M chars/mes gratis · **Studio**: 100K chars/mes gratis"
                 if lang_option == "es" else
-                "Get your key at console.cloud.google.com → APIs → Cloud Text-to-Speech"
-            ),
-        )
-        if gtts_api_key and gtts_api_key != _gtts_key_saved:
-            set_key(ENV_PATH, "GOOGLE_TTS_KEY", gtts_api_key)
-            load_dotenv(ENV_PATH, override=True)
+                "💡 **Neural2**: 1M chars/month free · **Studio**: 100K chars/month free"
+            )
 
-        # Voice selection
-        _gv_map = _GTTS.VOICES_ES if lang_option == "es" else _GTTS.VOICES_EN
-        _gv_opts = list(_gv_map.keys())
-        _gv_default_key = "gtts_voice_es" if lang_option == "es" else "gtts_voice_en"
-        _gv_saved = st.session_state.get(_gv_default_key, _gv_opts[0])
-        _gv_idx   = _gv_opts.index(_gv_saved) if _gv_saved in _gv_opts else 0
-        gtts_voice_label = st.selectbox(
-            "Voz" if lang_option == "es" else "Voice",
-            options=_gv_opts,
-            index=_gv_idx,
-            key="gtts_voice_select",
-        )
-        st.session_state[_gv_default_key] = gtts_voice_label
-        _gtts_lang_code, _gtts_voice_name = _gv_map[gtts_voice_label]
-        st.session_state["gtts_lang_code"]  = _gtts_lang_code
-        st.session_state["gtts_voice_name"] = _gtts_voice_name
+        with _gr:
+            # Voice selection
+            _gv_map = _GTTS.VOICES_ES if lang_option == "es" else _GTTS.VOICES_EN
+            _gv_opts = list(_gv_map.keys())
+            _gv_default_key = "gtts_voice_es" if lang_option == "es" else "gtts_voice_en"
+            _gv_saved = st.session_state.get(_gv_default_key, _gv_opts[0])
+            _gv_idx   = _gv_opts.index(_gv_saved) if _gv_saved in _gv_opts else 0
+            gtts_voice_label = st.selectbox(
+                "Voz" if lang_option == "es" else "Voice",
+                options=_gv_opts,
+                index=_gv_idx,
+                key="gtts_voice_select",
+            )
+            st.session_state[_gv_default_key] = gtts_voice_label
+            _gtts_lang_code, _gtts_voice_name = _gv_map[gtts_voice_label]
+            st.session_state["gtts_lang_code"]  = _gtts_lang_code
+            st.session_state["gtts_voice_name"] = _gtts_voice_name
 
-        # Rate and Pitch
-        _gc1, _gc2 = st.columns(2)
-        with _gc1:
             gtts_rate = st.slider(
-                "Velocidad" if lang_option == "es" else "Speaking Rate",
-                min_value=0.5, max_value=2.0, value=st.session_state.get("gtts_rate", 1.0),
+                "Velocidad" if lang_option == "es" else "Rate",
+                min_value=0.5, max_value=2.0,
+                value=st.session_state.get("gtts_rate", 1.0),
                 step=0.05, format="%.2f×",
-                help="1.0 = normal. Google TTS acepta 0.25–4.0" if lang_option == "es"
-                     else "1.0 = normal. Google TTS accepts 0.25–4.0",
                 key="gtts_rate_slider",
             )
             st.session_state["gtts_rate"] = gtts_rate
-        with _gc2:
+
             gtts_pitch = st.slider(
-                "Tono (pitch)" if lang_option == "es" else "Pitch",
+                "Tono" if lang_option == "es" else "Pitch",
                 min_value=-10.0, max_value=10.0,
                 value=st.session_state.get("gtts_pitch", 0.0),
                 step=0.5, format="%.1f st",
-                help="0 = tono original. Positivo = más agudo, negativo = más grave."
-                     if lang_option == "es" else
-                     "0 = original pitch. Positive = higher, negative = lower.",
                 key="gtts_pitch_slider",
             )
             st.session_state["gtts_pitch"] = gtts_pitch
 
-        # Preview
-        _gp_col1, _gp_col2 = st.columns([1, 2])
-        with _gp_col1:
-            _gtts_prev_clicked = st.button(
+            # Preview current voice (synchronous — REST call is ~1-2s)
+            _prev_btn = st.button(
                 "▶ Previsualizar" if lang_option == "es" else "▶ Preview",
-                use_container_width=True, key="gtts_preview_btn",
+                use_container_width=True,
                 disabled=not bool(gtts_api_key),
+                key="gtts_preview_btn",
             )
-        with _gp_col2:
-            _gtts_prev_status = st.empty()
+            if _prev_btn and gtts_api_key:
+                _prev_txt_g = (
+                    "Hola, esta es mi voz de Google. Perfecta para narrar tu video."
+                    if lang_option == "es" else
+                    "Hello, this is my Google voice. Perfect for narrating your video."
+                )
+                _prev_path_g = os.path.join(os.path.dirname(__file__), "assets", "temp", "gtts_preview.mp3")
+                os.makedirs(os.path.dirname(_prev_path_g), exist_ok=True)
+                with st.spinner("Generando..." if lang_option == "es" else "Generating..."):
+                    try:
+                        _peng = _GTTS(api_key=gtts_api_key, voice_name=_gtts_voice_name,
+                                      lang_code=_gtts_lang_code, speaking_rate=gtts_rate,
+                                      pitch=gtts_pitch)
+                        _peng._synthesize(_prev_txt_g, _prev_path_g)
+                    except Exception as _pe:
+                        st.error(str(_pe))
+                if os.path.exists(_prev_path_g) and os.path.getsize(_prev_path_g) > 500:
+                    st.audio(_prev_path_g, format="audio/mp3")
 
-        if _gtts_prev_clicked and gtts_api_key:
-            _gtts_prev_path = os.path.join(os.path.dirname(__file__), "assets", "temp", "gtts_preview.mp3")
-            os.makedirs(os.path.dirname(_gtts_prev_path), exist_ok=True)
-            _gtts_prev_status.caption("Generando muestra..." if lang_option == "es" else "Generating sample...")
-            _prev_txt_g = (
-                "Hola, esta es mi voz de Google. Voy a narrar tu próximo video."
+        # ── Voice Explorer ────────────────────────────────────────────────
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander(
+            "🎧 Explorador de Voces — prueba cada voz" if lang_option == "es"
+            else "🎧 Voice Explorer — try each voice",
+            expanded=False,
+        ):
+            _exp_map  = _GTTS.VOICES_ES if lang_option == "es" else _GTTS.VOICES_EN
+            _exp_text = (
+                "Este es un ejemplo de cómo suena esta voz. ¿Te gusta para tu video?"
                 if lang_option == "es" else
-                "Hello, this is my Google voice. I will narrate your next video."
+                "This is a sample of how this voice sounds. Is it good for your video?"
             )
-
-            def _gen_gtts_preview(api_key, voice, lang_code, rate, pitch, text, path):
-                try:
-                    _eng = _GTTS(api_key=api_key, voice_name=voice, lang_code=lang_code,
-                                 speaking_rate=rate, pitch=pitch)
-                    _eng._synthesize(text, path)
-                except Exception as _ex:
-                    print(f"Google TTS preview error: {_ex}")
-
-            import threading as _gth
-            _gth.Thread(
-                target=_gen_gtts_preview,
-                args=(gtts_api_key, _gtts_voice_name, _gtts_lang_code, gtts_rate, gtts_pitch,
-                      _prev_txt_g, _gtts_prev_path),
-                daemon=True,
-            ).start()
-            import time as _gt; _gt.sleep(4)
-            _gtts_prev_status.empty()
-            if os.path.exists(_gtts_prev_path) and os.path.getsize(_gtts_prev_path) > 500:
-                st.audio(_gtts_prev_path, format="audio/mp3")
+            if not gtts_api_key:
+                st.warning(
+                    "Ingresa tu API Key arriba para probar las voces."
+                    if lang_option == "es" else
+                    "Enter your API Key above to test voices."
+                )
             else:
-                st.error("Error generando preview. Verifica tu API key." if lang_option == "es"
-                         else "Error generating preview. Check your API key.")
-
-        st.caption(
-            "💡 Neural2 es gratuito hasta 1M caracteres/mes. Studio ofrece la máxima calidad."
-            if lang_option == "es" else
-            "💡 Neural2 is free up to 1M chars/month. Studio offers the highest quality."
-        )
+                st.caption(
+                    "Haz clic en ▶ para escuchar cada voz. La voz activa está marcada con ✓"
+                    if lang_option == "es" else
+                    "Click ▶ to hear each voice. The active voice is marked with ✓"
+                )
+                for _ve_label, (_ve_lang, _ve_name) in _exp_map.items():
+                    _ve_c1, _ve_c2 = st.columns([5, 1])
+                    with _ve_c1:
+                        _is_active = (_ve_name == _gtts_voice_name)
+                        st.markdown(
+                            f"{'**✓** ' if _is_active else ''}`{_ve_name}` · _{_ve_lang}_"
+                        )
+                    with _ve_c2:
+                        _ve_btn = st.button(
+                            "▶",
+                            key=f"ve_{_ve_name}",
+                            use_container_width=True,
+                        )
+                    if _ve_btn:
+                        _ve_out = os.path.join(
+                            os.path.dirname(__file__), "assets", "temp", f"ve_{_ve_name}.mp3"
+                        )
+                        os.makedirs(os.path.dirname(_ve_out), exist_ok=True)
+                        with st.spinner(f"{_ve_name}..."):
+                            try:
+                                _ve_eng = _GTTS(
+                                    api_key=gtts_api_key, voice_name=_ve_name,
+                                    lang_code=_ve_lang, speaking_rate=gtts_rate, pitch=0.0,
+                                )
+                                _ve_eng._synthesize(_exp_text, _ve_out)
+                                st.audio(_ve_out, format="audio/mp3")
+                            except Exception as _vee:
+                                st.error(str(_vee))
 
     else:
         # ── VoxCPM controls ───────────────────────────────────────────────
