@@ -1455,23 +1455,45 @@ if _voice_lang_key not in st.session_state:
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
 
-    # ── Motor TTS ─────────────────────────────────────────────────────────
-    _tts_labels = {
-        "edge_tts":   "☁️ Edge TTS (nube, rápido)"    if lang_option == "es" else "☁️ Edge TTS (cloud, fast)",
-        "google_tts": "🔵 Google TTS (Neural2/Studio)" if lang_option == "es" else "🔵 Google TTS (Neural2/Studio)",
-        "voxcpm":     "🤖 VoxCPM 2B (local, GPU)"     if lang_option == "es" else "🤖 VoxCPM 2B (local, GPU)",
-    }
-    _tts_opts = list(_tts_labels.keys())
-    _cur_tts  = st.session_state.get("tts_engine", "edge_tts")
-    tts_engine = st.radio(
-        "Motor TTS" if lang_option == "es" else "TTS Engine",
-        options=_tts_opts,
-        format_func=lambda x: _tts_labels[x],
-        horizontal=True,
-        index=_tts_opts.index(_cur_tts) if _cur_tts in _tts_opts else 0,
-        key="tts_engine_radio",
-    )
-    st.session_state["tts_engine"] = tts_engine
+    # ── Motor TTS — botones en cuadrícula (responsive, sin corte en móvil) ──
+    _tts_buttons = [
+        ("edge_tts",   "☁️ Edge TTS",    "Nube · rápido"    if lang_option == "es" else "Cloud · fast"),
+        ("google_tts", "🔵 Google TTS",  "Neural2 / Studio"),
+        ("voxcpm",     "🤖 VoxCPM 2B",   "Local · GPU"),
+    ]
+    _cur_tts = st.session_state.get("tts_engine", "edge_tts")
+
+    st.caption("Motor TTS" if lang_option == "es" else "TTS Engine")
+    _tc1, _tc2, _tc3 = st.columns(3, gap="small")
+    for _col, (_key, _label, _sub) in zip([_tc1, _tc2, _tc3], _tts_buttons):
+        _active = (_cur_tts == _key)
+        with _col:
+            st.markdown(
+                f"""<div style="
+                    background:{'#6366f1' if _active else '#f3f4f6'};
+                    color:{'#fff' if _active else '#374151'};
+                    border-radius:10px;
+                    padding:10px 6px;
+                    text-align:center;
+                    font-size:0.82rem;
+                    font-weight:{'700' if _active else '500'};
+                    border:2px solid {'#6366f1' if _active else '#e5e7eb'};
+                    line-height:1.3;
+                    cursor:pointer;
+                ">
+                {_label}<br>
+                <span style="font-size:0.7rem;opacity:{'1' if _active else '0.65'}">{_sub}</span>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            if st.button("✓" if _active else "Seleccionar" if lang_option == "es" else "Select",
+                         key=f"tts_btn_{_key}",
+                         use_container_width=True,
+                         type="primary" if _active else "secondary"):
+                st.session_state["tts_engine"] = _key
+                st.rerun()
+
+    tts_engine = st.session_state.get("tts_engine", "edge_tts")
 
     st.markdown("---")
 
