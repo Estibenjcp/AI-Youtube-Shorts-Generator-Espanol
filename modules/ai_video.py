@@ -226,9 +226,10 @@ class AIVideoEngine:
     async def _submit_fal(self, prompt: str, duration: int, session_headers: dict) -> str:
         """Submit a generation request to the FAL.ai queue, return request_id."""
         url  = f"{_FAL_BASE}/{self.model}"
+        # Most FAL models accept duration as integer; sending as string causes 403 on some models (e.g. fal-ai/ovi)
         body = {
             "prompt":       prompt,
-            "duration":     str(duration),
+            "duration":     int(duration),
             "aspect_ratio": "9:16",
         }
 
@@ -296,7 +297,7 @@ class AIVideoEngine:
         body = {
             "model_name":   "kling-v2-master",
             "prompt":       prompt,
-            "duration":     str(duration),
+            "duration":     str(duration),   # Kling direct API expects string
             "aspect_ratio": "9:16",
         }
 
