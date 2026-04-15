@@ -1067,21 +1067,28 @@ Finally, a short contextual subtitle relevant to the topic."
         hook = script[0]['text'] if script else ""
         last = script[-1]['text'] if script else ""
 
-        # Hashtag pools optimizados por modo
+        # Hashtag pools para TikTok: #fyp + #viral fijos + 3 del nicho = 5 exactos
+        # Para Facebook/YouTube se usan solo los 3 del nicho (sin fyp/viral)
         _ht = {
-            "viral":      ("#HistoriaOscura #MisteriosSinResolver #HechosImpactantes #CatastrofesHistoricas #DarkHistory",
-                           "#DarkHistory #BizarreScience #MysteryFacts #Unexplained #DidYouKnow"),
-            "testimonio": ("#Misterio #HistoriaOculta #Testimonios #TerrorReal #MisteriosInexplicables",
-                           "#Mystery #Horror #TrueStory #Unexplained #CreepyFacts"),
-            "libro":      ("#ResumenDeLibro #LibrosQueDebesLeer #Lectura #DesarrolloPersonal #LibrosRecomendados",
-                           "#BookSummary #BooksToRead #SelfImprovement #BookReview #LearnSomethingNew"),
-            "empleo":     ("#OfertaDeEmpleo #TrabajosDisponibles #BuscandoEmpleo #OportunidadLaboral #VacantesDeEmpleo",
-                           "#JobOffer #NowHiring #JobOpportunity #Careers #JobSearch"),
-            "guion":      ("#NoticiasVirales #Trending #LoCurioso #SabiaQue #HechosDelDia",
-                           "#ViralNews #Trending #DidYouKnow #RandomFacts #InterestingFacts"),
+            "viral":      ("#HistoriaOscura #HechosImpactantes #DarkHistory",
+                           "#DarkHistory #MysteryFacts #DidYouKnow"),
+            "testimonio": ("#Misterio #TerrorReal #HistoriaOculta",
+                           "#Mystery #Horror #TrueStory"),
+            "libro":      ("#ResumenDeLibro #Lectura #DesarrolloPersonal",
+                           "#BookSummary #SelfImprovement #LearnSomethingNew"),
+            "empleo":     ("#OfertaDeEmpleo #BuscandoEmpleo #OportunidadLaboral",
+                           "#JobOffer #NowHiring #JobOpportunity"),
+            "guion":      ("#NoticiasVirales #LoCurioso #SabiaQue",
+                           "#ViralNews #DidYouKnow #InterestingFacts"),
         }
-        hashtags_es, hashtags_en = _ht.get(mode, ("#MentesCuriosas #CienciaYMisterio #HechosCuriosos #DatosImpactantes #SabiaQue",
-                                                   "#DidYouKnow #MindBlowing #FunFacts #Science #History"))
+        _niche_es, _niche_en = _ht.get(mode, ("#HechosCuriosos #CienciaYMisterio #DatosImpactantes",
+                                               "#DidYouKnow #MindBlowing #FunFacts"))
+        # TikTok: siempre #fyp #viral + 3 del nicho (total 5)
+        hashtags_tiktok_es = f"#fyp #viral {_niche_es}"
+        hashtags_tiktok_en = f"#fyp #viral {_niche_en}"
+        # Facebook / YouTube: solo los 3 del nicho
+        hashtags_es = _niche_es
+        hashtags_en = _niche_en
 
         if lang == "es":
             prompt = f"""
@@ -1108,7 +1115,7 @@ Genera copy optimizado para cada plataforma en español latino.
 - LÍNEA 1: gancho con la PALABRA CLAVE PRINCIPAL del tema (dato impactante o afirmación sorprendente).
 - LÍNEA 2: 1 oración conversacional que amplía la curiosidad.
 - LÍNEA 3: CTA — pregunta directa que invite a comentar (ej: "¿Lo sabías? Comenta abajo 👇").
-- HASHTAGS: Usa EXACTAMENTE estos (ya optimizados para el nicho): {hashtags_es}
+- HASHTAGS: Usa EXACTAMENTE estos (ya optimizados para el nicho): {hashtags_tiktok_es}
 
 ### 4. CAPTION DE FACEBOOK REELS:
 - LÍNEA 1: afirmación impactante con la palabra clave principal (sin preguntas).
@@ -1149,7 +1156,7 @@ Generate platform-optimized copy for YouTube Shorts, TikTok, and Facebook Reels.
 - LINE 1: hook containing the PRIMARY KEYWORD (shocking fact or surprising statement).
 - LINE 2: 1 short conversational sentence expanding curiosity.
 - LINE 3: CTA — direct question inviting engagement (e.g. "Did you know this? Comment below 👇").
-- HASHTAGS: Use EXACTLY these (already optimized for the niche): {hashtags_en}
+- HASHTAGS: Use EXACTLY these (already optimized for the niche): {hashtags_tiktok_en}
 
 ### 4. FACEBOOK REELS CAPTION:
 - LINE 1: strongest hook — shocking statement with main keyword (no questions).
