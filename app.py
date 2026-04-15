@@ -2754,8 +2754,14 @@ elif _hook_step == "selecting":
                 "gtts_lang_code":   st.session_state.get("gtts_lang_code", "es-US"),
                 "gtts_rate":        st.session_state.get("gtts_rate", 1.0),
                 "gtts_pitch":       st.session_state.get("gtts_pitch", 0.0),
-                "ai_video_style":   st.session_state.get("ai_video_style", "cinematic"),
-                "novela_theme":     st.session_state.get("novela_theme_input", ""),
+                "ai_video_style":        st.session_state.get("ai_video_style", "cinematic"),
+                "video_source":          st.session_state.get("video_source", "pexels"),
+                "ai_video_provider":     os.getenv("AI_VIDEO_PROVIDER", "fal"),
+                "ai_video_key":          os.getenv("AI_VIDEO_KEY", ""),
+                "ai_video_model":        os.getenv("AI_VIDEO_MODEL", ""),
+                "ai_video_num_scenes":   st.session_state.get("ai_video_num_scenes", 6),
+                "ai_video_clip_duration":st.session_state.get("ai_video_clip_duration", 5),
+                "novela_theme":          st.session_state.get("novela_theme_input", ""),
             }
             _t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, _params), daemon=True)
             st.session_state.thread = _t
