@@ -1031,8 +1031,11 @@ for key, default in [
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
     ("vox_mood_enabled",  True),
-    ("ai_video_style",    "cinematic"),
-    ("novela_theme",      ""),
+    ("ai_video_style",          "cinematic"),
+    ("ai_video_total_duration", 30),
+    ("ai_video_clip_duration",  5),
+    ("ai_video_num_scenes",     6),
+    ("novela_theme",            ""),
     ("gtts_rate",         1.0),
     ("gtts_pitch",        0.0),
     ("gtts_lang_code",    "es-US"),
@@ -1082,6 +1085,16 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         log_q.put("STAGE:Brain")
         brain         = ContentBrain()
         pipeline_mode = params.get("mode", "auto")
+
+        # Si el usuario usa Video IA, sobrescribe num_scenes con el cálculo duracion/clip
+        _video_src = params.get("video_source", "pexels")
+        if _video_src == "ai_video":
+            _ai_num_scenes = int(params.get("ai_video_num_scenes", 6))
+            _ai_clip_dur   = int(params.get("ai_video_clip_duration", 5))
+            log_q.put(f"⏱️ Video IA: {_ai_num_scenes} escenas × {_ai_clip_dur}s = ~{_ai_num_scenes * _ai_clip_dur}s")
+        else:
+            _ai_num_scenes = params.get("num_scenes", 9)
+            _ai_clip_dur   = 5
 
         if pipeline_mode == "viral":
             topic       = params.get("topic", "").strip()
@@ -1145,13 +1158,13 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             log_q.put(f"🎬 [Mininovela] Historia: {topic} ({bible.get('genre','')})")
             log_q.put(f"🎭 Personajes: {', '.join(c['name'] for c in bible.get('characters',[]))}")
             log_q.put("📝 [Mininovela] Escribiendo guión por escenas...")
-            script = brain.generate_miniseries_script(bible, lang=pipeline_lang, num_scenes=8)
+            script = brain.generate_miniseries_script(bible, lang=pipeline_lang, num_scenes=_ai_num_scenes)
 
         else:
             chosen_hook = params.get("chosen_hook", "").strip()
             topic  = brain.get_trending_topic(params.get("topic", ""),
                                               lang=pipeline_lang, mode="auto")
-            script = brain.generate_script(topic, num_scenes=params.get("num_scenes", 9),
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
                                            lang=pipeline_lang, chosen_hook=chosen_hook)
 
         if not script:
@@ -1191,11 +1204,12 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         if _video_src == "ai_video":
             from modules.ai_video import AIVideoEngine
             _ai_vid_engine = AIVideoEngine(
-                provider     = params.get("ai_video_provider", "fal"),
-                api_key      = params.get("ai_video_key", ""),
-                model        = params.get("ai_video_model", ""),
-                style        = params.get("ai_video_style", "cinematic"),
-                max_parallel = 2,
+                provider      = params.get("ai_video_provider", "fal"),
+                api_key       = params.get("ai_video_key", ""),
+                model         = params.get("ai_video_model", ""),
+                style         = params.get("ai_video_style", "cinematic"),
+                clip_duration = _ai_clip_dur,
+                max_parallel  = 2,
             )
             log_q.put(f"🤖 [AI Video] Proveedor: {params.get('ai_video_provider','fal').upper()} · Estilo: {params.get('ai_video_style','cinematic')}")
             log_q.put("⏳ Generando clips de video con IA (puede tardar varios minutos)...")
@@ -1640,6 +1654,69 @@ if st.session_state.get("video_source", "pexels") == "ai_video":
             f"🎬 Estilo activo: **{_style_labels_map.get(_cur_style, _cur_style)}** · {VIDEO_STYLES.get(_cur_style, {}).get('suffix', '')[:60]}..."
             if lang_option == "es" else
             f"🎬 Active style: **{_style_labels_map.get(_cur_style, _cur_style)}** · {VIDEO_STYLES.get(_cur_style, {}).get('suffix', '')[:60]}..."
+        )
+
+        # ── Duración del video y cortes ───────────────────────────────────
+        st.markdown("---")
+        st.markdown(
+            "**⏱️ Duración y estructura del video**" if lang_option == "es"
+            else "**⏱️ Video duration & structure**"
+        )
+
+        _dur_c1, _dur_c2 = st.columns(2, gap="medium")
+
+        with _dur_c1:
+            # Duración total deseada
+            _total_options = [15, 30, 45, 60, 90]
+            _cur_total = st.session_state.get("ai_video_total_duration", 30)
+            ai_video_total = st.select_slider(
+                "Duración total" if lang_option == "es" else "Total duration",
+                options=_total_options,
+                value=_cur_total if _cur_total in _total_options else 30,
+                format_func=lambda x: f"{x}s",
+                key="ai_video_total_slider",
+            )
+            st.session_state["ai_video_total_duration"] = ai_video_total
+
+        with _dur_c2:
+            # Duración por clip (lo que pide al modelo)
+            _clip_options = [5, 10]
+            _cur_clip = st.session_state.get("ai_video_clip_duration", 5)
+            ai_video_clip = st.select_slider(
+                "Duración por clip" if lang_option == "es" else "Clip duration",
+                options=_clip_options,
+                value=_cur_clip if _cur_clip in _clip_options else 5,
+                format_func=lambda x: f"{x}s",
+                key="ai_video_clip_slider",
+                help=(
+                    "Duración que solicitas al modelo de IA por cada clip."
+                    if lang_option == "es" else
+                    "Duration requested from the AI model per clip."
+                ),
+            )
+            st.session_state["ai_video_clip_duration"] = ai_video_clip
+
+        # Cálculo automático de escenas
+        _computed_scenes = max(1, round(ai_video_total / ai_video_clip))
+        st.session_state["ai_video_num_scenes"] = _computed_scenes
+
+        st.markdown(
+            f"""<div style="background:#ede9fe;border-radius:10px;padding:12px 16px;
+            text-align:center;margin-top:4px">
+            <span style="font-size:1.1rem;font-weight:700;color:#5b21b6">
+            {ai_video_total}s ÷ {ai_video_clip}s = <span style="font-size:1.4rem">{_computed_scenes}</span> escenas
+            </span><br>
+            <span style="font-size:0.75rem;color:#7c3aed">
+            {'El guión se adaptará a ' if lang_option == 'es' else 'Script will adapt to '}
+            {_computed_scenes} {'escenas de' if lang_option == 'es' else 'scenes of'} {ai_video_clip}s
+            {'cada una' if lang_option == 'es' else 'each'}
+            </span></div>""",
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            "💡 FFmpeg recorta cada clip al largo exacto del audio TTS — el tiempo total real puede variar ±2s."
+            if lang_option == "es" else
+            "💡 FFmpeg trims each clip to the exact TTS audio length — actual total may vary ±2s."
         )
 
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
@@ -2503,8 +2580,10 @@ def _launch_pipeline():
         "ai_video_provider":os.getenv("AI_VIDEO_PROVIDER", "fal"),
         "ai_video_key":     os.getenv("AI_VIDEO_KEY", ""),
         "ai_video_model":   os.getenv("AI_VIDEO_MODEL", ""),
-        "ai_video_style":   st.session_state.get("ai_video_style", "cinematic"),
-        "novela_theme":     st.session_state.get("novela_theme_input", ""),
+        "ai_video_style":       st.session_state.get("ai_video_style", "cinematic"),
+        "ai_video_num_scenes":  st.session_state.get("ai_video_num_scenes", 6),
+        "ai_video_clip_duration": st.session_state.get("ai_video_clip_duration", 5),
+        "novela_theme":         st.session_state.get("novela_theme_input", ""),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t

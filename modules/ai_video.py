@@ -149,14 +149,16 @@ class AIVideoEngine:
         api_key: str,
         model: str = "",
         style: str = "cinematic",
+        clip_duration: int = 0,   # 0 = auto-detect from audio; 5 or 10 = forced
         max_parallel: int = 2,
     ):
-        self.provider     = provider.lower().strip()
-        self.api_key      = api_key.strip()
-        self.model        = model.strip() if model.strip() else self._default_model(self.provider)
-        self.style        = style if style in VIDEO_STYLES else "cinematic"
-        self.max_parallel = max(1, int(max_parallel))
-        self.output_dir   = _OUTPUT_DIR
+        self.provider      = provider.lower().strip()
+        self.api_key       = api_key.strip()
+        self.model         = model.strip() if model.strip() else self._default_model(self.provider)
+        self.style         = style if style in VIDEO_STYLES else "cinematic"
+        self.clip_duration = int(clip_duration)   # user-forced duration (0 = auto)
+        self.max_parallel  = max(1, int(max_parallel))
+        self.output_dir    = _OUTPUT_DIR
         os.makedirs(self.output_dir, exist_ok=True)
 
     # ------------------------------------------------------------------
@@ -168,15 +170,23 @@ class AIVideoEngine:
 
     def _best_duration(self, audio_dur: float) -> int:
         """
-        Pick the shortest supported clip duration that is >= audio_dur.
-        If audio_dur exceeds all available durations, return the longest one.
+        Return the clip duration to request from the AI model.
+        - If self.clip_duration is set (>0), use it directly (user preference).
+        - Otherwise auto-pick the shortest supported duration >= audio_dur.
         """
-        durations = _MODEL_DURATIONS.get(self.model, [5, 10])
-        durations_sorted = sorted(durations)
-        for d in durations_sorted:
+        if self.clip_duration > 0:
+            # Clamp to a supported duration (pick closest >=)
+            durations = sorted(_MODEL_DURATIONS.get(self.model, [5, 10]))
+            for d in durations:
+                if d >= self.clip_duration:
+                    return d
+            return durations[-1]
+        # Auto-detect: pick shortest clip that covers the audio
+        durations = sorted(_MODEL_DURATIONS.get(self.model, [5, 10]))
+        for d in durations:
             if d >= audio_dur:
                 return d
-        return durations_sorted[-1]
+        return durations[-1]
 
     def _build_prompt(self, scene: dict) -> str:
         """
