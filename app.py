@@ -1556,7 +1556,7 @@ with st.expander(voice_label_hint, expanded=False):
                 try:
                     from voxcpm import VoxCPM as _VC
                     import soundfile as _sf
-                    _m = _VC.from_pretrained("openbmb/VoxCPM2")
+                    _m = _VC.from_pretrained("openbmb/VoxCPM2", load_denoiser=False)
                     _wav = _m.generate(f"{desc} {text}", cfg_value=2.0)
                     _sf.write(path, _wav, 48000)
                 except Exception as _e:

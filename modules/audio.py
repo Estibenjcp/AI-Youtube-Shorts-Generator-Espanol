@@ -227,19 +227,31 @@ class VoxCPMAudioEngine:
                 "VoxCPM no esta instalado. Ejecuta: pip install voxcpm soundfile"
             )
 
-        self.voice_description = voice_description.strip()
-        self.lang              = lang
-        self.mood_enabled      = mood_enabled
-        self.reference_audio   = reference_audio.strip()
-        self.output_dir        = os.path.join(os.getcwd(), "assets", "audio_clips")
+        self.voice_description  = voice_description.strip()
+        self.lang               = lang
+        self.mood_enabled       = mood_enabled
+        self.reference_audio    = reference_audio.strip()
+        self.output_dir         = os.path.join(os.getcwd(), "assets", "audio_clips")
         os.makedirs(self.output_dir, exist_ok=True)
-        self._model            = None   # lazy-load on first use
+        self._model             = None   # lazy-load on first use
+        self._model_load_failed = False  # prevent re-attempting after failure
 
     def _get_model(self):
+        if self._model_load_failed:
+            raise RuntimeError("VoxCPM model failed to load — check logs above.")
         if self._model is None:
-            print("🤖 [VoxCPM] Loading model (first run — may take a minute)...")
-            self._model = self._VoxCPM.from_pretrained("openbmb/VoxCPM2")
-            print("✅ [VoxCPM] Model ready.")
+            print("[VoxCPM] Loading model (first run — may take a minute)...")
+            try:
+                # load_denoiser=False skips the ModelScope speech_zipenhancer
+                # dependency that may be geo-blocked or require authentication.
+                self._model = self._VoxCPM.from_pretrained(
+                    "openbmb/VoxCPM2",
+                    load_denoiser=False,
+                )
+                print("[VoxCPM] Model ready (denoiser disabled — faster load).")
+            except Exception as e:
+                self._model_load_failed = True
+                raise RuntimeError(f"[VoxCPM] Failed to load model: {e}") from e
         return self._model
 
     def _voice_for_scene(self, scene: dict) -> str:
