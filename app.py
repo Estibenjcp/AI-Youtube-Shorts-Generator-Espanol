@@ -1213,14 +1213,27 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             )
             log_q.put(f"🤖 [AI Video] Proveedor: {params.get('ai_video_provider','fal').upper()} · Estilo: {params.get('ai_video_style','cinematic')}")
             log_q.put("⏳ Generando clips de video con IA (puede tardar varios minutos)...")
-            assets_map = asyncio.run(_ai_vid_engine.process_script(script))
-            # Fallback to Pexels for any scene that failed AI generation
-            _failed_scenes = [s for s in script if s["id"] not in assets_map]
+            _ai_result = asyncio.run(_ai_vid_engine.process_script(script))
+            # {scene_id: [path]} → lista posicional [(path_a, path_b), ...] igual que AssetManager
+            _failed_scenes = []
+            _assets_list = []
+            for _sc in script:
+                _sid = _sc["id"]
+                if _sid in _ai_result:
+                    _assets_list.append((_ai_result[_sid][0], None))
+                else:
+                    _assets_list.append(None)
+                    _failed_scenes.append(_sc)
             if _failed_scenes:
                 log_q.put(f"⚠️ {len(_failed_scenes)} escenas sin clip IA — usando Pexels como respaldo...")
                 asset_manager = AssetManager()
-                _fallback_map = asset_manager.get_videos(_failed_scenes)
-                assets_map.update(_fallback_map)
+                _fallback_list = asset_manager.get_videos(_failed_scenes)
+                _fb_idx = 0
+                for _k in range(len(_assets_list)):
+                    if _assets_list[_k] is None and _fb_idx < len(_fallback_list):
+                        _assets_list[_k] = _fallback_list[_fb_idx]
+                        _fb_idx += 1
+            assets_map = _assets_list
         else:
             asset_manager = AssetManager()
             assets_map    = asset_manager.get_videos(script)
