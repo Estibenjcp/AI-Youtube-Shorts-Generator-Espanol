@@ -1103,7 +1103,7 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="viral")
-            script = brain.generate_viral_script(topic, category, lang=pipeline_lang, chosen_hook=chosen_hook)
+            script = brain.generate_viral_script(topic, category, lang=pipeline_lang, chosen_hook=chosen_hook, num_scenes=_ai_num_scenes)
 
         elif pipeline_mode == "testimonio":
             topic       = params.get("topic", "").strip()
@@ -1113,7 +1113,7 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="testimonio")
             script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang,
-                                                      chosen_hook=chosen_hook)
+                                                      chosen_hook=chosen_hook, num_scenes=_ai_num_scenes)
 
         elif pipeline_mode == "libro":
             topic       = params.get("topic", "").strip()
@@ -1123,7 +1123,7 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="libro")
             script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
-                                                        chosen_hook=chosen_hook)
+                                                        chosen_hook=chosen_hook, num_scenes=_ai_num_scenes)
 
         elif pipeline_mode == "empleo":
             offer_text = params.get("job_offer_text", "").strip()

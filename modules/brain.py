@@ -402,7 +402,7 @@ FORMAT (strict JSON, no markdown, no extra text):
         lines = [l.strip().strip('"').strip("'").strip('-').strip() for l in raw.splitlines() if len(l.strip()) > 10]
         return [self._sanitize(l) for l in lines if len(l) > 10][:n] or [ctx[:60]]
 
-    def generate_viral_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "") -> list:
+    def generate_viral_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9) -> list:
         """Genera un guion viral ultra-retención (45-60 seg) con estructura MrBeast/Dark History.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -415,7 +415,8 @@ FORMAT (strict JSON, no markdown, no extra text):
 Tu objetivo es crear Shorts que generen maxima retencion y shares (estilo MrBeast + The Why Files + Dark History).
 
 REGLAS OBLIGATORIAS:
-- Duracion total: 45-60 segundos (maximo 140-160 palabras en total sumando todos los campos "text").
+- Duracion total: ~{num_scenes * 5} segundos (maximo {num_scenes * 17} palabras en total sumando todos los campos "text").
+- EXACTAMENTE {num_scenes} escenas — ni una mas, ni una menos.
 - Estructura EXACTA en el orden de las escenas:
   Escena 1: HOOK VIRAL (CRITICO - maximo 12 palabras, el espectador decide en 1.7 seg):
     Elige OBLIGATORIAMENTE uno de estos 4 tipos:
@@ -424,10 +425,9 @@ REGLAS OBLIGATORIAS:
     TIPO C-CURIOSIDAD: "Nadie esta hablando de lo que paso realmente con [ELEMENTO DEL TEMA]."
     TIPO D-PREGUNTA TRAMPA: "¿Que harias si descubrieras que [AFIRMACION IMPACTANTE Y ESPECIFICA]?"
     El hook debe ser IMPOSIBLE de ignorar.
-  Escenas 2-3: CONTEXTO RAPIDO - Situacion historica en 1-2 frases.
-  Escenas 4-7: EL GIRO / LA MORTANDAD / EL NEAR MISS - Detalle brutal, dato desconocido, consecuencia terrorifica.
-  Escena 8: TWIST FINAL - Revelacion impactante, ironia o "lo que paso despues".
-  Escena 9: CTA - "Comenta QUE MAS si queres la parte 2. Sigueme para mas historia oscura."
+  Escenas 2-{max(3, num_scenes - 3)}: CONTEXTO + DESARROLLO - Situacion historica, detalles brutales, datos desconocidos.
+  Escena {num_scenes - 1}: TWIST FINAL - Revelacion impactante, ironia o "lo que paso despues".
+  Escena {num_scenes}: CTA - "Comenta QUE MAS si queres la parte 2. Sigueme para mas historia oscura."
 - Lenguaje dramatico, conversacional y adictivo. Usa MAYUSCULAS para enfasis.
 - PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales).
 - USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
@@ -443,7 +443,7 @@ FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
 ]
 
 REGLAS DEL JSON:
-- Entre 8 y 10 escenas.
+- EXACTAMENTE {num_scenes} entradas — no mas, no menos.
 - "text": el texto narrado de esa escena. Sin emojis. Sin caracteres especiales.
 - "visual_1" y "visual_2": terminos de busqueda en INGLES para Pexels (2-4 palabras), que coincidan con el contenido.
 - "mood": siempre "dramatic"."""
@@ -454,7 +454,8 @@ Your goal: maximum retention and shares (MrBeast + The Why Files + Dark History 
 
 MANDATORY RULES:
 - LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
-- Total duration: 45-60 seconds (maximum 140-160 words total across all "text" fields).
+- Total duration: ~{num_scenes * 5} seconds (maximum {num_scenes * 17} words total across all "text" fields).
+- EXACTLY {num_scenes} scenes — no more, no fewer.
 - EXACT scene structure:
   Scene 1: VIRAL HOOK (CRITICAL - max 12 words, viewer decides in 1.7 sec):
     MANDATORY — pick ONE of these 4 hook types:
@@ -463,10 +464,9 @@ MANDATORY RULES:
     TYPE C-CURIOSITY: "Nobody is talking about what really happened with [SPECIFIC ELEMENT]."
     TYPE D-TRAP QUESTION: "What would you do if you found out that [SHOCKING SPECIFIC STATEMENT]?"
     The hook must be IMPOSSIBLE to scroll past.
-  Scenes 2-3: QUICK CONTEXT - Historical situation in 1-2 sentences.
-  Scenes 4-7: THE TWIST / NEAR MISS - Brutal detail, unknown fact, terrifying consequence.
-  Scene 8: FINAL TWIST - Shocking revelation, irony or "what happened after".
-  Scene 9: CTA - "Comment WHAT ELSE if you want part 2. Follow for more dark history."
+  Scenes 2-{max(3, num_scenes - 3)}: QUICK CONTEXT + DEVELOPMENT - Historical situation, brutal details, unknown facts.
+  Scene {num_scenes - 1}: FINAL TWIST - Shocking revelation, irony or "what happened after".
+  Scene {num_scenes}: CTA - "Comment WHAT ELSE if you want part 2. Follow for more dark history."
 - Dramatic, conversational and addictive language. Use CAPS for emphasis.
 - FORBIDDEN: emojis, special Unicode characters (em-dashes, curly quotes, special ellipsis).
 - USE ONLY: letters, numbers, commas, periods, exclamation marks, question marks, plain apostrophes.
@@ -482,7 +482,7 @@ OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
 ]
 
 JSON RULES:
-- Between 8 and 10 scenes.
+- EXACTLY {num_scenes} entries — no more, no fewer.
 - "text": narrated text for that scene. No emojis. No special characters.
 - "visual_1" and "visual_2": English Pexels search terms (2-4 words) matching the content.
 - "mood": always "dramatic"."""
@@ -496,16 +496,21 @@ JSON RULES:
                 s['id']   = i + 1
                 s['text'] = self._sanitize(s.get('text', ''))
                 s.setdefault('mood', 'dramatic')
+            if len(scenes) > num_scenes:
+                print(f"⚠️ AI returned {len(scenes)} viral scenes, trimming to {num_scenes}.")
+                scenes = scenes[:num_scenes]
+            elif len(scenes) < num_scenes:
+                print(f"⚠️ AI returned only {len(scenes)} viral scenes (requested {num_scenes}).")
             print(f"✅ {len(scenes)} viral scenes ready")
             return scenes
         except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
             return [
                 {"id": i+1, "text": self._sanitize(s), "visual_1": "dramatic cinematic footage", "visual_2": "historical documentary", "mood": "dramatic"}
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_testimonio_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "") -> list:
+    def generate_testimonio_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9) -> list:
         """Guion estilo testimonio misterioso — narración lenta, cinematográfica, terror.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -524,17 +529,16 @@ JSON RULES:
 
 Debes contar la historia como si fuera un testimonio real de una persona (ex satanica, testigo, sacerdote, victima, etc.).
 
-Estructura exacta (50-70 segundos en total):
+Estructura exacta (~{num_scenes * 5} segundos / EXACTAMENTE {num_scenes} escenas):
   Escena 1 - HOOK PERTURBADOR (maximo 12 palabras, el espectador decide en 1.7 seg):
     OBLIGATORIO — uno de estos tipos:
     TIPO A: "[CIFRA] personas/casos [hecho perturbador]." Ej: "17 miembros de una secta murieron la misma noche. Nadie explica como."
     TIPO B: "Lo que [testigo/ex-miembro] revelo sobre [ELEMENTO ESPECIFICO] cambio todo."
     TIPO C: "Nadie habla de lo que paso realmente en [LUGAR/EVENTO ESPECIFICO DEL TEMA]."
     TIPO D: "¿Que harias si descubrieras que [HECHO PERTURBADOR CONCRETO]?"
-  Escenas 2-3 - TESTIGO: Presentacion del testimoniante ("Segun una mujer que estuvo anos en el satanismo...").
-  Escenas 4-7 - DESARROLLO: Detalles escalofriantes contados poco a poco.
-  Escena 8 - CLIMAX: La parte mas fuerte y perturbadora.
-  Escena 9 - CIERRE: Consecuencia + CTA ("Vos crees en esto? Comenta SI o NO").
+  Escenas 2-{max(3, num_scenes - 3)} - TESTIGO + DESARROLLO: Presentacion del testimoniante y detalles escalofriantes.
+  Escena {num_scenes - 1} - CLIMAX: La parte mas fuerte y perturbadora.
+  Escena {num_scenes} - CIERRE: Consecuencia + CTA ("Vos crees en esto? Comenta SI o NO").
 
 Reglas de estilo:
 - Lenguaje conversacional, misterioso y dramatico.
@@ -553,7 +557,7 @@ FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
 ]
 
 REGLAS DEL JSON:
-- Entre 8 y 10 escenas.
+- EXACTAMENTE {num_scenes} entradas — no mas, no menos.
 - "text": el texto narrado de esa escena. Sin emojis. Sin caracteres especiales.
 - "visual_1", "visual_2", "visual_3": terminos en INGLES para Pexels (2-4 palabras). Deben ser oscuros, atmosfericos: dark forest, candles, fog, shadow, cemetery, abandoned, storm, etc.
 - "mood": siempre "horror"."""
@@ -562,17 +566,16 @@ REGLAS DEL JSON:
 
 Tell the story as if it were a real testimony from a real person (ex-satanist, witness, priest, victim, etc.).
 
-Exact structure (50-70 seconds total):
+Exact structure (~{num_scenes * 5} seconds / EXACTLY {num_scenes} scenes):
   Scene 1 - DISTURBING HOOK (max 12 words, viewer decides in 1.7 sec):
     MANDATORY — one of these types:
     TYPE A: "[NUMBER] people/cases [disturbing fact]." E.g.: "17 cult members died the same night. Nobody explains how."
     TYPE B: "What [witness/ex-member/priest] revealed about [SPECIFIC ELEMENT] changed everything."
     TYPE C: "Nobody is talking about what really happened at [SPECIFIC PLACE/EVENT]."
     TYPE D: "What would you do if you found out that [DISTURBING CONCRETE FACT]?"
-  Scenes 2-3 - WITNESS: Introduce the person giving testimony ("According to a woman who spent years in satanism...").
-  Scenes 4-7 - DEVELOPMENT: Tell the chilling details gradually.
-  Scene 8 - CLIMAX: The strongest and most disturbing part.
-  Scene 9 - CLOSING: Consequence + CTA ("Do you believe this? Comment YES or NO").
+  Scenes 2-{max(3, num_scenes - 3)} - WITNESS + DEVELOPMENT: Introduce testimony person and chilling details gradually.
+  Scene {num_scenes - 1} - CLIMAX: The strongest and most disturbing part.
+  Scene {num_scenes} - CLOSING: Consequence + CTA ("Do you believe this? Comment YES or NO").
 
 Style rules:
 - LANGUAGE: ENGLISH ONLY. No Spanish words.
@@ -591,7 +594,7 @@ OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
 ]
 
 JSON RULES:
-- Between 8 and 10 scenes.
+- EXACTLY {num_scenes} entries — no more, no fewer.
 - "text": narrated text for that scene. No emojis. No special characters.
 - "visual_1", "visual_2", "visual_3": English Pexels search terms (2-4 words). Must be dark and atmospheric: dark forest, candles, fog, shadow, cemetery, abandoned, storm, etc.
 - "mood": always "horror"."""
@@ -607,10 +610,15 @@ JSON RULES:
                 s.setdefault('mood', 'horror')
                 if not s.get('visual_3'):
                     s['visual_3'] = _random.choice(ATMOSPHERIC_FALLBACKS)
+            if len(scenes) > num_scenes:
+                print(f"⚠️ AI returned {len(scenes)} testimonio scenes, trimming to {num_scenes}.")
+                scenes = scenes[:num_scenes]
+            elif len(scenes) < num_scenes:
+                print(f"⚠️ AI returned only {len(scenes)} testimonio scenes (requested {num_scenes}).")
             print(f"✅ {len(scenes)} testimonio scenes ready")
             return scenes
         except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
             return [
                 {
                     "id": i+1, "text": self._sanitize(s),
@@ -622,7 +630,7 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_book_summary_script(self, book: str, category: str, lang: str = "es", chosen_hook: str = "") -> list:
+    def generate_book_summary_script(self, book: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9) -> list:
         """Resumen de libro de 60 seg — enseña, aplica y motiva a leer.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -632,13 +640,12 @@ JSON RULES:
         if lang == "es":
             prompt = f"""Eres un narrador conversacional que habla directamente al oido del espectador. Tu voz sera leida por un sistema de texto a voz, por eso CADA FRASE debe sonar natural al ser pronunciada en voz alta.
 
-Estructura (8-10 escenas / 150-170 palabras en total):
+Estructura (EXACTAMENTE {num_scenes} escenas / {num_scenes * 15}-{num_scenes * 18} palabras en total):
   Escena 1 - GANCHO: Una verdad incomoda o dato sorprendente que el libro revela. Directo, sin rodeos.
   Escena 2 - EL LIBRO: Presenta el titulo y autor de forma natural, como si lo recomendaras a un amigo.
-  Escenas 3-4 - LA IDEA CENTRAL: La premisa principal del libro, explicada simple y clara.
-  Escenas 5-6 - EL GIRO: La idea mas inesperada o radical. La que cambia como piensas.
-  Escena 7 - EN TU VIDA: Como aplicar esto manana mismo, con un ejemplo concreto.
-  Escenas 8-9 - CIERRE: Una frase que quede resonando. Un CTA simple y directo.
+  Escenas 3-{max(4, num_scenes - 3)} - IDEAS + GIRO: La premisa principal y la idea mas inesperada del libro.
+  Escena {num_scenes - 1} - EN TU VIDA: Como aplicar esto manana mismo, con un ejemplo concreto.
+  Escena {num_scenes} - CIERRE + CTA: Una frase que quede resonando y llamada a la accion.
 
 REGLAS CRITICAS PARA SONAR HUMANO:
 - Cada escena: maximo 15 palabras. Frases cortas. Una idea por escena.
@@ -666,13 +673,12 @@ REGLAS DEL JSON:
         else:
             prompt = f"""You are a conversational narrator speaking directly into the viewer's ear. Your voice will be read by a text-to-speech system, so EVERY SENTENCE must sound natural when spoken out loud.
 
-Structure (8-10 scenes / 150-170 words total):
+Structure (EXACTLY {num_scenes} scenes / {num_scenes * 15}-{num_scenes * 18} words total):
   Scene 1 - HOOK: An uncomfortable truth or surprising fact the book reveals. Direct, no fluff.
   Scene 2 - THE BOOK: Introduce the title and author naturally, like recommending it to a friend.
-  Scenes 3-4 - THE CORE IDEA: The book's main premise, explained simply and clearly.
-  Scenes 5-6 - THE TWIST: The most unexpected or radical idea. The one that changes how you think.
-  Scene 7 - IN YOUR LIFE: How to apply this tomorrow, with a concrete example.
-  Scenes 8-9 - CLOSE: A line that keeps echoing. A simple, direct CTA.
+  Scenes 3-{max(4, num_scenes - 3)} - CORE IDEAS + TWIST: Main premise and most unexpected idea of the book.
+  Scene {num_scenes - 1} - IN YOUR LIFE: How to apply this tomorrow, with a concrete example.
+  Scene {num_scenes} - CLOSE + CTA: A line that keeps echoing and a simple call to action.
 
 CRITICAL RULES FOR SOUNDING HUMAN:
 - Each scene: maximum 15 words. Short sentences. One idea per scene.
@@ -708,10 +714,15 @@ JSON RULES:
                 s['id']   = i + 1
                 s['text'] = self._sanitize(s.get('text', ''))
                 s.setdefault('mood', 'inspiring')
+            if len(scenes) > num_scenes:
+                print(f"⚠️ AI returned {len(scenes)} book scenes, trimming to {num_scenes}.")
+                scenes = scenes[:num_scenes]
+            elif len(scenes) < num_scenes:
+                print(f"⚠️ AI returned only {len(scenes)} book scenes (requested {num_scenes}).")
             print(f"✅ {len(scenes)} book summary scenes ready")
             return scenes
         except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
             return [
                 {"id": i+1, "text": self._sanitize(s), "visual_1": "person reading book", "visual_2": "open notebook inspiring", "mood": "inspiring"}
                 for i, s in enumerate(sentences)
