@@ -1027,6 +1027,7 @@ for key, default in [
     ("guion_raw_text",    ""),
     ("generation_mode",   "auto"),
     ("hook_step",         "idle"),
+    ("video_source",      "pexels"),   # "pexels" | "ai_video"
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
     ("vox_mood_enabled",  True),
@@ -1292,6 +1293,40 @@ with st.sidebar:
                 "Only needed if using Google TTS as voice engine. Get it at console.cloud.google.com"
             ),
         )
+        st.markdown("---")
+        st.caption("🎬 " + ("Generación de Video con IA (opcional)" if lang_option == "es" else "AI Video Generation (optional)"))
+        _vid_providers = ["fal", "kling", "runway", "luma", "pika", "otro"]
+        _vid_provider_labels = {
+            "fal":    "FAL.ai",
+            "kling":  "Kling AI",
+            "runway": "Runway ML",
+            "luma":   "Luma Dream Machine",
+            "pika":   "Pika Labs",
+            "otro":   "Otro / Other",
+        }
+        ai_video_provider = st.selectbox(
+            "Proveedor de Video IA" if lang_option == "es" else "AI Video Provider",
+            options=_vid_providers,
+            index=_vid_providers.index(os.getenv("AI_VIDEO_PROVIDER", "fal"))
+                  if os.getenv("AI_VIDEO_PROVIDER", "fal") in _vid_providers else 0,
+            format_func=lambda x: _vid_provider_labels.get(x, x),
+        )
+        ai_video_key = st.text_input(
+            "API Key de Video IA" if lang_option == "es" else "AI Video API Key",
+            value=os.getenv("AI_VIDEO_KEY", ""),
+            type="password",
+            placeholder="sk-... / fal-... (opcional)",
+        )
+        ai_video_model = st.text_input(
+            "Modelo de Video" if lang_option == "es" else "Video Model",
+            value=os.getenv("AI_VIDEO_MODEL", ""),
+            placeholder="ej. fal-ai/kling-video/v2/standard/text-to-video",
+            help=(
+                "ID del modelo. Déjalo vacío para usar el modelo por defecto del proveedor."
+                if lang_option == "es" else
+                "Model ID. Leave blank to use the provider's default model."
+            ),
+        )
         api_saved  = st.form_submit_button(T["save_api"], use_container_width=True)
 
     if api_saved:
@@ -1301,6 +1336,10 @@ with st.sidebar:
         set_key(ENV_PATH, "PEXELS_API_KEY", pexels_key)
         if google_tts_key:
             set_key(ENV_PATH, "GOOGLE_TTS_KEY", google_tts_key)
+        set_key(ENV_PATH, "AI_VIDEO_PROVIDER", ai_video_provider)
+        if ai_video_key:
+            set_key(ENV_PATH, "AI_VIDEO_KEY",  ai_video_key)
+        set_key(ENV_PATH, "AI_VIDEO_MODEL",    ai_video_model)
         load_dotenv(ENV_PATH, override=True)
         st.success(T["api_saved"])
 
@@ -1362,11 +1401,14 @@ with st.sidebar:
     # Export
     import json as _json
     export_data = _json.dumps({
-        "AI_PROVIDER":    cfg["AI_PROVIDER"],
-        "AI_API_KEY":     cfg["AI_API_KEY"],
-        "AI_MODEL":       cfg["AI_MODEL"],
-        "PEXELS_API_KEY": cfg["PEXELS_API_KEY"],
-        "GOOGLE_TTS_KEY": os.getenv("GOOGLE_TTS_KEY", ""),
+        "AI_PROVIDER":       cfg["AI_PROVIDER"],
+        "AI_API_KEY":        cfg["AI_API_KEY"],
+        "AI_MODEL":          cfg["AI_MODEL"],
+        "PEXELS_API_KEY":    cfg["PEXELS_API_KEY"],
+        "GOOGLE_TTS_KEY":    os.getenv("GOOGLE_TTS_KEY", ""),
+        "AI_VIDEO_PROVIDER": os.getenv("AI_VIDEO_PROVIDER", ""),
+        "AI_VIDEO_KEY":      os.getenv("AI_VIDEO_KEY", ""),
+        "AI_VIDEO_MODEL":    os.getenv("AI_VIDEO_MODEL", ""),
     }, indent=2)
     st.download_button(
         label="⬇️ " + ("Exportar claves" if lang_option == "es" else "Export keys"),
@@ -1390,7 +1432,13 @@ with st.sidebar:
             set_key(ENV_PATH, "AI_MODEL",       imported.get("AI_MODEL", ""))
             set_key(ENV_PATH, "PEXELS_API_KEY", imported.get("PEXELS_API_KEY", ""))
             if imported.get("GOOGLE_TTS_KEY"):
-                set_key(ENV_PATH, "GOOGLE_TTS_KEY", imported.get("GOOGLE_TTS_KEY", ""))
+                set_key(ENV_PATH, "GOOGLE_TTS_KEY",    imported.get("GOOGLE_TTS_KEY", ""))
+            if imported.get("AI_VIDEO_PROVIDER"):
+                set_key(ENV_PATH, "AI_VIDEO_PROVIDER", imported.get("AI_VIDEO_PROVIDER", ""))
+            if imported.get("AI_VIDEO_KEY"):
+                set_key(ENV_PATH, "AI_VIDEO_KEY",      imported.get("AI_VIDEO_KEY", ""))
+            if imported.get("AI_VIDEO_MODEL"):
+                set_key(ENV_PATH, "AI_VIDEO_MODEL",    imported.get("AI_VIDEO_MODEL", ""))
             load_dotenv(ENV_PATH, override=True)
             st.success("✅ " + ("Configuración importada. Recarga la página." if lang_option == "es" else "Config imported. Reload the page."))
         except Exception as _e:
@@ -1404,10 +1452,13 @@ with st.sidebar:
 
 # ── Main area ─────────────────────────────────────────────────────────────────
 
-# ── Header: título + toggle de idioma en la misma fila ───────────────────────
-col_hero, col_lang = st.columns([3, 1])
+# ── Barra superior: fuente de video + idioma ──────────────────────────────────
+_cur_vsrc  = st.session_state.get("video_source", "pexels")
+_has_ai_vid = bool(os.getenv("AI_VIDEO_KEY", ""))
 
-with col_hero:
+_top_left, _top_right = st.columns([3, 1])
+
+with _top_left:
     T = UI[lang_option]
     st.markdown(
         f"<div class='hero-title'>{T['page_title']}</div>"
@@ -1415,7 +1466,8 @@ with col_hero:
         unsafe_allow_html=True,
     )
 
-with col_lang:
+with _top_right:
+    # ── Toggle de idioma ──────────────────────────────────────────────────
     st.markdown("<div class='lang-toggle'>", unsafe_allow_html=True)
     lang_option = st.radio(
         "lang",
@@ -1427,6 +1479,76 @@ with col_lang:
         key="lang_main",
     )
     st.markdown("</div>", unsafe_allow_html=True)
+
+# ── Selector de fuente de video (Pexels vs IA) ────────────────────────────────
+_vs_label = "🎬 Fuente de video" if lang_option == "es" else "🎬 Video source"
+st.caption(_vs_label)
+_vsrc_c1, _vsrc_c2 = st.columns(2, gap="small")
+
+_vsrc_pexels_active = (_cur_vsrc == "pexels")
+_vsrc_ai_active     = (_cur_vsrc == "ai_video")
+
+with _vsrc_c1:
+    st.markdown(
+        f"""<div style="
+            background:{'#6366f1' if _vsrc_pexels_active else '#f3f4f6'};
+            color:{'#fff' if _vsrc_pexels_active else '#374151'};
+            border-radius:10px; padding:10px 8px; text-align:center;
+            font-size:0.83rem; font-weight:{'700' if _vsrc_pexels_active else '500'};
+            border:2px solid {'#6366f1' if _vsrc_pexels_active else '#e5e7eb'};
+            line-height:1.3;">
+            🎥 Pexels<br>
+            <span style="font-size:0.7rem;opacity:{'1' if _vsrc_pexels_active else '0.6'}">
+            {'Actual · stock video' if lang_option == 'en' else 'Actual · stock video'}
+            </span></div>""",
+        unsafe_allow_html=True,
+    )
+    if st.button("✓" if _vsrc_pexels_active else ("Elegir" if lang_option == "es" else "Select"),
+                 key="vsrc_pexels_btn", use_container_width=True,
+                 type="primary" if _vsrc_pexels_active else "secondary"):
+        st.session_state["video_source"] = "pexels"
+        st.rerun()
+
+with _vsrc_c2:
+    _ai_vid_provider = os.getenv("AI_VIDEO_PROVIDER", "fal").upper()
+    _ai_vid_sub = f"{_ai_vid_provider} · {'Configura API →' if not _has_ai_vid else 'listo'}" \
+                  if lang_option == "es" else \
+                  f"{_ai_vid_provider} · {'Set API →' if not _has_ai_vid else 'ready'}"
+    st.markdown(
+        f"""<div style="
+            background:{'#6366f1' if _vsrc_ai_active else '#f3f4f6'};
+            color:{'#fff' if _vsrc_ai_active else '#374151'};
+            border-radius:10px; padding:10px 8px; text-align:center;
+            font-size:0.83rem; font-weight:{'700' if _vsrc_ai_active else '500'};
+            border:2px solid {'#6366f1' if _vsrc_ai_active else '#e5e7eb'};
+            line-height:1.3;">
+            🤖 {'Video con IA' if lang_option == 'es' else 'AI Video'}<br>
+            <span style="font-size:0.7rem;opacity:{'1' if _vsrc_ai_active else '0.6'}">{_ai_vid_sub}</span>
+            </div>""",
+        unsafe_allow_html=True,
+    )
+    if st.button("✓" if _vsrc_ai_active else ("Elegir" if lang_option == "es" else "Select"),
+                 key="vsrc_ai_btn", use_container_width=True,
+                 type="primary" if _vsrc_ai_active else "secondary"):
+        st.session_state["video_source"] = "ai_video"
+        st.rerun()
+
+if _vsrc_ai_active and not _has_ai_vid:
+    st.warning(
+        "⚠️ Configura tu API Key de Video IA en el panel lateral para usar esta opción."
+        if lang_option == "es" else
+        "⚠️ Set your AI Video API Key in the sidebar to use this option."
+    )
+elif _vsrc_ai_active and _has_ai_vid:
+    _ai_model_display = os.getenv("AI_VIDEO_MODEL", "") or "(modelo por defecto)"
+    st.info(
+        f"🤖 **{os.getenv('AI_VIDEO_PROVIDER','').upper()}** — modelo: `{_ai_model_display}` · "
+        f"{'(integración próximamente)' if lang_option == 'es' else '(integration coming soon)'}"
+        if lang_option == "es" else
+        f"🤖 **{os.getenv('AI_VIDEO_PROVIDER','').upper()}** — model: `{_ai_model_display}` · (integration coming soon)"
+    )
+
+st.divider()
 
 if lang_option != st.session_state.lang:
     st.session_state.lang              = lang_option
@@ -2248,6 +2370,10 @@ def _launch_pipeline():
         "gtts_lang_code":   st.session_state.get("gtts_lang_code", "es-US"),
         "gtts_rate":        st.session_state.get("gtts_rate", 1.0),
         "gtts_pitch":       st.session_state.get("gtts_pitch", 0.0),
+        "video_source":     st.session_state.get("video_source", "pexels"),
+        "ai_video_provider":os.getenv("AI_VIDEO_PROVIDER", "fal"),
+        "ai_video_key":     os.getenv("AI_VIDEO_KEY", ""),
+        "ai_video_model":   os.getenv("AI_VIDEO_MODEL", ""),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
