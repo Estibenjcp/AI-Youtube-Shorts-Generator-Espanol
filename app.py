@@ -1168,6 +1168,7 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         composer.concatenate_with_transitions(final_scene_paths, script_data=script,
                                               use_subtitles=params.get("use_subtitles", False),
                                               subtitle_style=params.get("subtitle_style", {}))
+        log_q.put("🧹 Metadatos eliminados del video final.")
 
         for folder in ["audio_clips", "video_clips", "temp"]:
             p = os.path.join(os.path.dirname(__file__), "assets", folder)
