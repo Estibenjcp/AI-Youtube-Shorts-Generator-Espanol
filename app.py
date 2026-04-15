@@ -1276,7 +1276,18 @@ with st.sidebar:
         model      = st.text_input(T["model"],
                         value=cfg["AI_MODEL"] or PROVIDER_DEFAULTS[provider]["model"],
                         placeholder=PROVIDER_DEFAULTS[provider]["model"])
-        pexels_key = st.text_input(T["pexels_key"], value=cfg["PEXELS_API_KEY"], type="password")
+        pexels_key  = st.text_input(T["pexels_key"], value=cfg["PEXELS_API_KEY"], type="password")
+        google_tts_key = st.text_input(
+            "🔵 Google TTS API Key",
+            value=os.getenv("GOOGLE_TTS_KEY", ""),
+            type="password",
+            placeholder="AIza... (opcional)",
+            help=(
+                "Solo si usas Google TTS como motor de voz. Obtén la clave en console.cloud.google.com"
+                if lang_option == "es" else
+                "Only needed if using Google TTS as voice engine. Get it at console.cloud.google.com"
+            ),
+        )
         api_saved  = st.form_submit_button(T["save_api"], use_container_width=True)
 
     if api_saved:
@@ -1284,6 +1295,8 @@ with st.sidebar:
         set_key(ENV_PATH, "AI_API_KEY",     ai_key)
         set_key(ENV_PATH, "AI_MODEL",       model)
         set_key(ENV_PATH, "PEXELS_API_KEY", pexels_key)
+        if google_tts_key:
+            set_key(ENV_PATH, "GOOGLE_TTS_KEY", google_tts_key)
         load_dotenv(ENV_PATH, override=True)
         st.success(T["api_saved"])
 
@@ -1349,6 +1362,7 @@ with st.sidebar:
         "AI_API_KEY":     cfg["AI_API_KEY"],
         "AI_MODEL":       cfg["AI_MODEL"],
         "PEXELS_API_KEY": cfg["PEXELS_API_KEY"],
+        "GOOGLE_TTS_KEY": os.getenv("GOOGLE_TTS_KEY", ""),
     }, indent=2)
     st.download_button(
         label="⬇️ " + ("Exportar claves" if lang_option == "es" else "Export keys"),
@@ -1371,6 +1385,8 @@ with st.sidebar:
             set_key(ENV_PATH, "AI_API_KEY",     imported.get("AI_API_KEY", ""))
             set_key(ENV_PATH, "AI_MODEL",       imported.get("AI_MODEL", ""))
             set_key(ENV_PATH, "PEXELS_API_KEY", imported.get("PEXELS_API_KEY", ""))
+            if imported.get("GOOGLE_TTS_KEY"):
+                set_key(ENV_PATH, "GOOGLE_TTS_KEY", imported.get("GOOGLE_TTS_KEY", ""))
             load_dotenv(ENV_PATH, override=True)
             st.success("✅ " + ("Configuración importada. Recarga la página." if lang_option == "es" else "Config imported. Reload the page."))
         except Exception as _e:
@@ -1502,27 +1518,21 @@ with st.expander(voice_label_hint, expanded=False):
 
         from modules.audio import GoogleTTSAudioEngine as _GTTS
 
-        # ── Two-column layout: left = API config  |  right = voice settings ──
+        # API key leída del .env (se guarda en Configuración de API → sidebar)
+        gtts_api_key = os.getenv("GOOGLE_TTS_KEY", "")
+
+        # ── Two-column layout: left = API status + test  |  right = voice settings ──
         _gl, _gr = st.columns([3, 2], gap="medium")
 
         with _gl:
-            # API Key input
-            _gtts_key_saved = os.getenv("GOOGLE_TTS_KEY", "")
-            gtts_api_key = st.text_input(
-                "🔑 Google Cloud TTS API Key",
-                value=_gtts_key_saved,
-                type="password",
-                placeholder="AIza...",
-                key="gtts_api_key_input",
-                help=(
-                    "Obtén tu clave en console.cloud.google.com → APIs → Cloud Text-to-Speech"
+            if gtts_api_key:
+                st.success("✅ API Key configurada" if lang_option == "es" else "✅ API Key configured")
+            else:
+                st.warning(
+                    "⚠️ API Key no configurada. Agrégala en **Configuración de API** (panel izquierdo)."
                     if lang_option == "es" else
-                    "Get your key at console.cloud.google.com → APIs → Cloud Text-to-Speech"
-                ),
-            )
-            if gtts_api_key and gtts_api_key != _gtts_key_saved:
-                set_key(ENV_PATH, "GOOGLE_TTS_KEY", gtts_api_key)
-                load_dotenv(ENV_PATH, override=True)
+                    "⚠️ API Key not set. Add it in **API Settings** (left panel)."
+                )
 
             # API Test button + status
             _atc1, _atc2 = st.columns([1, 2])
