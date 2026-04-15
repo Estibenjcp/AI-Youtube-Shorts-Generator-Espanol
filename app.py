@@ -1030,6 +1030,12 @@ for key, default in [
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
     ("vox_mood_enabled",  True),
+    ("gtts_rate",         1.0),
+    ("gtts_pitch",        0.0),
+    ("gtts_lang_code",    "es-US"),
+    ("gtts_voice_name",   "es-US-Neural2-B"),
+    ("gtts_voice_es",     "es-US-Neural2-B  (Masculino Latino ★)"),
+    ("gtts_voice_en",     "en-US-Neural2-D  (Male, US ★)"),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1147,6 +1153,16 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 reference_audio   = params.get("vox_clone_ref", ""),
             )
             log_q.put("🤖 [VoxCPM] Motor de voz local activado (mood-adaptive)")
+        elif _tts_choice == "google_tts":
+            from modules.audio import GoogleTTSAudioEngine
+            audio_engine = GoogleTTSAudioEngine(
+                api_key      = params.get("gtts_api_key", ""),
+                voice_name   = params.get("gtts_voice_name", "es-US-Neural2-B"),
+                lang_code    = params.get("gtts_lang_code", "es-US"),
+                speaking_rate= params.get("gtts_rate", 1.0),
+                pitch        = params.get("gtts_pitch", 0.0),
+            )
+            log_q.put(f"🔵 [Google TTS] Voz: {params.get('gtts_voice_name')} · rate={params.get('gtts_rate', 1.0):.2f}×")
         else:
             audio_engine = AudioEngine(
                 voice = params.get("voice", "es-ES-AlvaroNeural"),
@@ -1421,15 +1437,18 @@ with st.expander(voice_label_hint, expanded=False):
 
     # ── Motor TTS ─────────────────────────────────────────────────────────
     _tts_labels = {
-        "edge_tts": "☁️ Edge TTS (nube, rápido)" if lang_option == "es" else "☁️ Edge TTS (cloud, fast)",
-        "voxcpm":   "🤖 VoxCPM 2B (local, GPU)" if lang_option == "es" else "🤖 VoxCPM 2B (local, GPU)",
+        "edge_tts":   "☁️ Edge TTS (nube, rápido)"    if lang_option == "es" else "☁️ Edge TTS (cloud, fast)",
+        "google_tts": "🔵 Google TTS (Neural2/Studio)" if lang_option == "es" else "🔵 Google TTS (Neural2/Studio)",
+        "voxcpm":     "🤖 VoxCPM 2B (local, GPU)"     if lang_option == "es" else "🤖 VoxCPM 2B (local, GPU)",
     }
+    _tts_opts = list(_tts_labels.keys())
+    _cur_tts  = st.session_state.get("tts_engine", "edge_tts")
     tts_engine = st.radio(
         "Motor TTS" if lang_option == "es" else "TTS Engine",
-        options=list(_tts_labels.keys()),
+        options=_tts_opts,
         format_func=lambda x: _tts_labels[x],
         horizontal=True,
-        index=0 if st.session_state.get("tts_engine", "edge_tts") == "edge_tts" else 1,
+        index=_tts_opts.index(_cur_tts) if _cur_tts in _tts_opts else 0,
         key="tts_engine_radio",
     )
     st.session_state["tts_engine"] = tts_engine
@@ -1475,6 +1494,123 @@ with st.expander(voice_label_hint, expanded=False):
         rate_pct = st.slider(T["speech_rate"], min_value=-30, max_value=50, value=10, step=5,
                              format="%+d%%", help=T["speech_help"], key="rate_slider")
         rate_str = f"+{rate_pct}%" if rate_pct >= 0 else f"{rate_pct}%"
+
+    elif tts_engine == "google_tts":
+        # ── Google TTS controls ───────────────────────────────────────────
+        selected_voice = ""   # not used by Google TTS
+        rate_str       = "+0%"
+
+        from modules.audio import GoogleTTSAudioEngine as _GTTS
+
+        # Load saved Google TTS API key
+        _gtts_key_saved = os.getenv("GOOGLE_TTS_KEY", "")
+        gtts_api_key = st.text_input(
+            "🔑 Google Cloud TTS API Key" if lang_option == "es" else "🔑 Google Cloud TTS API Key",
+            value=_gtts_key_saved,
+            type="password",
+            placeholder="AIza...",
+            key="gtts_api_key_input",
+            help=(
+                "Obtén tu clave en console.cloud.google.com → APIs → Cloud Text-to-Speech"
+                if lang_option == "es" else
+                "Get your key at console.cloud.google.com → APIs → Cloud Text-to-Speech"
+            ),
+        )
+        if gtts_api_key and gtts_api_key != _gtts_key_saved:
+            set_key(ENV_PATH, "GOOGLE_TTS_KEY", gtts_api_key)
+            load_dotenv(ENV_PATH, override=True)
+
+        # Voice selection
+        _gv_map = _GTTS.VOICES_ES if lang_option == "es" else _GTTS.VOICES_EN
+        _gv_opts = list(_gv_map.keys())
+        _gv_default_key = "gtts_voice_es" if lang_option == "es" else "gtts_voice_en"
+        _gv_saved = st.session_state.get(_gv_default_key, _gv_opts[0])
+        _gv_idx   = _gv_opts.index(_gv_saved) if _gv_saved in _gv_opts else 0
+        gtts_voice_label = st.selectbox(
+            "Voz" if lang_option == "es" else "Voice",
+            options=_gv_opts,
+            index=_gv_idx,
+            key="gtts_voice_select",
+        )
+        st.session_state[_gv_default_key] = gtts_voice_label
+        _gtts_lang_code, _gtts_voice_name = _gv_map[gtts_voice_label]
+        st.session_state["gtts_lang_code"]  = _gtts_lang_code
+        st.session_state["gtts_voice_name"] = _gtts_voice_name
+
+        # Rate and Pitch
+        _gc1, _gc2 = st.columns(2)
+        with _gc1:
+            gtts_rate = st.slider(
+                "Velocidad" if lang_option == "es" else "Speaking Rate",
+                min_value=0.5, max_value=2.0, value=st.session_state.get("gtts_rate", 1.0),
+                step=0.05, format="%.2f×",
+                help="1.0 = normal. Google TTS acepta 0.25–4.0" if lang_option == "es"
+                     else "1.0 = normal. Google TTS accepts 0.25–4.0",
+                key="gtts_rate_slider",
+            )
+            st.session_state["gtts_rate"] = gtts_rate
+        with _gc2:
+            gtts_pitch = st.slider(
+                "Tono (pitch)" if lang_option == "es" else "Pitch",
+                min_value=-10.0, max_value=10.0,
+                value=st.session_state.get("gtts_pitch", 0.0),
+                step=0.5, format="%.1f st",
+                help="0 = tono original. Positivo = más agudo, negativo = más grave."
+                     if lang_option == "es" else
+                     "0 = original pitch. Positive = higher, negative = lower.",
+                key="gtts_pitch_slider",
+            )
+            st.session_state["gtts_pitch"] = gtts_pitch
+
+        # Preview
+        _gp_col1, _gp_col2 = st.columns([1, 2])
+        with _gp_col1:
+            _gtts_prev_clicked = st.button(
+                "▶ Previsualizar" if lang_option == "es" else "▶ Preview",
+                use_container_width=True, key="gtts_preview_btn",
+                disabled=not bool(gtts_api_key),
+            )
+        with _gp_col2:
+            _gtts_prev_status = st.empty()
+
+        if _gtts_prev_clicked and gtts_api_key:
+            _gtts_prev_path = os.path.join(os.path.dirname(__file__), "assets", "temp", "gtts_preview.mp3")
+            os.makedirs(os.path.dirname(_gtts_prev_path), exist_ok=True)
+            _gtts_prev_status.caption("Generando muestra..." if lang_option == "es" else "Generating sample...")
+            _prev_txt_g = (
+                "Hola, esta es mi voz de Google. Voy a narrar tu próximo video."
+                if lang_option == "es" else
+                "Hello, this is my Google voice. I will narrate your next video."
+            )
+
+            def _gen_gtts_preview(api_key, voice, lang_code, rate, pitch, text, path):
+                try:
+                    _eng = _GTTS(api_key=api_key, voice_name=voice, lang_code=lang_code,
+                                 speaking_rate=rate, pitch=pitch)
+                    _eng._synthesize(text, path)
+                except Exception as _ex:
+                    print(f"Google TTS preview error: {_ex}")
+
+            import threading as _gth
+            _gth.Thread(
+                target=_gen_gtts_preview,
+                args=(gtts_api_key, _gtts_voice_name, _gtts_lang_code, gtts_rate, gtts_pitch,
+                      _prev_txt_g, _gtts_prev_path),
+                daemon=True,
+            ).start()
+            import time as _gt; _gt.sleep(4)
+            _gtts_prev_status.empty()
+            if os.path.exists(_gtts_prev_path) and os.path.getsize(_gtts_prev_path) > 500:
+                st.audio(_gtts_prev_path, format="audio/mp3")
+            else:
+                st.error("Error generando preview. Verifica tu API key." if lang_option == "es"
+                         else "Error generating preview. Check your API key.")
+
+        st.caption(
+            "💡 Neural2 es gratuito hasta 1M caracteres/mes. Studio ofrece la máxima calidad."
+            if lang_option == "es" else
+            "💡 Neural2 is free up to 1M chars/month. Studio offers the highest quality."
+        )
 
     else:
         # ── VoxCPM controls ───────────────────────────────────────────────
@@ -1983,10 +2119,15 @@ def _launch_pipeline():
         "chosen_hook": st.session_state.get("chosen_hook", ""),
         "job_offer_text": st.session_state.get("job_offer_input", ""),
         "guion_raw_text": st.session_state.get("guion_raw_input", ""),
-        "tts_engine":      st.session_state.get("tts_engine", "edge_tts"),
-        "vox_voice_desc":  st.session_state.get("vox_voice_desc", ""),
+        "tts_engine":       st.session_state.get("tts_engine", "edge_tts"),
+        "vox_voice_desc":   st.session_state.get("vox_voice_desc", ""),
         "vox_mood_enabled": st.session_state.get("vox_mood_enabled", True),
-        "vox_clone_ref":   st.session_state.get("vox_clone_ref", ""),
+        "vox_clone_ref":    st.session_state.get("vox_clone_ref", ""),
+        "gtts_api_key":     os.getenv("GOOGLE_TTS_KEY", ""),
+        "gtts_voice_name":  st.session_state.get("gtts_voice_name", "es-US-Neural2-B"),
+        "gtts_lang_code":   st.session_state.get("gtts_lang_code", "es-US"),
+        "gtts_rate":        st.session_state.get("gtts_rate", 1.0),
+        "gtts_pitch":       st.session_state.get("gtts_pitch", 0.0),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
@@ -2148,10 +2289,15 @@ elif _hook_step == "selecting":
                 "webhook_url": _wh_url,
                 "chosen_hook": _chosen_hook_val,
                 "job_offer_text": st.session_state.get("job_offer_input", ""),
-                "tts_engine":      st.session_state.get("tts_engine", "edge_tts"),
-                "vox_voice_desc":  st.session_state.get("vox_voice_desc", ""),
+                "tts_engine":       st.session_state.get("tts_engine", "edge_tts"),
+                "vox_voice_desc":   st.session_state.get("vox_voice_desc", ""),
                 "vox_mood_enabled": st.session_state.get("vox_mood_enabled", True),
-                "vox_clone_ref":   st.session_state.get("vox_clone_ref", ""),
+                "vox_clone_ref":    st.session_state.get("vox_clone_ref", ""),
+                "gtts_api_key":     os.getenv("GOOGLE_TTS_KEY", ""),
+                "gtts_voice_name":  st.session_state.get("gtts_voice_name", "es-US-Neural2-B"),
+                "gtts_lang_code":   st.session_state.get("gtts_lang_code", "es-US"),
+                "gtts_rate":        st.session_state.get("gtts_rate", 1.0),
+                "gtts_pitch":       st.session_state.get("gtts_pitch", 0.0),
             }
             _t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, _params), daemon=True)
             st.session_state.thread = _t

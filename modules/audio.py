@@ -392,3 +392,159 @@ class VoxCPMAudioEngine:
                 continue
 
         return script_data
+
+
+class GoogleTTSAudioEngine:
+    """Google Cloud Text-to-Speech via REST API.
+    Only requires a Google Cloud API key — no extra SDK needed.
+    Supports Neural2 and Studio voices for ES and EN.
+    """
+
+    # label → (lang_code, voice_name)
+    VOICES_ES = {
+        "es-US-Neural2-B  (Masculino Latino ★)":   ("es-US", "es-US-Neural2-B"),
+        "es-US-Neural2-A  (Femenina Latina)":       ("es-US", "es-US-Neural2-A"),
+        "es-US-Neural2-C  (Femenina Latina 2)":     ("es-US", "es-US-Neural2-C"),
+        "es-MX-Neural2-B  (Masculino México)":      ("es-MX", "es-MX-Neural2-B"),
+        "es-MX-Neural2-A  (Femenina México)":       ("es-MX", "es-MX-Neural2-A"),
+        "es-MX-Neural2-C  (Masculino México 2)":    ("es-MX", "es-MX-Neural2-C"),
+        "es-ES-Neural2-B  (Masculino España)":      ("es-ES", "es-ES-Neural2-B"),
+        "es-ES-Neural2-A  (Femenina España)":       ("es-ES", "es-ES-Neural2-A"),
+        "es-US-Studio-B   (Studio Masculino ★★)":   ("es-US", "es-US-Studio-B"),
+    }
+
+    VOICES_EN = {
+        "en-US-Neural2-D  (Male, US ★)":       ("en-US", "en-US-Neural2-D"),
+        "en-US-Neural2-A  (Female, US)":        ("en-US", "en-US-Neural2-A"),
+        "en-US-Neural2-F  (Female, US 2)":      ("en-US", "en-US-Neural2-F"),
+        "en-US-Neural2-J  (Male, US 2)":        ("en-US", "en-US-Neural2-J"),
+        "en-US-Studio-Q   (Studio Male ★★)":    ("en-US", "en-US-Studio-Q"),
+        "en-US-Studio-O   (Studio Female ★★)":  ("en-US", "en-US-Studio-O"),
+    }
+
+    _URL = "https://texttospeech.googleapis.com/v1/text:synthesize"
+
+    def __init__(self, api_key: str, voice_name: str, lang_code: str,
+                 speaking_rate: float = 1.0, pitch: float = 0.0):
+        if not api_key:
+            raise ValueError("Google TTS API key is required.")
+        self.api_key      = api_key
+        self.voice_name   = voice_name
+        self.lang_code    = lang_code
+        self.speaking_rate = speaking_rate
+        self.pitch        = pitch
+        self.output_dir   = os.path.join(os.getcwd(), "assets", "audio_clips")
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    @staticmethod
+    def _clean_text(text: str) -> str:
+        text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+        text = text.replace('...', ',').replace('\u2026', ',')
+        text = re.sub(r'\s{2,}', ' ', text)
+        text = re.sub(r',\s*,', ',', text)
+        return text.strip()
+
+    def _synthesize(self, text: str, output_path: str,
+                    speaking_rate: float | None = None) -> str:
+        import requests
+        import base64
+        rate = speaking_rate if speaking_rate is not None else self.speaking_rate
+        payload = {
+            "input":  {"text": text},
+            "voice":  {"languageCode": self.lang_code, "name": self.voice_name},
+            "audioConfig": {
+                "audioEncoding":    "MP3",
+                "speakingRate":     round(max(0.25, min(rate, 4.0)), 3),
+                "pitch":            round(max(-20.0, min(self.pitch, 20.0)), 1),
+                "effectsProfileId": ["headphone-class-device"],
+            },
+        }
+        r = requests.post(
+            self._URL,
+            params={"key": self.api_key},
+            json=payload,
+            timeout=30,
+        )
+        r.raise_for_status()
+        audio_bytes = base64.b64decode(r.json()["audioContent"])
+        with open(output_path, "wb") as f:
+            f.write(audio_bytes)
+        return output_path
+
+    def _normalize(self, path: str) -> None:
+        """Peak-normalize to _TARGET_PEAK_DB (same logic as AudioEngine)."""
+        try:
+            result = subprocess.run(
+                ['ffmpeg', '-i', path, '-af', 'volumedetect', '-f', 'null', '-'],
+                capture_output=True, text=True, errors='replace'
+            )
+            match = re.search(r'max_volume:\s*([-\d.]+)\s*dB', result.stderr)
+            if not match:
+                return
+            gain = _TARGET_PEAK_DB - float(match.group(1))
+            if abs(gain) < 0.3:
+                return
+            tmp = path + '.norm.mp3'
+            if os.path.exists(tmp):
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+            proc = subprocess.run(
+                ['ffmpeg', '-i', path, '-af', f'volume={gain:.2f}dB', '-y', tmp],
+                capture_output=True,
+            )
+            if proc.returncode == 0 and os.path.exists(tmp) and os.path.getsize(tmp) > 1024:
+                os.replace(tmp, path)
+            else:
+                if os.path.exists(tmp):
+                    try:
+                        os.remove(tmp)
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"      ⚠️ Normalization skipped: {e}")
+
+    def get_audio_duration(self, file_path: str) -> float:
+        try:
+            audio = MP3(file_path)
+            return audio.info.length
+        except Exception:
+            return 0.0
+
+    async def process_script(self, script_data: list) -> list:
+        total = len(script_data)
+        print(f"🎙️ [Google TTS] Generating audio for {total} scenes "
+              f"(voice={self.voice_name}, rate={self.speaking_rate})...")
+        for idx, scene in enumerate(script_data):
+            scene_id = scene["id"]
+            text = self._clean_text(scene.get("text", ""))
+            if not text:
+                print(f"   ⚠️ Scene {scene_id}: empty text — skipping.")
+                continue
+            out_path = os.path.join(self.output_dir, f"voice_{scene_id}.mp3")
+
+            # Hook scenes: slightly faster for urgency; CTA: slower for clarity
+            if idx < 2:
+                scene_rate = min(self.speaking_rate * 1.08, 4.0)
+            elif idx >= total - 1:
+                scene_rate = max(self.speaking_rate * 0.95, 0.25)
+            else:
+                scene_rate = self.speaking_rate
+
+            try:
+                self._synthesize(text, out_path, speaking_rate=scene_rate)
+                self._normalize(out_path)
+                duration = self.get_audio_duration(out_path)
+                if duration <= 0:
+                    print(f"   ❌ Scene {scene_id}: invalid audio — skipping.")
+                    continue
+                scene["audio_path"] = out_path
+                scene["duration"]   = duration
+                print(f"   ✅ Scene {scene_id}: {duration:.2f}s")
+                await asyncio.sleep(0.1)   # respect rate limits
+            except Exception as e:
+                print(f"   ❌ Scene {scene_id} error: {e}")
+                continue
+
+        return script_data
