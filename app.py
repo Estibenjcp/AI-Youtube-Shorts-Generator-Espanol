@@ -2126,6 +2126,22 @@ elif mode == "empleo":
 
     st.markdown(f"<div class='auto-info'>{T['empleo_info']}</div>", unsafe_allow_html=True)
 
+    # Badge fijo: 6 escenas / 30 seg / energético
+    st.markdown(
+        "<div style='display:flex;gap:8px;margin-bottom:12px'>"
+        "<span style='background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>⚡ 6 escenas</span>"
+        "<span style='background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>⏱️ ~30 segundos</span>"
+        "<span style='background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>🔥 Estilo energético</span>"
+        "</div>"
+        if lang_option == "es" else
+        "<div style='display:flex;gap:8px;margin-bottom:12px'>"
+        "<span style='background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>⚡ 6 scenes</span>"
+        "<span style='background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>⏱️ ~30 seconds</span>"
+        "<span style='background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600'>🔥 Energetic style</span>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
     st.markdown(f"<div class='step-header'>📋 {T['empleo_label']}</div>", unsafe_allow_html=True)
     job_offer_raw = st.text_area(
         "job_offer",
@@ -2143,7 +2159,7 @@ elif mode == "empleo":
         final_topic = ""
 
     final_category = ""
-    num_scenes     = 9
+    num_scenes     = 6   # fijo: 6 escenas ≈ 30 segundos, siempre energético
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO GUIÓN LIBRE

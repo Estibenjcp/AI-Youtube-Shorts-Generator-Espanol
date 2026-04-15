@@ -725,79 +725,79 @@ JSON RULES:
         print(f"💼 {label}...")
 
         if lang == "es":
-            prompt = f"""Eres un director creativo especializado en videos de reclutamiento viral para YouTube Shorts y TikTok.
+            prompt = f"""Eres el director creativo de anuncios de empleo más energicos y virales de TikTok y YouTube Shorts.
 
 OFERTA DE EMPLEO (texto original del cliente):
 ---
 {offer_text}
 ---
 
-TAREA: Convierte esta oferta en un guion de video promocional de 8-10 escenas (60-90 segundos).
+TAREA: Crea exactamente 6 escenas — video de 30 SEGUNDOS EXACTOS — estilo anuncio de TV de alto impacto.
 
 REGLAS ABSOLUTAS:
 - PROHIBIDO inventar, exagerar o añadir información que NO esté en el texto original.
-- PROHIBIDO omitir datos clave: puesto, empresa, salario (si está), requisitos importantes, beneficios, cómo aplicar.
-- Presenta la información de forma atractiva y emocionante, pero 100% fiel al original.
-- Si el salario está en la oferta, DEBES mencionarlo — es el dato más poderoso.
-- Tono: directo, motivador, habla en 2da persona ("tú", "tu carrera", "si buscas...").
-- Cada escena: máximo 18 palabras. Una idea por escena.
-- PROHIBIDO: emojis, caracteres especiales Unicode, palabras en inglés (excepto nombres propios de empresa).
+- Presenta la información de forma EXPLOSIVA y ENERGICA, pero 100% fiel al original.
+- Si el salario está en la oferta, DEBES mencionarlo — es el gancho mas poderoso.
+- Tono: directo, urgente, habla en 2da persona ("tu", "tu carrera", "si buscas").
+- Cada escena: MAXIMO 10 PALABRAS. Frases cortas, poderosas, sin relleno.
+- PROHIBIDO: emojis, caracteres especiales Unicode, palabras en ingles (excepto nombre de empresa).
+- TODO el mood debe ser "energetic" — rapido, dinamico, sin pausa.
 
-ESTRUCTURA (8-10 escenas):
-  Escena 1 — GANCHO: El beneficio o dato más atractivo de la oferta (salario, empresa conocida, flexibilidad, crecimiento). Directo e irresistible.
-  Escena 2 — LA EMPRESA: Quién contrata. Breve y positivo.
-  Escena 3 — EL PUESTO: Qué harás. Presentado como una oportunidad emocionante.
-  Escenas 4-5 — REQUISITOS: Los más importantes, presentados como "si eres X, eres ideal".
-  Escenas 6-7 — BENEFICIOS: Salario, prestaciones, horario, remoto, crecimiento — lo que haga brillar la oferta.
-  Escena 8 — CTA: Cómo aplicar. Urgente y claro. "Aplica ahora", "El link está en la descripción", etc.
+ESTRUCTURA (6 escenas exactas — ~5 seg cada una):
+  Escena 1 — GANCHO EXPLOSIVO: El beneficio mas impactante. Impresiona en 3 segundos.
+  Escena 2 — EMPRESA + PUESTO: Quien contrata y que rol. Ultra corto.
+  Escena 3 — REQUISITO CLAVE: El mas importante, presentado como "si tienes X, es para ti".
+  Escena 4 — BENEFICIO ESTRELLA: Salario, modalidad, crecimiento — lo mas atractivo.
+  Escena 5 — URGENCIA: Por que aplicar YA. Plazas limitadas, oportunidad unica, etc.
+  Escena 6 — CTA DIRECTO: Aplica ya. Link en descripcion. Accion inmediata.
 
-FORMATO DE SALIDA (JSON estricto, sin markdown):
+FORMATO DE SALIDA (JSON estricto, sin markdown, exactamente 6 elementos):
 [
-  {{"id":1,"text":"texto aqui","visual_1":"professional interview handshake","visual_2":"modern office team","mood":"energetic"}},
-  {{"id":2,"text":"texto aqui","visual_1":"company building exterior","visual_2":"team meeting collaboration","mood":"professional"}}
+  {{"id":1,"text":"texto aqui maximo 10 palabras","visual_1":"energetic job interview success","visual_2":"modern office team celebrating","mood":"energetic"}},
+  {{"id":2,"text":"texto aqui","visual_1":"company brand building","visual_2":"professional team working","mood":"energetic"}}
 ]
 
 REGLAS DEL JSON:
-- "text": texto narrado. Máximo 18 palabras. Sin caracteres especiales.
-- "visual_1" y "visual_2": términos de búsqueda EN INGLÉS para Pexels (2-4 palabras). Profesionales: oficina moderna, equipo de trabajo, crecimiento, ciudad, tecnología, personas exitosas.
-- "mood": "energetic", "professional" o "inspiring" según la escena."""
+- "text": MAXIMO 10 PALABRAS por escena. Frases de impacto. Sin puntos finales innecesarios.
+- "visual_1" y "visual_2": terminos EN INGLES para Pexels (2-4 palabras). Dinamicos: success celebration, career growth, job interview, modern workspace, team achievement, business success.
+- "mood": SIEMPRE "energetic" en todas las escenas."""
         else:
-            prompt = f"""You are a creative director specializing in viral recruitment videos for YouTube Shorts and TikTok.
+            prompt = f"""You are the creative director of the most energetic and viral job ad videos on TikTok and YouTube Shorts.
 
 JOB OFFER (original client text):
 ---
 {offer_text}
 ---
 
-TASK: Convert this job offer into an 8-10 scene promotional video script (60-90 seconds).
+TASK: Create exactly 6 scenes — a 30-SECOND video — high-impact TV ad style.
 
 ABSOLUTE RULES:
 - FORBIDDEN to invent, exaggerate or add information NOT in the original text.
-- FORBIDDEN to omit key data: position, company, salary (if present), main requirements, benefits, how to apply.
-- Present information in an attractive and exciting way, but 100% faithful to the original.
-- If salary is in the offer, you MUST mention it — it's the most powerful detail.
-- Tone: direct, motivating, speak in 2nd person ("you", "your career", "if you're looking for...").
-- Each scene: maximum 18 words. One idea per scene.
+- Present information in an EXPLOSIVE, ENERGETIC way — 100% faithful to the original.
+- If salary is in the offer, you MUST mention it — it's the most powerful hook.
+- Tone: direct, urgent, speak in 2nd person ("you", "your career", "if you're looking").
+- Each scene: MAXIMUM 10 WORDS. Short, powerful phrases. Zero filler.
 - FORBIDDEN: emojis, special Unicode characters. ENGLISH ONLY.
+- ALL moods must be "energetic" — fast, dynamic, no pauses.
 
-STRUCTURE (8-10 scenes):
-  Scene 1 — HOOK: The most attractive benefit or detail in the offer (salary, known company, flexibility, growth). Direct and irresistible.
-  Scene 2 — THE COMPANY: Who's hiring. Brief and positive.
-  Scene 3 — THE ROLE: What you'll do. Presented as an exciting opportunity.
-  Scenes 4-5 — REQUIREMENTS: The most important ones, framed as "if you have X, you're ideal".
-  Scenes 6-7 — BENEFITS: Salary, perks, schedule, remote, growth — whatever makes the offer shine.
-  Scene 8 — CTA: How to apply. Urgent and clear. "Apply now", "Link in the description", etc.
+STRUCTURE (exactly 6 scenes — ~5 sec each):
+  Scene 1 — EXPLOSIVE HOOK: The most impactful benefit. Wow in 3 seconds.
+  Scene 2 — COMPANY + ROLE: Who's hiring and what role. Ultra short.
+  Scene 3 — KEY REQUIREMENT: The most important one, framed as "if you have X, this is for you".
+  Scene 4 — STAR BENEFIT: Salary, work model, growth — the most attractive detail.
+  Scene 5 — URGENCY: Why apply NOW. Limited spots, unique opportunity, etc.
+  Scene 6 — DIRECT CTA: Apply now. Link in description. Immediate action.
 
-OUTPUT FORMAT (strict JSON, no markdown):
+OUTPUT FORMAT (strict JSON, no markdown, exactly 6 items):
 [
-  {{"id":1,"text":"text here","visual_1":"professional interview handshake","visual_2":"modern office team","mood":"energetic"}},
-  {{"id":2,"text":"text here","visual_1":"company building exterior","visual_2":"team meeting collaboration","mood":"professional"}}
+  {{"id":1,"text":"max 10 words here","visual_1":"energetic job interview success","visual_2":"modern office team celebrating","mood":"energetic"}},
+  {{"id":2,"text":"text here","visual_1":"company brand building","visual_2":"professional team working","mood":"energetic"}}
 ]
 
 JSON RULES:
-- "text": narrated text. Maximum 18 words. No special characters.
-- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Professional: modern office, team collaboration, career growth, city, technology, successful people.
-- "mood": "energetic", "professional" or "inspiring" based on the scene."""
+- "text": MAXIMUM 10 WORDS per scene. Impact phrases. No unnecessary punctuation.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Dynamic: success celebration, career growth, job interview, modern workspace, team achievement, business success.
+- "mood": ALWAYS "energetic" for ALL scenes."""
 
         raw   = self._generate(prompt)
         clean = raw.replace('```json', '').replace('```', '').strip()
@@ -807,13 +807,13 @@ JSON RULES:
             for i, s in enumerate(scenes):
                 s['id']   = i + 1
                 s['text'] = self._sanitize(s.get('text', ''))
-                s.setdefault('mood', 'professional')
-            print(f"✅ {len(scenes)} job offer scenes ready")
+                s['mood'] = 'energetic'   # siempre energético para empleo
+            print(f"✅ {len(scenes)} job offer scenes ready (~30s)")
             return scenes
         except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:10]
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:6]
             return [
-                {"id": i+1, "text": self._sanitize(s), "visual_1": "professional office team", "visual_2": "career growth success", "mood": "professional"}
+                {"id": i+1, "text": self._sanitize(s), "visual_1": "job interview success", "visual_2": "career growth celebration", "mood": "energetic"}
                 for i, s in enumerate(sentences)
             ]
 

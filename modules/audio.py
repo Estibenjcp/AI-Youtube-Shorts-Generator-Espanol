@@ -151,8 +151,12 @@ class AudioEngine:
                 continue
             filename = f"voice_{scene_id}.mp3"
 
+            # Mood "energetic" → todas las escenas al ritmo de hook (+8%)
             # Hook scenes (1-2): +8% faster → urgency; CTA (last): -5% → clarity
-            if idx < 2:
+            _mood = scene.get('mood', '')
+            if _mood == 'energetic':
+                scene_rate = self._adjust_rate(self.rate, +8)   # rápido en todo el video
+            elif idx < 2:
                 scene_rate = self._adjust_rate(self.rate, +8)
             elif idx >= total_scenes - 1:
                 scene_rate = self._adjust_rate(self.rate, -5)
@@ -524,8 +528,11 @@ class GoogleTTSAudioEngine:
                 continue
             out_path = os.path.join(self.output_dir, f"voice_{scene_id}.mp3")
 
-            # Hook scenes: slightly faster for urgency; CTA: slower for clarity
-            if idx < 2:
+            # Mood "energetic" → todo el video rápido (+8%)
+            _mood = scene.get("mood", "")
+            if _mood == "energetic":
+                scene_rate = min(self.speaking_rate * 1.08, 4.0)
+            elif idx < 2:
                 scene_rate = min(self.speaking_rate * 1.08, 4.0)
             elif idx >= total - 1:
                 scene_rate = max(self.speaking_rate * 0.95, 0.25)
