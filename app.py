@@ -1406,192 +1406,149 @@ with st.sidebar:
             "Test each service with a real request without generating content."
         )
 
-        _dc1, _dc2, _dc3 = st.columns(3)
+        # ── helper: fila de servicio ─────────────────────────
+        def _diag_row(icon, label, detail, key, btn_disabled=False):
+            """Renderiza una fila horizontal: icono+label+detalle | botón"""
+            _ra, _rb = st.columns([3, 1])
+            with _ra:
+                st.markdown(
+                    f"<div style='display:flex;align-items:center;gap:8px;padding:4px 0'>"
+                    f"<span style='font-size:1.2rem'>{icon}</span>"
+                    f"<div><span style='font-weight:700;font-size:0.85rem'>{label}</span>"
+                    f"<br><span style='font-size:0.72rem;color:#6b7280'>{detail}</span></div>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            with _rb:
+                clicked = st.button(
+                    "🔌 " + ("Probar" if _is_es_diag else "Test"),
+                    key=key,
+                    use_container_width=True,
+                    disabled=btn_disabled,
+                )
+            result_slot = st.empty()
+            return clicked, result_slot
 
         # ──────────────── LLM ────────────────────────────
-        with _dc1:
-            st.markdown(
-                "<div style='text-align:center;font-size:1.3rem'>🧠</div>"
-                "<div style='text-align:center;font-weight:700;font-size:0.82rem'>LLM</div>",
-                unsafe_allow_html=True,
-            )
-            _diag_llm_key = os.getenv("AI_API_KEY", "")
-            _diag_llm_model = os.getenv("AI_MODEL", "") or "gemini-2.0-flash-exp"
-            _diag_llm_prov  = os.getenv("AI_PROVIDER", "gemini").lower()
-            st.caption(f"`{_diag_llm_model[:22]}`")
-            _diag_llm_btn = st.button(
-                "🔌 " + ("Probar" if _is_es_diag else "Test"),
-                key="diag_llm_btn",
-                use_container_width=True,
-                disabled=not _diag_llm_key,
-                help="Sin API Key configurada" if not _diag_llm_key else "",
-            )
-            _diag_llm_out = st.empty()
-            if _diag_llm_btn:
-                with st.spinner("..."):
-                    try:
-                        if _diag_llm_prov == "openrouter":
-                            from openai import OpenAI as _OAI
-                            _oc = _OAI(
-                                base_url="https://openrouter.ai/api/v1",
-                                api_key=_diag_llm_key,
-                            )
-                            _or = _oc.chat.completions.create(
-                                model=_diag_llm_model,
-                                messages=[{"role": "user", "content": "Reply with the single word: OK"}],
-                                max_tokens=8,
-                            )
-                            _ans = _or.choices[0].message.content.strip()
-                        else:
-                            from google import genai as _gai
-                            _gc = _gai.Client(api_key=_diag_llm_key)
-                            _gr2 = _gc.models.generate_content(
-                                model=_diag_llm_model,
-                                contents="Reply with the single word: OK",
-                            )
-                            _ans = _gr2.text.strip()
-                        _diag_llm_out.success(f"✅ {_ans[:15]}")
-                    except Exception as _de:
-                        _diag_llm_out.error(f"❌ {str(_de)[:60]}")
+        _diag_llm_key   = os.getenv("AI_API_KEY", "")
+        _diag_llm_model = os.getenv("AI_MODEL", "") or "gemini-2.0-flash-exp"
+        _diag_llm_prov  = os.getenv("AI_PROVIDER", "gemini").lower()
+        _diag_llm_btn, _diag_llm_out = _diag_row(
+            "🧠", "LLM", f"{_diag_llm_prov} · {_diag_llm_model[:24]}",
+            "diag_llm_btn", btn_disabled=not _diag_llm_key,
+        )
+        if _diag_llm_btn:
+            with st.spinner("Consultando LLM..."):
+                try:
+                    if _diag_llm_prov == "openrouter":
+                        from openai import OpenAI as _OAI
+                        _oc = _OAI(base_url="https://openrouter.ai/api/v1", api_key=_diag_llm_key)
+                        _or = _oc.chat.completions.create(
+                            model=_diag_llm_model,
+                            messages=[{"role": "user", "content": "Reply with the single word: OK"}],
+                            max_tokens=8,
+                        )
+                        _ans = _or.choices[0].message.content.strip()
+                    else:
+                        from google import genai as _gai
+                        _gc = _gai.Client(api_key=_diag_llm_key)
+                        _gr2 = _gc.models.generate_content(model=_diag_llm_model, contents="Reply with the single word: OK")
+                        _ans = _gr2.text.strip()
+                    _diag_llm_out.success(f"✅ Conectado · respuesta: {_ans[:20]}")
+                except Exception as _de:
+                    _diag_llm_out.error(f"❌ {str(_de)[:80]}")
 
         # ──────────────── Video IA ───────────────────────
-        with _dc2:
-            st.markdown(
-                "<div style='text-align:center;font-size:1.3rem'>🎬</div>"
-                "<div style='text-align:center;font-weight:700;font-size:0.82rem'>Video IA</div>",
-                unsafe_allow_html=True,
-            )
-            _diag_vid_key  = os.getenv("AI_VIDEO_KEY", "")
-            _diag_vid_prov = os.getenv("AI_VIDEO_PROVIDER", "fal").lower()
-            _diag_vid_mdl  = (
-                os.getenv("AI_VIDEO_MODEL", "")
-                or "fal-ai/kling-video/v2/standard/text-to-video"
-            )
-            st.caption(f"`{_diag_vid_prov.upper()}`")
-            _diag_vid_btn = st.button(
-                "🔌 " + ("Probar" if _is_es_diag else "Test"),
-                key="diag_vid_btn",
-                use_container_width=True,
-                disabled=not _diag_vid_key,
-                help="Sin API Key de Video IA configurada" if not _diag_vid_key else "",
-            )
-            _diag_vid_out = st.empty()
-            if _diag_vid_btn:
-                with st.spinner("..."):
-                    try:
-                        import requests as _rq_v
-                        if _diag_vid_prov == "kling":
-                            # Kling direct: request a non-existent task → 404 = key OK
-                            _vh = {"Authorization": f"Bearer {_diag_vid_key}", "Content-Type": "application/json"}
-                            _vr = _rq_v.get(
-                                "https://api.klingai.com/v1/videos/text2video/__diag_test__",
-                                headers=_vh, timeout=12,
-                            )
-                            if _vr.status_code in (200, 404, 400):
-                                _diag_vid_out.success(f"✅ Auth OK ({_vr.status_code})")
-                            elif _vr.status_code in (401, 403):
-                                _diag_vid_out.error(f"❌ Auth fail ({_vr.status_code})")
-                            else:
-                                _diag_vid_out.warning(f"⚠️ {_vr.status_code}")
+        _diag_vid_key  = os.getenv("AI_VIDEO_KEY", "")
+        _diag_vid_prov = os.getenv("AI_VIDEO_PROVIDER", "fal").lower()
+        _diag_vid_mdl  = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2/standard/text-to-video"
+        _diag_vid_btn, _diag_vid_out = _diag_row(
+            "🎬", "Video IA", f"{_diag_vid_prov.upper()} · {_diag_vid_mdl[:26]}",
+            "diag_vid_btn", btn_disabled=not _diag_vid_key,
+        )
+        if _diag_vid_btn:
+            with st.spinner("Verificando auth..."):
+                try:
+                    import requests as _rq_v
+                    if _diag_vid_prov == "kling":
+                        _vh = {"Authorization": f"Bearer {_diag_vid_key}", "Content-Type": "application/json"}
+                        _vr = _rq_v.get("https://api.klingai.com/v1/videos/text2video/__diag__", headers=_vh, timeout=12)
+                        if _vr.status_code in (200, 404, 400):
+                            _diag_vid_out.success(f"✅ Auth OK (HTTP {_vr.status_code})")
+                        elif _vr.status_code in (401, 403):
+                            _diag_vid_out.error(f"❌ Key inválida (HTTP {_vr.status_code})")
                         else:
-                            # FAL.ai: request status of fake ID → 404 = key OK, 401 = bad key
-                            _vh = {"Authorization": f"Key {_diag_vid_key}"}
-                            _vr = _rq_v.get(
-                                f"https://queue.fal.run/{_diag_vid_mdl}/requests/__diag_test__/status",
-                                headers=_vh, timeout=12,
-                            )
-                            if _vr.status_code in (200, 404, 422):
-                                _diag_vid_out.success(f"✅ Auth OK ({_vr.status_code})")
-                            elif _vr.status_code in (401, 403):
-                                _diag_vid_out.error(f"❌ Auth fail ({_vr.status_code})")
-                            else:
-                                _diag_vid_out.warning(f"⚠️ {_vr.status_code}: {_vr.text[:40]}")
-                    except Exception as _de:
-                        _diag_vid_out.error(f"❌ {str(_de)[:60]}")
+                            _diag_vid_out.warning(f"⚠️ HTTP {_vr.status_code}")
+                    else:
+                        _vh = {"Authorization": f"Key {_diag_vid_key}"}
+                        _vr = _rq_v.get(
+                            f"https://queue.fal.run/{_diag_vid_mdl}/requests/__diag__/status",
+                            headers=_vh, timeout=12,
+                        )
+                        if _vr.status_code in (200, 404, 422):
+                            _diag_vid_out.success(f"✅ Auth OK (HTTP {_vr.status_code})")
+                        elif _vr.status_code in (401, 403):
+                            _diag_vid_out.error(f"❌ Key inválida (HTTP {_vr.status_code})")
+                        else:
+                            _diag_vid_out.warning(f"⚠️ HTTP {_vr.status_code}: {_vr.text[:50]}")
+                except Exception as _de:
+                    _diag_vid_out.error(f"❌ {str(_de)[:80]}")
 
         # ──────────────── Audio TTS ──────────────────────
-        with _dc3:
-            st.markdown(
-                "<div style='text-align:center;font-size:1.3rem'>🎙️</div>"
-                "<div style='text-align:center;font-weight:700;font-size:0.82rem'>TTS</div>",
-                unsafe_allow_html=True,
-            )
-            _diag_tts = st.session_state.get("tts_engine", "edge_tts")
-            _diag_tts_label = {"edge_tts": "Edge TTS", "google_tts": "Google TTS", "voxcpm": "VoxCPM"}.get(_diag_tts, _diag_tts)
-            st.caption(f"`{_diag_tts_label}`")
-            _diag_tts_btn = st.button(
-                "🔌 " + ("Probar" if _is_es_diag else "Test"),
-                key="diag_tts_btn",
-                use_container_width=True,
-            )
-            _diag_tts_out = st.empty()
-            if _diag_tts_btn:
-                with st.spinner("..."):
-                    try:
-                        import tempfile, os as _os2
-                        _tmp = tempfile.mktemp(suffix=".mp3")
-                        if _diag_tts == "edge_tts":
-                            import edge_tts as _ett, asyncio as _aio2
-                            _ev = st.session_state.get("voice", "es-MX-DaliaNeural")
-                            async def _edge_diag():
-                                c = _ett.Communicate("ok", _ev)
-                                await c.save(_tmp)
-                            _aio2.run(_edge_diag())
-                            _size = _os2.path.getsize(_tmp) if _os2.path.exists(_tmp) else 0
-                            if _size > 100:
-                                _diag_tts_out.success(f"✅ Edge TTS OK")
+        _diag_tts = st.session_state.get("tts_engine", "edge_tts")
+        _diag_tts_label = {"edge_tts": "Edge TTS", "google_tts": "Google TTS", "voxcpm": "VoxCPM"}.get(_diag_tts, _diag_tts)
+        _diag_tts_btn, _diag_tts_out = _diag_row(
+            "🎙️", "Audio TTS", _diag_tts_label,
+            "diag_tts_btn",
+        )
+        if _diag_tts_btn:
+            with st.spinner("Probando síntesis..."):
+                try:
+                    import tempfile, os as _os2
+                    _tmp = tempfile.mktemp(suffix=".mp3")
+                    if _diag_tts == "edge_tts":
+                        import edge_tts as _ett, asyncio as _aio2
+                        _ev = st.session_state.get("voice", "es-MX-DaliaNeural")
+                        async def _edge_diag():
+                            c = _ett.Communicate("ok", _ev)
+                            await c.save(_tmp)
+                        _aio2.run(_edge_diag())
+                        _size = _os2.path.getsize(_tmp) if _os2.path.exists(_tmp) else 0
+                        _diag_tts_out.success("✅ Edge TTS OK") if _size > 100 else _diag_tts_out.error("❌ Audio vacío")
+                    elif _diag_tts == "google_tts":
+                        _gk = os.getenv("GOOGLE_TTS_KEY", "")
+                        if not _gk:
+                            _diag_tts_out.error("❌ Sin API Key de Google TTS")
+                        else:
+                            import requests as _rq_t
+                            _tr = _rq_t.post(
+                                "https://texttospeech.googleapis.com/v1/text:synthesize",
+                                params={"key": _gk},
+                                json={"input": {"text": "ok"}, "voice": {"languageCode": "es-US", "name": "es-US-Neural2-B"}, "audioConfig": {"audioEncoding": "MP3"}},
+                                timeout=10,
+                            )
+                            if _tr.status_code == 200:
+                                _diag_tts_out.success("✅ Google TTS OK")
                             else:
-                                _diag_tts_out.error("❌ Audio vacío")
-                        elif _diag_tts == "google_tts":
-                            _gk = os.getenv("GOOGLE_TTS_KEY", "")
-                            if not _gk:
-                                _diag_tts_out.error("❌ Sin API Key de Google TTS")
-                            else:
-                                import requests as _rq_t, base64 as _b64
-                                _tr = _rq_t.post(
-                                    "https://texttospeech.googleapis.com/v1/text:synthesize",
-                                    params={"key": _gk},
-                                    json={
-                                        "input": {"text": "ok"},
-                                        "voice": {"languageCode": "es-US", "name": "es-US-Neural2-B"},
-                                        "audioConfig": {"audioEncoding": "MP3"},
-                                    },
-                                    timeout=10,
-                                )
-                                if _tr.status_code == 200:
-                                    _diag_tts_out.success("✅ Google TTS OK")
-                                else:
-                                    _em = _tr.json().get("error", {}).get("message", str(_tr.status_code))
-                                    _diag_tts_out.error(f"❌ {_em[:60]}")
-                        elif _diag_tts == "voxcpm":
-                            try:
-                                from modelscope.pipelines import pipeline as _ms_pipe
-                                _diag_tts_out.success("✅ VoxCPM disponible")
-                            except ImportError:
-                                _diag_tts_out.error("❌ modelscope no instalado")
-                        if _os2.path.exists(_tmp):
-                            _os2.remove(_tmp)
-                    except Exception as _de:
-                        _diag_tts_out.error(f"❌ {str(_de)[:60]}")
+                                _em = _tr.json().get("error", {}).get("message", str(_tr.status_code))
+                                _diag_tts_out.error(f"❌ {_em[:70]}")
+                    elif _diag_tts == "voxcpm":
+                        try:
+                            from modelscope.pipelines import pipeline as _ms_pipe  # noqa
+                            _diag_tts_out.success("✅ VoxCPM disponible")
+                        except ImportError:
+                            _diag_tts_out.error("❌ modelscope no instalado")
+                    if _os2.path.exists(_tmp):
+                        _os2.remove(_tmp)
+                except Exception as _de:
+                    _diag_tts_out.error(f"❌ {str(_de)[:80]}")
 
         # ──────────────── Pexels ─────────────────────────
-        st.markdown("---")
-        _dc4, _dc4b = st.columns([2, 1])
-        with _dc4:
-            st.markdown(
-                "**📷 Pexels** — " + ("Búsqueda de videos de stock" if _is_es_diag else "Stock video search"),
-                unsafe_allow_html=False,
-            )
-            _diag_px_key = os.getenv("PEXELS_API_KEY", "")
-            st.caption(f"`{'configurada ✓' if _diag_px_key else 'sin configurar'}`")
-        with _dc4b:
-            _diag_px_btn = st.button(
-                "🔌 " + ("Probar" if _is_es_diag else "Test"),
-                key="diag_px_btn",
-                use_container_width=True,
-                disabled=not _diag_px_key,
-            )
-        _diag_px_out = st.empty()
+        _diag_px_key = os.getenv("PEXELS_API_KEY", "")
+        _diag_px_btn, _diag_px_out = _diag_row(
+            "📷", "Pexels", "configurada ✓" if _diag_px_key else "sin configurar",
+            "diag_px_btn", btn_disabled=not _diag_px_key,
+        )
         if _diag_px_btn:
             with st.spinner("..."):
                 try:
