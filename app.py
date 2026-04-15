@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", message="Accessing `__path__`")
+
 import streamlit as st
 import threading
 import asyncio
