@@ -1193,7 +1193,11 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 os.makedirs(p, exist_ok=True)
 
         copy_data    = brain.generate_copy(topic, script, lang=pipeline_lang, mode=pipeline_mode)
-        thumb_prompt = brain.generate_thumbnail_prompt(topic, script, lang=pipeline_lang)
+        thumb_prompt = brain.generate_thumbnail_prompt(
+            topic, script, lang=pipeline_lang,
+            mode=pipeline_mode,
+            offer_text=params.get("job_offer_text", ""),
+        )
 
         log_q.put(f"COPY:{__import__('json').dumps(copy_data)}")
         log_q.put(f"THUMB:{thumb_prompt}")

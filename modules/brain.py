@@ -1005,10 +1005,60 @@ We need TWO different stock videos for every single scene.
             print(clean_text)
             return None
 
-    def generate_thumbnail_prompt(self, topic: str, script: list, lang: str = "es") -> str:
+    def generate_thumbnail_prompt(self, topic: str, script: list, lang: str = "es",
+                                   mode: str = "auto", offer_text: str = "") -> str:
         print("🖼️ Generating thumbnail prompt...")
         hook = script[0]['text'] if script else ""
 
+        # ── MODO EMPLEO: prompt especializado de reclutamiento ─────────────────
+        if mode == "empleo":
+            # Extraer datos clave del guion para no inventar nada
+            script_lines = " | ".join(s.get("text", "") for s in script[:6])
+            source_ctx   = offer_text.strip()[:1200] if offer_text.strip() else script_lines
+
+            prompt = f"""You are an expert in visual marketing, performance ads and viral recruitment thumbnail design.
+
+JOB OFFER SOURCE (use ONLY this — do NOT invent anything):
+---
+{source_ctx}
+---
+
+EXTRACTED SCRIPT SCENES (reference for copy):
+{script_lines}
+
+YOUR TASK: Generate ONE complete image prompt (ready for DALL-E / Midjourney) for a job offer thumbnail.
+
+MANDATORY RULES:
+1. RECRUITMENT FOCUS — transmit opportunity, growth and money. Positive and energetic.
+2. 70% positive visual dominance. If using contrast (duality), positive side must dominate.
+3. COPY INSIDE THE IMAGE (extract ONLY from the offer, no invention):
+   - Top title: what the job is (e.g. "REPARTIDOR", "VENDEDOR", "DISEÑADOR")
+   - Main headline: the economic or emotional main benefit
+   - Secondary badge: specific earning or key advantage (salary if mentioned)
+   - Call to action: "EMPIEZA HOY" or "APLICA YA"
+4. VISUAL STYLE:
+   - Viral thumbnail, cinematic, optimistic and energetic
+   - Dramatic but positive lighting: golden glow, neon energy, bright highlights
+   - Progress elements: money, apps, metrics, action, celebration, success
+   - Vertical composition 9:16, centered, mobile-optimized
+   - Photorealistic, 8K, maximum detail
+5. ADAPT to job type detected:
+   - Delivery/field: outdoor energy, vehicle, city, motion blur
+   - Office/remote: modern workspace, laptop, skyline, professional glow
+   - Sales: handshake, money rain, targets hit, celebration
+   - Technical: tools, precision, expertise glow
+6. TEXT ON IMAGE: ALL IN SPANISH (Spanish-speaking audience)
+7. PROMPT LANGUAGE: English (for AI image generation compatibility)
+
+OUTPUT FORMAT — return exactly this structure, no markdown, no explanations:
+
+[ONE LINE: brief creative concept]
+---
+[FULL PROMPT ready for DALL-E/Midjourney, in English, with Spanish overlay texts specified]
+"""
+            return self._generate(prompt).strip()
+
+        # ── RESTO DE MODOS: prompt cinematográfico estándar ──────────────────
         if lang == "es":
             word_lang_instruction = (
                 "- El prompt de imagen va en INGLÉS (para compatibilidad con Midjourney/DALL-E).\n"
