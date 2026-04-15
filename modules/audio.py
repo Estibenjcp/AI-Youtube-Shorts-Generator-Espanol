@@ -238,21 +238,76 @@ class VoxCPMAudioEngine:
 
     def _get_model(self):
         if self._model_load_failed:
-            raise RuntimeError("VoxCPM model failed to load — check logs above.")
+            raise RuntimeError(
+                "[VoxCPM] Modelo no disponible. Revisa los logs del pipeline para instrucciones."
+            )
         if self._model is None:
-            print("[VoxCPM] Loading model (first run — may take a minute)...")
+            print("[VoxCPM] Cargando modelo (primera vez — puede tardar un minuto)...")
+
+            # Strategy 1: patch ModelScope download to skip the denoiser
+            model = self._try_load_with_patch()
+            if model is not None:
+                self._model = model
+                print("[VoxCPM] Modelo listo (sin denoiser de ModelScope).")
+                return self._model
+
+            # Strategy 2: normal load (works if user has ModelScope token)
             try:
-                # load_denoiser=False skips the ModelScope speech_zipenhancer
-                # dependency that may be geo-blocked or require authentication.
-                self._model = self._VoxCPM.from_pretrained(
-                    "openbmb/VoxCPM2",
-                    load_denoiser=False,
-                )
-                print("[VoxCPM] Model ready (denoiser disabled — faster load).")
+                self._model = self._VoxCPM.from_pretrained("openbmb/VoxCPM2")
+                print("[VoxCPM] Modelo listo.")
+                return self._model
             except Exception as e:
                 self._model_load_failed = True
-                raise RuntimeError(f"[VoxCPM] Failed to load model: {e}") from e
+                print(
+                    "\n[VoxCPM] ERROR: No se pudo cargar el modelo.\n"
+                    "El denoiser de speech_zipenhancer esta bloqueado (requiere cuenta ModelScope).\n"
+                    "\n--- SOLUCION ---\n"
+                    "1. Crea una cuenta GRATIS en: https://modelscope.cn\n"
+                    "2. Ve a: https://modelscope.cn/my/myaccesstoken  y copia tu token\n"
+                    "3. Ejecuta en Python UNA SOLA VEZ:\n"
+                    "   from modelscope.hub.api import HubApi\n"
+                    "   HubApi().login('TU_TOKEN_AQUI')\n"
+                    "4. Reinicia la app\n"
+                    "----------------\n"
+                    f"Error original: {e}\n"
+                )
+                raise RuntimeError("[VoxCPM] Modelo no cargado — ver instrucciones en la consola.") from e
         return self._model
+
+    def _try_load_with_patch(self):
+        """Intenta cargar VoxCPM interceptando la descarga del denoiser de ModelScope.
+        Si VoxCPM maneja el error internamente, el modelo carga sin denoiser."""
+        _patches = []
+        try:
+            import modelscope.hub.snapshot_download as _sd_mod
+            _orig_dl = _sd_mod.snapshot_download
+
+            def _skip_denoiser_download(model_id='', *args, **kwargs):
+                if isinstance(model_id, str) and (
+                    'zipenhancer' in model_id.lower() or
+                    'speech_zipenhancer' in model_id.lower()
+                ):
+                    print(f"[VoxCPM] Omitiendo denoiser: {model_id}")
+                    raise Exception(f"Denoiser skipped: {model_id}")
+                return _orig_dl(model_id, *args, **kwargs)
+
+            _sd_mod.snapshot_download = _skip_denoiser_download
+            _patches.append((_sd_mod, 'snapshot_download', _orig_dl))
+        except Exception:
+            return None  # modelscope not importable yet — skip this strategy
+
+        try:
+            model = self._VoxCPM.from_pretrained("openbmb/VoxCPM2")
+            return model
+        except Exception as e:
+            print(f"[VoxCPM] Carga con patch fallo: {e}")
+            return None
+        finally:
+            for _mod, _attr, _orig in _patches:
+                try:
+                    setattr(_mod, _attr, _orig)
+                except Exception:
+                    pass
 
     def _voice_for_scene(self, scene: dict) -> str:
         """Return voice description string for a scene."""

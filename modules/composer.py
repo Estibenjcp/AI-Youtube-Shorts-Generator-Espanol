@@ -424,8 +424,38 @@ class Composer:
             ).run(overwrite_output=True, quiet=False)
 
             print(f"✅ FINAL VIDEO SAVED: {output_path}")
+            self._strip_metadata(output_path)
             return output_path
 
         except ffmpeg.Error as e:
             print(f"❌ Stitching Error: {e.stderr.decode('utf8') if e.stderr else str(e)}")
             return None
+
+    @staticmethod
+    def _strip_metadata(video_path: str) -> None:
+        """Remove all metadata from the final video using FFmpeg stream copy (no re-encode).
+        Overwrites the file in-place via a temp file."""
+        import subprocess, os, shutil
+        tmp = video_path + ".clean.mp4"
+        try:
+            result = subprocess.run(
+                [
+                    "ffmpeg", "-y",
+                    "-i", video_path,
+                    "-map_metadata", "-1",   # drop all global metadata
+                    "-map_chapters", "-1",   # drop chapter markers
+                    "-c", "copy",            # no re-encode — instant
+                    "-movflags", "faststart",
+                    tmp,
+                ],
+                capture_output=True,
+            )
+            if result.returncode == 0 and os.path.exists(tmp) and os.path.getsize(tmp) > 1024:
+                shutil.move(tmp, video_path)
+                print("🧹 Metadata stripped from final video.")
+            else:
+                print("⚠️  Metadata strip skipped (ffmpeg error) — keeping original.")
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+        except Exception as e:
+            print(f"⚠️  Metadata strip failed: {e}")
