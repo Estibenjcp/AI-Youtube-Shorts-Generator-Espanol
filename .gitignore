@@ -5,6 +5,9 @@ venv/
 # Environment variables (Critical for security)
 .env
 
+# Streamlit local secrets (contains API keys — never commit)
+.streamlit/secrets.toml
+
 # System files
 .DS_Store
 Thumbs.db
