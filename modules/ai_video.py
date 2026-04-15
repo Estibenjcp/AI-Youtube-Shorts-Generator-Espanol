@@ -88,6 +88,7 @@ _MODEL_DURATIONS = {
     "fal-ai/runway-gen3/turbo/text-to-video": [5, 10],
     "fal-ai/luma-dream-machine": [5],
     "fal-ai/wan-i2v": [5],
+    "fal-ai/ovi": [5, 10, 15],
 }
 
 _DEFAULT_MODELS = {

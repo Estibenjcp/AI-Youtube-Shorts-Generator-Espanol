@@ -1854,7 +1854,13 @@ if st.session_state.get("video_source", "pexels") == "ai_video":
 
         with _dur_c2:
             # Duración por clip (lo que pide al modelo)
-            _clip_options = [5, 10]
+            # Detectar duraciones soportadas por el modelo configurado
+            _active_vid_model = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2/standard/text-to-video"
+            try:
+                from modules.ai_video import _MODEL_DURATIONS as _MVD
+                _clip_options = sorted(_MVD.get(_active_vid_model, [5, 10]))
+            except Exception:
+                _clip_options = [5, 10]
             _cur_clip = st.session_state.get("ai_video_clip_duration", 5)
             ai_video_clip = st.select_slider(
                 "Duración por clip" if lang_option == "es" else "Clip duration",
