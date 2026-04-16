@@ -144,17 +144,6 @@ _DEFAULT_MODELS = {
     "otro":    "fal-ai/kling-video/v2.6/pro/text-to-video",
 }
 
-_MOOD_MOTION = {
-    "energetic":    "fast dynamic motion, high energy movement",
-    "dramatic":     "slow dramatic push-in, intense atmosphere",
-    "mysterious":   "slow creeping camera, eerie tension",
-    "calm":         "gentle slow pan, peaceful serene",
-    "inspiring":    "upward camera movement, uplifting energy",
-    "professional": "clean smooth dolly shot, polished",
-    "exciting":     "dynamic handheld, thrilling action",
-    "fun":          "bouncy playful movement, vibrant",
-    "informative":  "steady tripod shot, clear focused",
-}
 
 _FAL_BASE        = "https://queue.fal.run"
 _KLING_BASE      = "https://api.klingai.com/v1/videos/text2video"
@@ -232,33 +221,94 @@ class AIVideoEngine:
                 return d
         return durations[-1]
 
+    # Structured camera motion directives per mood (Kling 2.6 Pro guide style)
+    _MOOD_CAMERA = {
+        "energetic":    "Camera races forward with fast dynamic tracking shot, handheld energy, rapid push-in",
+        "dramatic":     "Camera slowly pushes in with smooth dolly movement, then pulls back wide to reveal full scene",
+        "mysterious":   "Camera creeps imperceptibly forward, unsettling slow pan revealing hidden details",
+        "calm":         "Gentle slow horizontal pan, steady locked-off shot with subtle drift, peaceful movement",
+        "inspiring":    "Smooth upward crane tilt revealing expansive view, slow majestic pull-back",
+        "professional": "Clean smooth dolly tracking shot, steady professional movement, precise framing",
+        "exciting":     "Dynamic handheld tracking following action, fast energy, thrilling push-in",
+        "fun":          "Bouncy playful camera movement, joyful tracking, vibrant angles",
+        "informative":  "Steady tripod shot, subtle slow zoom-in, clear focused composition",
+        "horror":       "Extremely slow creeping push-in through darkness, unsettling stillness broken by micro-movements",
+        "intriguing":   "Slow revealing dolly, camera tilts up to expose the full scene gradually",
+    }
+
+    # Lighting atmosphere per mood
+    _MOOD_LIGHTING = {
+        "energetic":    "bright high-energy lighting, sharp high contrast, dynamic atmosphere",
+        "dramatic":     "dramatic chiaroscuro, volumetric light beams piercing from above, deep shadows",
+        "mysterious":   "low-key single point light source, deep moody shadows, fog and haze",
+        "calm":         "soft natural diffused light, golden hour warmth, tranquil peaceful atmosphere",
+        "inspiring":    "warm golden uplifting light, bright luminous highlights, aspirational glow",
+        "professional": "clean soft studio lighting, even fill light, polished corporate atmosphere",
+        "exciting":     "bright vivid lighting, high energy, vibrant saturated colors",
+        "fun":          "colorful playful lighting, warm cheerful tones, vibrant atmosphere",
+        "informative":  "natural documentary lighting, clean and clear, neutral balanced tones",
+        "horror":       "near total darkness, cold blue moonlight or single candle, deep oppressive shadows, fog",
+        "intriguing":   "dramatic side lighting, selective focus, mysterious atmosphere with depth",
+    }
+
     def _build_prompt(self, scene: dict) -> str:
         """
-        Compose the text-to-video prompt from scene metadata.
-        Priority: scene["video_prompt"] > visual_1 + visual_2.
-        Appended: mood motion hint + style suffix + format notice.
+        Compose a structured Kling 2.6 Pro text-to-video prompt from scene metadata.
+
+        Structure (per Kling 2.6 Pro guide):
+          1. Subject / Scene Setting  (what + where)
+          2. Motion Directives        (camera + subject movement)
+          3. Lighting / Atmosphere    (mood-driven)
+          4. Style Suffix             (from VIDEO_STYLES)
+          5. Technical constraints    (vertical, no text)
+
+        Priority: scene["video_prompt"] (mininovela) > visual_1 + visual_2.
         """
+        # ── 1. Scene content ──────────────────────────────────────────────────
         if scene.get("video_prompt", "").strip():
+            # Mininovela: already a full structured prompt — just append constraints
             base = scene["video_prompt"].strip()
+            mood         = scene.get("mood", "dramatic").lower().strip()
+            style_suffix = VIDEO_STYLES[self.style]["suffix"]
+            return (
+                f"{base}. "
+                f"{style_suffix}. "
+                "No text overlays, no watermarks, no subtitles. "
+                "Vertical 9:16 composition, mobile-first framing."
+            )
+
+        # Build from visual search terms (viral / testimonio / libro / auto)
+        v1   = scene.get("visual_1", "").strip()
+        v2   = scene.get("visual_2", "").strip()
+        mood = scene.get("mood", "dramatic").lower().strip()
+
+        # Primary subject with ++emphasis++ (Kling guide technique)
+        if v1 and v2:
+            subject = f"++{v1}++, with {v2} in the background"
+        elif v1:
+            subject = f"++{v1}++"
+        elif v2:
+            subject = f"++{v2}++"
         else:
-            parts = []
-            if scene.get("visual_1", "").strip():
-                parts.append(scene["visual_1"].strip())
-            if scene.get("visual_2", "").strip():
-                parts.append(scene["visual_2"].strip())
-            base = ". ".join(parts) if parts else "cinematic scene"
+            subject = "++cinematic documentary scene++"
 
-        mood = scene.get("mood", "").lower().strip()
-        motion_hint = _MOOD_MOTION.get(mood, "smooth camera movement")
+        # ── 2. Camera + motion directive ──────────────────────────────────────
+        camera = self._MOOD_CAMERA.get(mood, "smooth slow cinematic push-in, slight pull-back")
 
+        # ── 3. Lighting / atmosphere ──────────────────────────────────────────
+        lighting = self._MOOD_LIGHTING.get(mood, "cinematic dramatic lighting, natural tones")
+
+        # ── 4. Style suffix ───────────────────────────────────────────────────
         style_suffix = VIDEO_STYLES[self.style]["suffix"]
 
+        # ── 5. Assemble ───────────────────────────────────────────────────────
         prompt = (
-            f"{base}. "
-            f"{motion_hint}. "
+            f"{subject}. "
+            f"{camera}. "
+            f"{lighting}. "
             f"{style_suffix}. "
-            "No text overlays, no watermarks. "
-            "Vertical 9:16 format, mobile optimized."
+            "No text overlays, no watermarks, no subtitles. "
+            "Vertical 9:16 format, mobile-first framing, subject centered."
         )
         return prompt
 
@@ -266,8 +316,10 @@ class AIVideoEngine:
     # FAL.ai provider (primary)
     # ------------------------------------------------------------------
 
-    async def _submit_fal(self, prompt: str, duration: int, session_headers: dict) -> str:
-        """Submit a generation request to the FAL.ai queue, return request_id."""
+    async def _submit_fal(self, prompt: str, duration: int, session_headers: dict) -> tuple:
+        """Submit a generation request to the FAL.ai queue.
+        Returns (request_id, status_url, result_url) — uses URLs from the response
+        when available so we never construct wrong paths ourselves."""
         url  = f"{_FAL_BASE}/{self.model}"
         _cfg = _MODEL_CONFIGS.get(self.model, {"duration_str": True, "extra": {}})
         _dur_val = str(duration) if _cfg["duration_str"] else int(duration)
@@ -287,12 +339,28 @@ class AIVideoEngine:
         request_id = data.get("request_id") or data.get("id")
         if not request_id:
             raise RuntimeError(f"FAL submit: no request_id in response: {data}")
-        return request_id
 
-    async def _poll_fal(self, request_id: str, session_headers: dict) -> str:
+        # Prefer URLs returned by FAL (they know the correct path); fall back to
+        # the manually-constructed ones only if FAL doesn't provide them.
+        status_url = (
+            data.get("status_url")
+            or f"{_FAL_BASE}/{self.model}/requests/{request_id}/status"
+        )
+        result_url = (
+            data.get("response_url")
+            or data.get("result_url")
+            or f"{_FAL_BASE}/{self.model}/requests/{request_id}"
+        )
+        return request_id, status_url, result_url
+
+    async def _poll_fal(self, request_id: str, session_headers: dict,
+                        status_url: str = "", result_url: str = "") -> str:
         """Poll the FAL.ai queue until the job is COMPLETED, return video URL."""
-        status_url = f"{_FAL_BASE}/{self.model}/requests/{request_id}/status"
-        result_url = f"{_FAL_BASE}/{self.model}/requests/{request_id}"
+        # Allow callers to pass the URLs from the submit response
+        if not status_url:
+            status_url = f"{_FAL_BASE}/{self.model}/requests/{request_id}/status"
+        if not result_url:
+            result_url = f"{_FAL_BASE}/{self.model}/requests/{request_id}"
         deadline   = time.monotonic() + _POLL_TIMEOUT
 
         while time.monotonic() < deadline:
@@ -472,8 +540,8 @@ class AIVideoEngine:
                         "Authorization": f"Key {self.api_key}",
                         "Content-Type":  "application/json",
                     }
-                    request_id = await self._submit_fal(prompt, clip_dur, headers)
-                    video_url  = await self._poll_fal(request_id, headers)
+                    request_id, status_url, result_url = await self._submit_fal(prompt, clip_dur, headers)
+                    video_url  = await self._poll_fal(request_id, headers, status_url, result_url)
 
                 # ---- download ----
                 await self._download_clip(video_url, raw_path)
