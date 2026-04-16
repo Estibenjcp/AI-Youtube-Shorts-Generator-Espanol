@@ -402,7 +402,7 @@ FORMAT (strict JSON, no markdown, no extra text):
         lines = [l.strip().strip('"').strip("'").strip('-').strip() for l in raw.splitlines() if len(l.strip()) > 10]
         return [self._sanitize(l) for l in lines if len(l) > 10][:n] or [ctx[:60]]
 
-    def generate_viral_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9) -> list:
+    def generate_viral_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9, max_words_per_scene: int = 999) -> list:
         """Genera un guion viral ultra-retención (45-60 seg) con estructura MrBeast/Dark History.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -416,6 +416,7 @@ Tu objetivo es crear Shorts que generen maxima retencion y shares (estilo MrBeas
 
 REGLAS OBLIGATORIAS:
 - Duracion total: ~{num_scenes * 5} segundos (maximo {num_scenes * 17} palabras en total sumando todos los campos "text").
+- MAXIMO {max_words_per_scene} palabras por escena en el campo "text" — es critico para sincronizar con el clip de video.
 - EXACTAMENTE {num_scenes} escenas — ni una mas, ni una menos.
 - Estructura EXACTA en el orden de las escenas:
   Escena 1: HOOK VIRAL (CRITICO - maximo 12 palabras, el espectador decide en 1.7 seg):
@@ -455,6 +456,7 @@ Your goal: maximum retention and shares (MrBeast + The Why Files + Dark History 
 MANDATORY RULES:
 - LANGUAGE: ENGLISH ONLY. Every single word must be in English. No Spanish words whatsoever.
 - Total duration: ~{num_scenes * 5} seconds (maximum {num_scenes * 17} words total across all "text" fields).
+- MAXIMUM {max_words_per_scene} words per scene in the "text" field — critical for video clip sync.
 - EXACTLY {num_scenes} scenes — no more, no fewer.
 - EXACT scene structure:
   Scene 1: VIRAL HOOK (CRITICAL - max 12 words, viewer decides in 1.7 sec):
@@ -510,7 +512,7 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_testimonio_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9) -> list:
+    def generate_testimonio_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9, max_words_per_scene: int = 999) -> list:
         """Guion estilo testimonio misterioso — narración lenta, cinematográfica, terror.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -529,7 +531,7 @@ JSON RULES:
 
 Debes contar la historia como si fuera un testimonio real de una persona (ex satanica, testigo, sacerdote, victima, etc.).
 
-Estructura exacta (~{num_scenes * 5} segundos / EXACTAMENTE {num_scenes} escenas):
+Estructura exacta (~{num_scenes * 5} segundos / EXACTAMENTE {num_scenes} escenas / MAXIMO {max_words_per_scene} palabras por escena):
   Escena 1 - HOOK PERTURBADOR (maximo 12 palabras, el espectador decide en 1.7 seg):
     OBLIGATORIO — uno de estos tipos:
     TIPO A: "[CIFRA] personas/casos [hecho perturbador]." Ej: "17 miembros de una secta murieron la misma noche. Nadie explica como."
@@ -566,7 +568,7 @@ REGLAS DEL JSON:
 
 Tell the story as if it were a real testimony from a real person (ex-satanist, witness, priest, victim, etc.).
 
-Exact structure (~{num_scenes * 5} seconds / EXACTLY {num_scenes} scenes):
+Exact structure (~{num_scenes * 5} seconds / EXACTLY {num_scenes} scenes / MAX {max_words_per_scene} words per scene):
   Scene 1 - DISTURBING HOOK (max 12 words, viewer decides in 1.7 sec):
     MANDATORY — one of these types:
     TYPE A: "[NUMBER] people/cases [disturbing fact]." E.g.: "17 cult members died the same night. Nobody explains how."
@@ -630,7 +632,7 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_book_summary_script(self, book: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9) -> list:
+    def generate_book_summary_script(self, book: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9, max_words_per_scene: int = 999) -> list:
         """Resumen de libro de 60 seg — enseña, aplica y motiva a leer.
         Single-call: produce JSON scenes directly — no second AI call, no text modification."""
         import re as _re
@@ -640,7 +642,7 @@ JSON RULES:
         if lang == "es":
             prompt = f"""Eres un narrador conversacional que habla directamente al oido del espectador. Tu voz sera leida por un sistema de texto a voz, por eso CADA FRASE debe sonar natural al ser pronunciada en voz alta.
 
-Estructura (EXACTAMENTE {num_scenes} escenas / {num_scenes * 15}-{num_scenes * 18} palabras en total):
+Estructura (EXACTAMENTE {num_scenes} escenas / {num_scenes * 15}-{num_scenes * 18} palabras en total / MAXIMO {max_words_per_scene} palabras por escena):
   Escena 1 - GANCHO: Una verdad incomoda o dato sorprendente que el libro revela. Directo, sin rodeos.
   Escena 2 - EL LIBRO: Presenta el titulo y autor de forma natural, como si lo recomendaras a un amigo.
   Escenas 3-{max(4, num_scenes - 3)} - IDEAS + GIRO: La premisa principal y la idea mas inesperada del libro.
@@ -673,7 +675,7 @@ REGLAS DEL JSON:
         else:
             prompt = f"""You are a conversational narrator speaking directly into the viewer's ear. Your voice will be read by a text-to-speech system, so EVERY SENTENCE must sound natural when spoken out loud.
 
-Structure (EXACTLY {num_scenes} scenes / {num_scenes * 15}-{num_scenes * 18} words total):
+Structure (EXACTLY {num_scenes} scenes / {num_scenes * 15}-{num_scenes * 18} words total / MAX {max_words_per_scene} words per scene):
   Scene 1 - HOOK: An uncomfortable truth or surprising fact the book reveals. Direct, no fluff.
   Scene 2 - THE BOOK: Introduce the title and author naturally, like recommending it to a friend.
   Scenes 3-{max(4, num_scenes - 3)} - CORE IDEAS + TWIST: Main premise and most unexpected idea of the book.

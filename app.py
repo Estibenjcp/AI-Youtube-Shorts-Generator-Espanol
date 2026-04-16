@@ -1101,6 +1101,9 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             _ai_num_scenes = params.get("num_scenes", 9)
             _ai_clip_dur   = 5
 
+        # Palabras máx por escena para guiar al LLM (TTS ≈ 2.3 pal/s)
+        _max_wpsc = max(8, int(_ai_clip_dur * 2.3)) if _video_src in ("ai_video", "ai_video_test") else 999
+
         if pipeline_mode == "viral":
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
@@ -1108,7 +1111,9 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="viral")
-            script = brain.generate_viral_script(topic, category, lang=pipeline_lang, chosen_hook=chosen_hook, num_scenes=_ai_num_scenes)
+            script = brain.generate_viral_script(topic, category, lang=pipeline_lang,
+                                                 chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
+                                                 max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "testimonio":
             topic       = params.get("topic", "").strip()
@@ -1118,7 +1123,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="testimonio")
             script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang,
-                                                      chosen_hook=chosen_hook, num_scenes=_ai_num_scenes)
+                                                      chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
+                                                      max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "libro":
             topic       = params.get("topic", "").strip()
@@ -1128,7 +1134,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="libro")
             script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
-                                                        chosen_hook=chosen_hook, num_scenes=_ai_num_scenes)
+                                                        chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
+                                                        max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "empleo":
             offer_text = params.get("job_offer_text", "").strip()
@@ -1177,17 +1184,39 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             return
 
         # ── TEST MODE: reemplaza el texto de la escena con frase corta (~3s TTS)
-        # El LLM devuelve guiones largos incluso para 1 escena; si no forzamos el
-        # texto aquí, el audio dura 60+ s y el clip de 5s se repite 12 veces.
         if _video_src == "ai_video_test":
             _test_phrase = (
                 "Verificando modelo de video con inteligencia artificial."
                 if pipeline_lang == "es"
                 else "Testing AI video model generation clip."
             )
-            script = [script[0]]          # asegurar solo 1 escena
+            script = [script[0]]
             script[0]["text"] = _test_phrase
             log_q.put(f"🧪 Texto de test forzado: \"{_test_phrase}\"")
+
+        # ── AI VIDEO MODE: recortar texto de cada escena para que el TTS no supere
+        # la duración del clip de IA.  TTS ≈ 2.3 palabras/segundo en español.
+        # Sin este límite el LLM puede escribir 20+ seg de narración por escena,
+        # y FFmpeg loopeará el clip de 5s muchas veces.
+        if _video_src in ("ai_video", "ai_video_test") and script:
+            _words_per_sec = 2.3          # velocidad conservadora (con margen)
+            _max_words     = max(8, int(_ai_clip_dur * _words_per_sec))
+            _capped_count  = 0
+            for _sc in script:
+                _wlist = _sc.get("text", "").split()
+                if len(_wlist) > _max_words:
+                    # Cortar en el último punto o coma antes del límite si existe
+                    _truncated = " ".join(_wlist[:_max_words])
+                    # Asegurar que termine en punto
+                    if not _truncated.endswith((".", "!", "?")):
+                        _truncated = _truncated.rstrip(",;:") + "."
+                    _sc["text"] = _truncated
+                    _capped_count += 1
+            if _capped_count:
+                log_q.put(
+                    f"✂️ {_capped_count} escena(s) recortadas a ≤{_max_words} palabras "
+                    f"para caber en {_ai_clip_dur}s por clip"
+                )
 
         log_q.put("STAGE:Audio")
         _tts_choice = params.get("tts_engine", "edge_tts")
