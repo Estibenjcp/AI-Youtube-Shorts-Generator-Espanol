@@ -1027,7 +1027,7 @@ for key, default in [
     ("guion_raw_text",    ""),
     ("generation_mode",   "auto"),
     ("hook_step",         "idle"),
-    ("video_source",      "pexels"),   # "pexels" | "ai_video"
+    ("video_source",      "pexels"),   # "pexels" | "ai_video" | "ai_video_test"
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
     ("vox_mood_enabled",  True),
@@ -1088,7 +1088,12 @@ def run_pipeline(log_q: queue.Queue, params: dict):
 
         # Si el usuario usa Video IA, sobrescribe num_scenes con el cálculo duracion/clip
         _video_src = params.get("video_source", "pexels")
-        if _video_src == "ai_video":
+        if _video_src == "ai_video_test":
+            # Test Mode: fuerza 1 escena de 5s sin importar los sliders
+            _ai_num_scenes = 1
+            _ai_clip_dur   = 5
+            log_q.put("🧪 Test Mode: generando 1 escena de 5s para verificar el modelo...")
+        elif _video_src == "ai_video":
             _ai_num_scenes = int(params.get("ai_video_num_scenes", 6))
             _ai_clip_dur   = int(params.get("ai_video_clip_duration", 5))
             log_q.put(f"⏱️ Video IA: {_ai_num_scenes} escenas × {_ai_clip_dur}s = ~{_ai_num_scenes * _ai_clip_dur}s")
@@ -1201,7 +1206,7 @@ def run_pipeline(log_q: queue.Queue, params: dict):
 
         log_q.put("STAGE:Assets")
         _video_src = params.get("video_source", "pexels")
-        if _video_src == "ai_video":
+        if _video_src in ("ai_video", "ai_video_test"):
             from modules.ai_video import AIVideoEngine
             _ai_vid_engine = AIVideoEngine(
                 provider      = params.get("ai_video_provider", "fal"),
@@ -1717,26 +1722,35 @@ with _top_right:
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ── Selector de fuente de video (Pexels vs IA) ────────────────────────────────
+# ── Selector de fuente de video (3 opciones) ─────────────────────────────────
 _vs_label = "🎬 Fuente de video" if lang_option == "es" else "🎬 Video source"
 st.caption(_vs_label)
-_vsrc_c1, _vsrc_c2 = st.columns(2, gap="small")
+_vsrc_c1, _vsrc_c2, _vsrc_c3 = st.columns(3, gap="small")
 
-_vsrc_pexels_active = (_cur_vsrc == "pexels")
-_vsrc_ai_active     = (_cur_vsrc == "ai_video")
+_vsrc_pexels_active  = (_cur_vsrc == "pexels")
+_vsrc_ai_active      = (_cur_vsrc == "ai_video")
+_vsrc_test_active    = (_cur_vsrc == "ai_video_test")
+_ai_vid_provider     = os.getenv("AI_VIDEO_PROVIDER", "fal").upper()
 
+def _vsrc_card(active):
+    return {
+        "bg":     "#6366f1" if active else "#f3f4f6",
+        "color":  "#fff"    if active else "#374151",
+        "weight": "700"     if active else "500",
+        "border": "#6366f1" if active else "#e5e7eb",
+        "op":     "1"       if active else "0.6",
+    }
+
+# Card 1 — Pexels
 with _vsrc_c1:
+    _s = _vsrc_card(_vsrc_pexels_active)
     st.markdown(
-        f"""<div style="
-            background:{'#6366f1' if _vsrc_pexels_active else '#f3f4f6'};
-            color:{'#fff' if _vsrc_pexels_active else '#374151'};
-            border-radius:10px; padding:10px 8px; text-align:center;
-            font-size:0.83rem; font-weight:{'700' if _vsrc_pexels_active else '500'};
-            border:2px solid {'#6366f1' if _vsrc_pexels_active else '#e5e7eb'};
-            line-height:1.3;">
+        f"""<div style="background:{_s['bg']};color:{_s['color']};border-radius:10px;
+            padding:10px 8px;text-align:center;font-size:0.83rem;font-weight:{_s['weight']};
+            border:2px solid {_s['border']};line-height:1.3;">
             🎥 Pexels<br>
-            <span style="font-size:0.7rem;opacity:{'1' if _vsrc_pexels_active else '0.6'}">
-            {'Actual · stock video' if lang_option == 'en' else 'Actual · stock video'}
+            <span style="font-size:0.7rem;opacity:{_s['op']}">
+            {'Stock video' if lang_option == 'en' else 'Stock video'}
             </span></div>""",
         unsafe_allow_html=True,
     )
@@ -1746,21 +1760,18 @@ with _vsrc_c1:
         st.session_state["video_source"] = "pexels"
         st.rerun()
 
+# Card 2 — AI Video
 with _vsrc_c2:
-    _ai_vid_provider = os.getenv("AI_VIDEO_PROVIDER", "fal").upper()
-    _ai_vid_sub = f"{_ai_vid_provider} · {'Configura API →' if not _has_ai_vid else 'listo'}" \
-                  if lang_option == "es" else \
-                  f"{_ai_vid_provider} · {'Set API →' if not _has_ai_vid else 'ready'}"
+    _s = _vsrc_card(_vsrc_ai_active)
+    _ai_sub = f"{_ai_vid_provider} · {'listo' if _has_ai_vid else 'config →'}" \
+              if lang_option == "es" else \
+              f"{_ai_vid_provider} · {'ready' if _has_ai_vid else 'set API →'}"
     st.markdown(
-        f"""<div style="
-            background:{'#6366f1' if _vsrc_ai_active else '#f3f4f6'};
-            color:{'#fff' if _vsrc_ai_active else '#374151'};
-            border-radius:10px; padding:10px 8px; text-align:center;
-            font-size:0.83rem; font-weight:{'700' if _vsrc_ai_active else '500'};
-            border:2px solid {'#6366f1' if _vsrc_ai_active else '#e5e7eb'};
-            line-height:1.3;">
-            🤖 {'Video con IA' if lang_option == 'es' else 'AI Video'}<br>
-            <span style="font-size:0.7rem;opacity:{'1' if _vsrc_ai_active else '0.6'}">{_ai_vid_sub}</span>
+        f"""<div style="background:{_s['bg']};color:{_s['color']};border-radius:10px;
+            padding:10px 8px;text-align:center;font-size:0.83rem;font-weight:{_s['weight']};
+            border:2px solid {_s['border']};line-height:1.3;">
+            🤖 {'Video IA' if lang_option == 'es' else 'AI Video'}<br>
+            <span style="font-size:0.7rem;opacity:{_s['op']}">{_ai_sub}</span>
             </div>""",
         unsafe_allow_html=True,
     )
@@ -1770,19 +1781,42 @@ with _vsrc_c2:
         st.session_state["video_source"] = "ai_video"
         st.rerun()
 
-if _vsrc_ai_active and not _has_ai_vid:
-    st.warning(
-        "⚠️ Configura tu API Key de Video IA en el panel lateral para usar esta opción."
-        if lang_option == "es" else
-        "⚠️ Set your AI Video API Key in the sidebar to use this option."
+# Card 3 — Test IA (1 escena / 5s)
+with _vsrc_c3:
+    _s = _vsrc_card(_vsrc_test_active)
+    # override: test card uses amber when active
+    if _vsrc_test_active:
+        _s["bg"] = "#ca8a04"; _s["border"] = "#ca8a04"
+    st.markdown(
+        f"""<div style="background:{_s['bg']};color:{_s['color']};border-radius:10px;
+            padding:10px 8px;text-align:center;font-size:0.83rem;font-weight:{_s['weight']};
+            border:2px solid {_s['border']};line-height:1.3;">
+            🧪 Test IA<br>
+            <span style="font-size:0.7rem;opacity:{_s['op']}">
+            {'1 clip · verifica modelo' if lang_option == 'es' else '1 clip · verify model'}
+            </span></div>""",
+        unsafe_allow_html=True,
     )
+    if st.button("✓" if _vsrc_test_active else ("Elegir" if lang_option == "es" else "Select"),
+                 key="vsrc_test_btn", use_container_width=True,
+                 type="primary" if _vsrc_test_active else "secondary"):
+        st.session_state["video_source"] = "ai_video_test"
+        st.rerun()
+
+# Info banners bajo las tarjetas
+if (_vsrc_ai_active or _vsrc_test_active) and not _has_ai_vid:
+    st.warning("⚠️ " + ("Configura tu API Key de Video IA en el panel lateral."
+               if lang_option == "es" else "Set your AI Video API Key in the sidebar."))
 elif _vsrc_ai_active and _has_ai_vid:
-    _ai_model_display = os.getenv("AI_VIDEO_MODEL", "") or "(modelo por defecto)"
-    st.info(
-        f"🤖 **{os.getenv('AI_VIDEO_PROVIDER','').upper()}** — modelo: `{_ai_model_display}` · "
-        f"{'(integración próximamente)' if lang_option == 'es' else '(integration coming soon)'}"
-        if lang_option == "es" else
-        f"🤖 **{os.getenv('AI_VIDEO_PROVIDER','').upper()}** — model: `{_ai_model_display}` · (integration coming soon)"
+    _ai_model_display = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2.6/pro/text-to-video"
+    st.info(f"🤖 **{_ai_vid_provider}** — `{_ai_model_display}`")
+elif _vsrc_test_active and _has_ai_vid:
+    _ai_model_display = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2.6/pro/text-to-video"
+    st.warning(
+        f"🧪 **Test Mode** — genera **1 escena de 5s** con `{_ai_model_display}`. "
+        + ("Verifica que el clip llegue correcto antes de producir el video completo."
+           if lang_option == "es" else
+           "Verify the clip arrives correctly before producing the full video.")
     )
 
 st.divider()
@@ -1811,8 +1845,8 @@ if _voice_lang_key not in st.session_state:
     st.session_state.pop("voice_select", None)
     st.session_state[_voice_lang_key] = True
 
-# ── Estilo de Video IA (solo visible si video_source == "ai_video") ───────────
-if st.session_state.get("video_source", "pexels") == "ai_video":
+# ── Estilo de Video IA (visible si video_source es ai_video o ai_video_test) ──
+if st.session_state.get("video_source", "pexels") in ("ai_video", "ai_video_test"):
     from modules.ai_video import VIDEO_STYLES
     _vs_exp_label = "🎨 Estilo de Video IA" if lang_option == "es" else "🎨 AI Video Style"
     with st.expander(_vs_exp_label, expanded=False):
@@ -1912,52 +1946,11 @@ if st.session_state.get("video_source", "pexels") == "ai_video":
             "💡 FFmpeg trims each clip to the exact TTS audio length — actual total may vary ±2s."
         )
 
-        # ── Test Mode panel ──────────────────────────────────────────────────
-        _is_test_mode = (
-            st.session_state.get("ai_video_num_scenes", 6) == 1
-            and st.session_state.get("ai_video_clip_duration", 5) == 5
+        st.caption(
+            "💡 " + ("Para probar el modelo sin gastar créditos, selecciona '🧪 Test IA' en la fuente de video."
+                     if lang_option == "es" else
+                     "To test the model without spending credits, select '🧪 Test IA' as video source.")
         )
-        if _is_test_mode:
-            st.markdown(
-                """<div style="background:#fef9c3;border:2px solid #ca8a04;border-radius:10px;
-                padding:12px 14px;margin-top:10px">
-                <div style="font-size:0.9rem;font-weight:700;color:#92400e">
-                🧪 MODO TEST ACTIVO</div>
-                <div style="font-size:0.78rem;color:#78350f;margin-top:4px;line-height:1.4">
-                Solo se generará <b>1 escena de 5s</b>.<br>
-                Verifica que el video llegue correcto, luego ajusta las escenas para tu video real.
-                </div></div>""",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "✕ " + ("Desactivar Test Mode" if lang_option == "es" else "Exit Test Mode"),
-                key="ai_video_test_mode_btn",
-                use_container_width=True,
-            ):
-                st.session_state["ai_video_total_duration"] = 30
-                st.session_state["ai_video_clip_duration"]  = 5
-                st.session_state["ai_video_num_scenes"]     = 6
-                st.rerun()
-        else:
-            st.markdown(
-                f"""<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;
-                padding:11px 14px;margin-top:10px">
-                <div style="font-size:0.82rem;font-weight:700;color:#166534">
-                💡 {'¿Primera vez con este modelo?' if lang_option == 'es' else 'New model? Start here'}</div>
-                <div style="font-size:0.75rem;color:#15803d;margin-top:3px;line-height:1.4">
-                {'Usa <b>Test Mode</b> para generar solo 1 clip de 5s y confirmar que todo funciona antes de gastar créditos en el video completo.' if lang_option == 'es' else 'Use <b>Test Mode</b> to generate just 1 clip of 5s and confirm everything works before spending credits on the full video.'}
-                </div></div>""",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "🧪 " + ("Activar Test Mode (1 escena / 5s)" if lang_option == "es" else "Enable Test Mode (1 scene / 5s)"),
-                key="ai_video_test_mode_btn",
-                use_container_width=True,
-            ):
-                st.session_state["ai_video_total_duration"] = 5
-                st.session_state["ai_video_clip_duration"]  = 5
-                st.session_state["ai_video_num_scenes"]     = 1
-                st.rerun()
 
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
@@ -2671,7 +2664,7 @@ elif mode == "guion":
 # ══════════════════════════════════════════════════════════════════════════════
 
 elif mode == "novela":
-    _is_ai = st.session_state.get("video_source", "pexels") == "ai_video"
+    _is_ai = st.session_state.get("video_source", "pexels") in ("ai_video", "ai_video_test")
     if not _is_ai:
         st.warning(
             "🎬 El modo Mininovela requiere **Video con IA** como fuente de video. "
