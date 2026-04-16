@@ -332,7 +332,18 @@ class AIVideoEngine:
 
         def _post():
             resp = requests.post(url, headers=session_headers, json=body, timeout=30)
-            resp.raise_for_status()
+            if not resp.ok:
+                # Include response body in the error so users can diagnose issues
+                # (e.g. "invalid_api_key", "insufficient_credits", "model_not_found")
+                try:
+                    _body = resp.json()
+                    _detail = _body.get("detail") or _body.get("message") or _body.get("error") or str(_body)[:200]
+                except Exception:
+                    _detail = resp.text[:200]
+                raise requests.HTTPError(
+                    f"{resp.status_code} {resp.reason} → {_detail}",
+                    response=resp,
+                )
             return resp.json()
 
         data = await asyncio.to_thread(_post)
@@ -368,7 +379,15 @@ class AIVideoEngine:
 
             def _get_status():
                 r = requests.get(status_url, headers=session_headers, timeout=20)
-                r.raise_for_status()
+                if not r.ok:
+                    try:
+                        _detail = r.json().get("detail") or r.text[:150]
+                    except Exception:
+                        _detail = r.text[:150]
+                    raise requests.HTTPError(
+                        f"{r.status_code} {r.reason} (status poll) → {_detail}",
+                        response=r,
+                    )
                 return r.json()
 
             status_data = await asyncio.to_thread(_get_status)

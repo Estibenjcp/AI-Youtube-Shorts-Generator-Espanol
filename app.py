@@ -1485,10 +1485,11 @@ with st.sidebar:
             "diag_vid_btn", btn_disabled=not _diag_vid_key,
         )
         if _diag_vid_btn:
-            with st.spinner("Verificando auth..."):
+            with st.spinner("Enviando petición de prueba..."):
                 try:
                     import requests as _rq_v
                     if _diag_vid_prov == "kling":
+                        # Kling direct: GET a endpoint inexistente — 404 = auth OK
                         _vh = {"Authorization": f"Bearer {_diag_vid_key}", "Content-Type": "application/json"}
                         _vr = _rq_v.get("https://api.klingai.com/v1/videos/text2video/__diag__", headers=_vh, timeout=12)
                         if _vr.status_code in (200, 404, 400):
@@ -1498,19 +1499,57 @@ with st.sidebar:
                         else:
                             _diag_vid_out.warning(f"⚠️ HTTP {_vr.status_code}")
                     else:
-                        _vh = {"Authorization": f"Key {_diag_vid_key}"}
-                        _vr = _rq_v.get(
-                            f"https://queue.fal.run/{_diag_vid_mdl}/requests/__diag__/status",
-                            headers=_vh, timeout=12,
+                        # FAL: POST real al modelo configurado con prompt mínimo
+                        # Esto detecta exactamente el mismo 403/422/etc que verías en producción
+                        _vh = {
+                            "Authorization": f"Key {_diag_vid_key}",
+                            "Content-Type":  "application/json",
+                        }
+                        _test_body = {
+                            "prompt":       "a single black dot on white background",
+                            "duration":     "5",
+                            "aspect_ratio": "9:16",
+                        }
+                        _vr = _rq_v.post(
+                            f"https://queue.fal.run/{_diag_vid_mdl}",
+                            headers=_vh, json=_test_body, timeout=20,
                         )
-                        if _vr.status_code in (200, 404, 422):
-                            _diag_vid_out.success(f"✅ Auth OK (HTTP {_vr.status_code})")
-                        elif _vr.status_code in (401, 403):
-                            _diag_vid_out.error(f"❌ Key inválida (HTTP {_vr.status_code})")
+                        _http = _vr.status_code
+                        try:
+                            _body = _vr.json()
+                            _detail = _body.get("detail") or _body.get("message") or _body.get("error") or ""
+                        except Exception:
+                            _detail = _vr.text[:120]
+
+                        if _http in (200, 201):
+                            # Request accepted — get request_id and cancel it
+                            _req_id = _body.get("request_id") or _body.get("id", "")
+                            if _req_id:
+                                # Cancel the test job so we don't waste credits
+                                _cancel_url = f"https://queue.fal.run/{_diag_vid_mdl}/requests/{_req_id}/cancel"
+                                try:
+                                    _rq_v.put(_cancel_url, headers=_vh, timeout=8)
+                                except Exception:
+                                    pass
+                                _diag_vid_out.success(f"✅ Auth OK · modelo aceptado · job cancelado ({_req_id[:16]}…)")
+                            else:
+                                _diag_vid_out.success(f"✅ Auth OK (HTTP {_http})")
+                        elif _http == 422:
+                            # Unprocessable entity — auth OK but body was rejected (expected for test prompt)
+                            _diag_vid_out.success(f"✅ Auth OK · modelo accesible (HTTP 422 — cuerpo rechazado, normal en test)")
+                        elif _http in (401, 403):
+                            _hint = ""
+                            if "credit" in str(_detail).lower() or "quota" in str(_detail).lower():
+                                _hint = " — Sin créditos o cuota agotada"
+                            elif "model" in str(_detail).lower() or "access" in str(_detail).lower():
+                                _hint = " — Modelo no disponible en tu plan"
+                            elif "invalid" in str(_detail).lower() or "key" in str(_detail).lower():
+                                _hint = " — API Key inválida"
+                            _diag_vid_out.error(f"❌ {_http} Forbidden{_hint}: {str(_detail)[:100]}")
                         else:
-                            _diag_vid_out.warning(f"⚠️ HTTP {_vr.status_code}: {_vr.text[:50]}")
+                            _diag_vid_out.warning(f"⚠️ HTTP {_http}: {str(_detail)[:80]}")
                 except Exception as _de:
-                    _diag_vid_out.error(f"❌ {str(_de)[:80]}")
+                    _diag_vid_out.error(f"❌ {str(_de)[:120]}")
 
         # ──────────────── Audio TTS ──────────────────────
         _diag_tts = st.session_state.get("tts_engine", "edge_tts")
