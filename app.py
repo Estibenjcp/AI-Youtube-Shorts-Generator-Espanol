@@ -1176,6 +1176,19 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             log_q.put("ERROR:Script generation failed.")
             return
 
+        # ── TEST MODE: reemplaza el texto de la escena con frase corta (~3s TTS)
+        # El LLM devuelve guiones largos incluso para 1 escena; si no forzamos el
+        # texto aquí, el audio dura 60+ s y el clip de 5s se repite 12 veces.
+        if _video_src == "ai_video_test":
+            _test_phrase = (
+                "Verificando modelo de video con inteligencia artificial."
+                if pipeline_lang == "es"
+                else "Testing AI video model generation clip."
+            )
+            script = [script[0]]          # asegurar solo 1 escena
+            script[0]["text"] = _test_phrase
+            log_q.put(f"🧪 Texto de test forzado: \"{_test_phrase}\"")
+
         log_q.put("STAGE:Audio")
         _tts_choice = params.get("tts_engine", "edge_tts")
         if _tts_choice == "voxcpm":
@@ -1217,6 +1230,10 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 max_parallel  = 2,
             )
             log_q.put(f"🤖 [AI Video] Proveedor: {params.get('ai_video_provider','fal').upper()} · Estilo: {params.get('ai_video_style','cinematic')}")
+            # Mostrar el prompt que se enviará al modelo para cada escena
+            for _sc_prev in script[:3]:  # máximo 3 para no saturar el log
+                _prev_prompt = _ai_vid_engine._build_prompt(_sc_prev)
+                log_q.put(f"📽️ Prompt escena {_sc_prev['id']}: {_prev_prompt[:120]}…")
             log_q.put("⏳ Generando clips de video con IA (puede tardar varios minutos)...")
             _ai_result = asyncio.run(_ai_vid_engine.process_script(script))
             # {scene_id: [path]} → lista posicional [(path_a, path_b), ...] igual que AssetManager
@@ -1499,20 +1516,13 @@ with st.sidebar:
                         else:
                             _diag_vid_out.warning(f"⚠️ HTTP {_vr.status_code}")
                     else:
-                        # FAL: POST real al modelo configurado con prompt mínimo
-                        # Esto detecta exactamente el mismo 403/422/etc que verías en producción
-                        _vh = {
-                            "Authorization": f"Key {_diag_vid_key}",
-                            "Content-Type":  "application/json",
-                        }
-                        _test_body = {
-                            "prompt":       "a single black dot on white background",
-                            "duration":     "5",
-                            "aspect_ratio": "9:16",
-                        }
-                        _vr = _rq_v.post(
-                            f"https://queue.fal.run/{_diag_vid_mdl}",
-                            headers=_vh, json=_test_body, timeout=20,
+                        # FAL: GET con request_id falso — 404 = auth OK, 401/403 = key inválida
+                        # Esta técnica NO genera ningún job ni consume créditos.
+                        _vh = {"Authorization": f"Key {_diag_vid_key}"}
+                        _fake_id = "diag-test-000000000000"
+                        _vr = _rq_v.get(
+                            f"https://queue.fal.run/{_diag_vid_mdl}/requests/{_fake_id}/status",
+                            headers=_vh, timeout=12,
                         )
                         _http = _vr.status_code
                         try:
@@ -1521,22 +1531,13 @@ with st.sidebar:
                         except Exception:
                             _detail = _vr.text[:120]
 
-                        if _http in (200, 201):
-                            # Request accepted — get request_id and cancel it
-                            _req_id = _body.get("request_id") or _body.get("id", "")
-                            if _req_id:
-                                # Cancel the test job so we don't waste credits
-                                _cancel_url = f"https://queue.fal.run/{_diag_vid_mdl}/requests/{_req_id}/cancel"
-                                try:
-                                    _rq_v.put(_cancel_url, headers=_vh, timeout=8)
-                                except Exception:
-                                    pass
-                                _diag_vid_out.success(f"✅ Auth OK · modelo aceptado · job cancelado ({_req_id[:16]}…)")
-                            else:
-                                _diag_vid_out.success(f"✅ Auth OK (HTTP {_http})")
-                        elif _http == 422:
-                            # Unprocessable entity — auth OK but body was rejected (expected for test prompt)
-                            _diag_vid_out.success(f"✅ Auth OK · modelo accesible (HTTP 422 — cuerpo rechazado, normal en test)")
+                        if _http in (200, 404, 422):
+                            # 404 = key válida pero request no existe (esperado)
+                            _diag_vid_out.success(
+                                f"✅ Key válida · modelo accesible  "
+                                f"(HTTP {_http} — sin créditos gastados)\n"
+                                f"Para verificar el clip real usa **🧪 Test IA**"
+                            )
                         elif _http in (401, 403):
                             _hint = ""
                             if "credit" in str(_detail).lower() or "quota" in str(_detail).lower():
@@ -1545,6 +1546,8 @@ with st.sidebar:
                                 _hint = " — Modelo no disponible en tu plan"
                             elif "invalid" in str(_detail).lower() or "key" in str(_detail).lower():
                                 _hint = " — API Key inválida"
+                            else:
+                                _hint = " — Revisa la key o el plan de FAL"
                             _diag_vid_out.error(f"❌ {_http} Forbidden{_hint}: {str(_detail)[:100]}")
                         else:
                             _diag_vid_out.warning(f"⚠️ HTTP {_http}: {str(_detail)[:80]}")
