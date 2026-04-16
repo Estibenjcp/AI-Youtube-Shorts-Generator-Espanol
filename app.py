@@ -1159,6 +1159,25 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             topic  = _lines[0][:70] if _lines else ("Guion Libre" if pipeline_lang == "es" else "Freeform Script")
             print(f"✍️ Topic derivado: {topic}")
 
+        elif pipeline_mode == "podcast":
+            _pod_topic  = params.get("podcast_topic", params.get("topic", "")).strip()
+            _host_name  = params.get("host_name", "Host")
+            _guest_name = params.get("guest_name", "Invitado")
+            _n_exc      = int(params.get("num_exchanges", 6))
+            # Use podcast_voice_a as the primary voice if provided
+            _pod_voice_a = params.get("podcast_voice_a", "").strip()
+            if _pod_voice_a:
+                params["voice"] = _pod_voice_a
+            topic = _pod_topic or ("Episodio de podcast" if pipeline_lang == "es" else "Podcast episode")
+            script = brain.generate_podcast_script(
+                topic         = _pod_topic or topic,
+                host_name     = _host_name,
+                guest_name    = _guest_name,
+                lang          = pipeline_lang,
+                num_exchanges = _n_exc,
+                max_words_per_scene = _max_wpsc,
+            )
+
         elif pipeline_mode == "novela":
             novela_theme = params.get("novela_theme", "").strip()
             if not novela_theme:
@@ -1241,8 +1260,9 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             log_q.put(f"🔵 [Google TTS] Voz: {params.get('gtts_voice_name')} · rate={params.get('gtts_rate', 1.0):.2f}×")
         else:
             audio_engine = AudioEngine(
-                voice = params.get("voice", "es-ES-AlvaroNeural"),
-                rate  = params.get("rate", "+10%"),
+                voice   = params.get("voice", "es-ES-AlvaroNeural"),
+                rate    = params.get("rate", "+10%"),
+                voice_b = params.get("podcast_voice_b", ""),
             )
         script = asyncio.run(audio_engine.process_script(script))
 
@@ -2415,6 +2435,7 @@ _mode_buttons = (
         ("empleo",     "💼 Empleo"),
         ("guion",      "✍️ Guión"),
         ("novela",     "🎬 Mininovela"),
+        ("podcast",    "🎙️ Podcast"),
     ]
     if lang_option == "es"
     else [
@@ -2426,6 +2447,7 @@ _mode_buttons = (
         ("empleo",     "💼 Job Ad"),
         ("guion",      "✍️ Script"),
         ("novela",     "🎬 Miniseries"),
+        ("podcast",    "🎙️ Podcast"),
     ]
 )
 
@@ -2789,6 +2811,72 @@ elif mode == "novela":
         final_category = ""
         num_scenes     = 8
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO PODCAST / DIÁLOGO
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "podcast":
+
+    _pod_info = (
+        "🎙️ Genera un corto estilo podcast con dos voces TTS alternando. Host y Invitado hablan de forma natural sobre el tema elegido."
+        if lang_option == "es"
+        else
+        "🎙️ Generate a podcast-style Short with two alternating TTS voices. Host and Guest talk naturally about the chosen topic."
+    )
+    st.markdown(f"<div class='auto-info'>{_pod_info}</div>", unsafe_allow_html=True)
+
+    podcast_topic = st.text_input(
+        "Tema del episodio" if lang_option == "es" else "Episode topic",
+        key="podcast_topic_input",
+        placeholder=(
+            "ej. Los secretos del sueño que nadie te cuenta"
+            if lang_option == "es"
+            else "e.g. The sleep secrets nobody tells you"
+        ),
+    )
+
+    col_host, col_guest = st.columns(2)
+    with col_host:
+        st.markdown("**🎤 Host**")
+        host_name = st.text_input(
+            "Nombre del Host" if lang_option == "es" else "Host name",
+            value="Carlos",
+            key="podcast_host_name",
+        )
+        _voice_keys = list(VOICES.keys())
+        _default_voice_key = T["default_voice"]
+        _default_idx_a = _voice_keys.index(_default_voice_key) if _default_voice_key in _voice_keys else 0
+        voice_a_label = st.selectbox(
+            "Voz del Host" if lang_option == "es" else "Host voice",
+            options=_voice_keys,
+            index=_default_idx_a,
+            key="podcast_voice_a",
+        )
+    with col_guest:
+        st.markdown("**🎧 Invitado**" if lang_option == "es" else "**🎧 Guest**")
+        guest_name = st.text_input(
+            "Nombre del Invitado" if lang_option == "es" else "Guest name",
+            value="Ana",
+            key="podcast_guest_name",
+        )
+        _default_idx_b = 1 if len(_voice_keys) > 1 else 0
+        voice_b_label = st.selectbox(
+            "Voz del Invitado" if lang_option == "es" else "Guest voice",
+            options=_voice_keys,
+            index=_default_idx_b,
+            key="podcast_voice_b",
+        )
+
+    num_exchanges = st.slider(
+        "Número de intercambios" if lang_option == "es" else "Number of exchanges",
+        min_value=4, max_value=12, value=6,
+        key="podcast_num_exchanges",
+    )
+
+    final_topic    = podcast_topic.strip()
+    final_category = ""
+    num_scenes     = num_exchanges
+
 # ── Generar / Hook flow ───────────────────────────────────────────────────────
 # Modos donde el hook se inyecta en la Escena 1 del guion
 _HOOK_MODES = {"auto", "category", "viral", "testimonio", "libro"}
@@ -2832,6 +2920,12 @@ def _launch_pipeline():
         "ai_video_num_scenes":  st.session_state.get("ai_video_num_scenes", 6),
         "ai_video_clip_duration": st.session_state.get("ai_video_clip_duration", 5),
         "novela_theme":         st.session_state.get("novela_theme_input", ""),
+        "podcast_topic":        st.session_state.get("podcast_topic_input", ""),
+        "host_name":            st.session_state.get("podcast_host_name", "Host"),
+        "guest_name":           st.session_state.get("podcast_guest_name", "Invitado"),
+        "podcast_voice_a":      VOICES.get(st.session_state.get("podcast_voice_a", ""), ""),
+        "podcast_voice_b":      VOICES.get(st.session_state.get("podcast_voice_b", ""), ""),
+        "num_exchanges":        st.session_state.get("podcast_num_exchanges", 6),
     }
     t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, params), daemon=True)
     st.session_state.thread = t
@@ -3010,6 +3104,12 @@ elif _hook_step == "selecting":
                 "ai_video_num_scenes":   st.session_state.get("ai_video_num_scenes", 6),
                 "ai_video_clip_duration":st.session_state.get("ai_video_clip_duration", 5),
                 "novela_theme":          st.session_state.get("novela_theme_input", ""),
+                "podcast_topic":         st.session_state.get("podcast_topic_input", ""),
+                "host_name":             st.session_state.get("podcast_host_name", "Host"),
+                "guest_name":            st.session_state.get("podcast_guest_name", "Invitado"),
+                "podcast_voice_a":       VOICES.get(st.session_state.get("podcast_voice_a", ""), ""),
+                "podcast_voice_b":       VOICES.get(st.session_state.get("podcast_voice_b", ""), ""),
+                "num_exchanges":         st.session_state.get("podcast_num_exchanges", 6),
             }
             _t = threading.Thread(target=run_pipeline, args=(st.session_state.log_queue, _params), daemon=True)
             st.session_state.thread = _t

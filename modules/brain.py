@@ -1018,6 +1018,111 @@ We need TWO different stock videos for every single scene.
             print(clean_text)
             return None
 
+    def generate_podcast_script(self, topic: str, host_name: str = "Host",
+                                guest_name: str = "Invitado", lang: str = "es",
+                                num_exchanges: int = 6, max_words_per_scene: int = 999) -> list:
+        """Genera un diálogo estilo podcast entre dos personas para YouTube Shorts."""
+        import re as _re
+        print(f"🎙️ Generando diálogo podcast: {topic}...")
+
+        if lang == "es":
+            prompt = f"""Eres el guionista de un canal de podcast viral para YouTube Shorts en español latino.
+
+Genera un diálogo natural y fluido entre dos personas:
+- Host: {host_name} — hace preguntas, presenta el tema, conduce la conversación
+- Invitado: {guest_name} — responde con datos fascinantes, revela información impactante
+
+Tema: {topic}
+
+ESTRUCTURA (EXACTAMENTE {num_exchanges} intercambios / MAXIMO {max_words_per_scene} palabras por turno):
+- Turno 1 (Host): Hook viral — pregunta o dato impactante que engancha en 1.7 segundos
+- Turnos 2-{num_exchanges - 1}: Diálogo natural alternado con revelaciones progresivas
+- Turno {num_exchanges} (Host o Guest): Conclusión + CTA ("Comenta qué opinas y síguenos")
+
+REGLAS:
+- Lenguaje conversacional, como si hablaran de verdad, no como narración
+- Frases cortas y directas — máximo {max_words_per_scene} palabras por turno
+- Datos reales y verificables
+- PROHIBIDO: emojis, caracteres Unicode especiales
+- Solo letras, números, comas, puntos, signos de exclamación e interrogación
+
+FORMATO JSON estricto, sin markdown:
+[
+  {{"id":1,"speaker":"host","text":"¿Sabías que...?","visual_1":"podcast studio microphone","visual_2":"two people talking","mood":"informative"}},
+  {{"id":2,"speaker":"guest","text":"Sí, y lo más increíble es...","visual_1":"person explaining animated","visual_2":"podcast closeup face","mood":"informative"}}
+]
+
+REGLAS DEL JSON:
+- "speaker": "host" o "guest" (alternando, empezar con host)
+- "text": el diálogo de ese turno. MAX {max_words_per_scene} palabras. Sin caracteres especiales.
+- "visual_1" y "visual_2": términos EN INGLÉS para Pexels (2-4 palabras). Podcast: studio, microphone, conversation, talking, discussion.
+- "mood": "informative", "fun", "exciting" o "professional"
+- EXACTAMENTE {num_exchanges} entradas"""
+        else:
+            prompt = f"""You are the scriptwriter of a viral podcast channel for YouTube Shorts.
+
+Generate a natural and fluid dialogue between two people:
+- Host: {host_name} — asks questions, introduces the topic, leads the conversation
+- Guest: {guest_name} — responds with fascinating data, reveals impactful information
+
+Topic: {topic}
+
+STRUCTURE (EXACTLY {num_exchanges} exchanges / MAX {max_words_per_scene} words per turn):
+- Turn 1 (Host): Viral hook — impactful question or fact that hooks in 1.7 seconds
+- Turns 2-{num_exchanges - 1}: Natural alternating dialogue with progressive revelations
+- Turn {num_exchanges} (Host or Guest): Conclusion + CTA ("Comment what you think and follow us")
+
+RULES:
+- Conversational language, as if they are really talking, not narrating
+- Short and direct phrases — maximum {max_words_per_scene} words per turn
+- Real and verifiable data
+- FORBIDDEN: emojis, special Unicode characters
+- Only letters, numbers, commas, periods, exclamation and question marks
+
+Strict JSON format, no markdown:
+[
+  {{"id":1,"speaker":"host","text":"Did you know that...?","visual_1":"podcast studio microphone","visual_2":"two people talking","mood":"informative"}},
+  {{"id":2,"speaker":"guest","text":"Yes, and the most incredible thing is...","visual_1":"person explaining animated","visual_2":"podcast closeup face","mood":"informative"}}
+]
+
+JSON RULES:
+- "speaker": "host" or "guest" (alternating, start with host)
+- "text": the dialogue for that turn. MAX {max_words_per_scene} words. No special characters.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Podcast: studio, microphone, conversation, talking, discussion.
+- "mood": "informative", "fun", "exciting" or "professional"
+- EXACTLY {num_exchanges} entries"""
+
+        raw   = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
+                s.setdefault('mood', 'informative')
+                s.setdefault('speaker', 'host' if i % 2 == 0 else 'guest')
+            if len(scenes) > num_exchanges:
+                print(f"⚠️ AI returned {len(scenes)} podcast scenes, trimming to {num_exchanges}.")
+                scenes = scenes[:num_exchanges]
+            elif len(scenes) < num_exchanges:
+                print(f"⚠️ AI returned only {len(scenes)} podcast scenes (requested {num_exchanges}).")
+            print(f"✅ {len(scenes)} podcast scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_exchanges]
+            return [
+                {
+                    "id": i + 1,
+                    "text": self._sanitize(s),
+                    "speaker": "host" if i % 2 == 0 else "guest",
+                    "visual_1": "podcast studio microphone",
+                    "visual_2": "two people talking",
+                    "mood": "informative",
+                }
+                for i, s in enumerate(sentences)
+            ]
+
     def generate_thumbnail_prompt(self, topic: str, script: list, lang: str = "es",
                                    mode: str = "auto", offer_text: str = "") -> str:
         print("🖼️ Generating thumbnail prompt...")

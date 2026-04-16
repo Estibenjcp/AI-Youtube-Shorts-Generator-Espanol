@@ -9,8 +9,9 @@ from mutagen.mp3 import MP3
 _TARGET_PEAK_DB = -3.0
 
 class AudioEngine:
-    def __init__(self, voice: str = "en-US-AvaNeural", rate: str = "+10%"):
-        self.voice = voice
+    def __init__(self, voice: str = "en-US-AvaNeural", rate: str = "+10%", voice_b: str = ""):
+        self.voice   = voice
+        self.voice_b = voice_b   # voz del "guest" / hablante B
         self.rate = rate
         self.output_dir = os.path.join(os.getcwd(), "assets", "audio_clips")
         os.makedirs(self.output_dir, exist_ok=True)
@@ -91,7 +92,7 @@ class AudioEngine:
             return f"+{val}%" if val >= 0 else f"{val}%"
         return rate_str
 
-    async def generate_audio(self, text, output_filename, retries=3, rate_override=None):
+    async def generate_audio(self, text, output_filename, retries=3, rate_override=None, voice_override=None):
         """
         Generates MP3 with retry logic to handle connection drops.
         After generation, verifies the file has valid duration.
@@ -102,7 +103,8 @@ class AudioEngine:
         for attempt in range(retries):
             try:
                 effective_rate = rate_override if rate_override is not None else self.rate
-                communicate = edge_tts.Communicate(text, self.voice, rate=effective_rate)
+                _voice = voice_override if voice_override else self.voice
+                communicate = edge_tts.Communicate(text, _voice, rate=effective_rate)
                 await communicate.save(output_path)
 
                 # Verify the file is valid BEFORE normalization
@@ -118,7 +120,7 @@ class AudioEngine:
                 if post_duration <= 0:
                     # Normalization corrupted it — regenerate clean copy
                     print(f"      ⚠️ File corrupted by normalization — regenerating clean copy...")
-                    communicate2 = edge_tts.Communicate(text, self.voice, rate=effective_rate)
+                    communicate2 = edge_tts.Communicate(text, _voice, rate=effective_rate)
                     await communicate2.save(output_path)
 
                 return output_path
@@ -164,7 +166,13 @@ class AudioEngine:
                 scene_rate = self.rate
 
             try:
-                file_path = await self.generate_audio(text, filename, rate_override=scene_rate)
+                # Soporte de dos voces para modo podcast/diálogo
+                _speaker = scene.get("speaker", "host")
+                _voice_override = None
+                if self.voice_b and _speaker in ("guest", "b", "invitado"):
+                    _voice_override = self.voice_b
+
+                file_path = await self.generate_audio(text, filename, rate_override=scene_rate, voice_override=_voice_override)
                 duration  = self.get_audio_duration(file_path)
 
                 if duration <= 0:
