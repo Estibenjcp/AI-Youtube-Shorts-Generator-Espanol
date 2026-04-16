@@ -1383,7 +1383,7 @@ with st.sidebar:
         ai_video_model = st.text_input(
             "Modelo de Video" if lang_option == "es" else "Video Model",
             value=os.getenv("AI_VIDEO_MODEL", ""),
-            placeholder="ej. fal-ai/kling-video/v2/standard/text-to-video",
+            placeholder="ej. fal-ai/kling-video/v2.6/pro/text-to-video",
             help=(
                 "ID del modelo. Déjalo vacío para usar el modelo por defecto del proveedor."
                 if lang_option == "es" else
@@ -1474,7 +1474,7 @@ with st.sidebar:
         # ──────────────── Video IA ───────────────────────
         _diag_vid_key  = os.getenv("AI_VIDEO_KEY", "")
         _diag_vid_prov = os.getenv("AI_VIDEO_PROVIDER", "fal").lower()
-        _diag_vid_mdl  = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2/standard/text-to-video"
+        _diag_vid_mdl  = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2.6/pro/text-to-video"
         _diag_vid_btn, _diag_vid_out = _diag_row(
             "🎬", "Video IA", f"{_diag_vid_prov.upper()} · {_diag_vid_mdl[:26]}",
             "diag_vid_btn", btn_disabled=not _diag_vid_key,
@@ -1868,7 +1868,7 @@ if st.session_state.get("video_source", "pexels") == "ai_video":
         with _dur_c2:
             # Duración por clip (lo que pide al modelo)
             # Detectar duraciones soportadas por el modelo configurado
-            _active_vid_model = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2/standard/text-to-video"
+            _active_vid_model = os.getenv("AI_VIDEO_MODEL", "") or "fal-ai/kling-video/v2.6/pro/text-to-video"
             try:
                 from modules.ai_video import _MODEL_DURATIONS as _MVD
                 _clip_options = sorted(_MVD.get(_active_vid_model, [5, 10]))
@@ -1911,6 +1911,19 @@ if st.session_state.get("video_source", "pexels") == "ai_video":
             if lang_option == "es" else
             "💡 FFmpeg trims each clip to the exact TTS audio length — actual total may vary ±2s."
         )
+
+        # Test mode: 1 scene only
+        st.markdown("")
+        if st.button(
+            "🧪 " + ("Modo Test — 1 escena / 5s" if lang_option == "es" else "Test Mode — 1 scene / 5s"),
+            key="ai_video_test_mode_btn",
+            use_container_width=True,
+            help="Genera solo 1 escena de 5s para verificar que el modelo funciona sin gastar créditos." if lang_option == "es" else "Generate only 1 scene of 5s to verify the model works without burning credits.",
+        ):
+            st.session_state["ai_video_total_duration"] = 5
+            st.session_state["ai_video_clip_duration"]  = 5
+            st.session_state["ai_video_num_scenes"]     = 1
+            st.rerun()
 
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
@@ -2289,64 +2302,8 @@ with st.expander(voice_label_hint, expanded=False):
             st.session_state.setdefault("vox_clone_ref", "")
 
     use_avatar    = st.toggle(T["avatar_toggle"],    value=False, help=T["avatar_help"],    key="avatar_toggle")
-    use_subtitles = st.toggle(T["subtitles_toggle"], value=True,  help=T["subtitles_help"], key="subs_toggle")
-
-    # ── Configuración de subtítulos (visible solo si están activados) ──────────
+    use_subtitles = False
     subtitle_style = {}
-    if use_subtitles:
-        _is_es = lang_option == "es"
-        with st.expander("🎨 " + ("Estilo de subtítulos" if _is_es else "Subtitle Style"), expanded=False):
-
-            # Tamaño
-            _size_opts = (["Pequeño", "Mediano", "Grande", "Extra"] if _is_es
-                          else ["Small", "Medium", "Large", "Extra"])
-            _size_map  = dict(zip(_size_opts, [32, 44, 56, 72]))
-            _size_sel  = st.select_slider(
-                "Tamaño" if _is_es else "Size",
-                options=_size_opts, value=_size_opts[2], key="sub_size"
-            )
-            subtitle_style["fontsize"] = _size_map[_size_sel]
-
-            # Color de texto
-            _color_opts = (["Blanco", "Amarillo", "Cian", "Verde"] if _is_es
-                           else ["White", "Yellow", "Cyan", "Green"])
-            _color_map  = dict(zip(_color_opts, ["white", "yellow", "00FFFF", "00FF88"]))
-            _color_sel  = st.radio(
-                "Color" if _is_es else "Color",
-                options=_color_opts, horizontal=True, index=0, key="sub_color",
-                label_visibility="visible"
-            )
-            subtitle_style["fontcolor"] = _color_map[_color_sel]
-
-            # Posición vertical — slider de 0% (arriba) a 92% (abajo)
-            _y_pct = st.slider(
-                ("Posición vertical (0 = arriba · 85 = abajo)" if _is_es
-                 else "Vertical position (0 = top · 85 = bottom)"),
-                min_value=0, max_value=92, value=78, step=1, key="sub_y_pct"
-            )
-            subtitle_style["y"] = f"h*{_y_pct/100:.2f}"
-
-            # Borde
-            _outline = st.slider(
-                "Borde (grosor)" if _is_es else "Outline (thickness)",
-                min_value=0, max_value=6, value=3, key="sub_outline"
-            )
-            subtitle_style["borderw"] = _outline
-
-            # Fondo
-            _bg = st.toggle(
-                "Fondo semitransparente" if _is_es else "Semi-transparent background",
-                value=False, key="sub_bg"
-            )
-            subtitle_style["box"]      = 1 if _bg else 0
-            subtitle_style["boxcolor"] = "black@0.45"
-
-            # Palabras por línea
-            _wrap = st.slider(
-                "Palabras por línea" if _is_es else "Words per line",
-                min_value=10, max_value=36, value=22, step=2, key="sub_wrap"
-            )
-            subtitle_style["max_chars"] = _wrap
 
 # ── Selector de modo (grid 2×N de botones) ───────────────────────────────────
 
@@ -2752,7 +2709,7 @@ def _launch_pipeline():
     params = {
         "topic": final_topic, "num_scenes": num_scenes,
         "voice": selected_voice, "rate": rate_str,
-        "use_avatar": use_avatar, "use_subtitles": use_subtitles,
+        "use_avatar": use_avatar, "use_subtitles": False,
         "subtitle_style": subtitle_style,
         "lang": lang_option, "mode": mode,
         "category": final_category,
@@ -2931,7 +2888,7 @@ elif _hook_step == "selecting":
             _params = {
                 "topic": _ft, "num_scenes": _fn,
                 "voice": selected_voice, "rate": rate_str,
-                "use_avatar": use_avatar, "use_subtitles": use_subtitles,
+                "use_avatar": use_avatar, "use_subtitles": False,
                 "subtitle_style": subtitle_style,
                 "lang": lang_option, "mode": mode,
                 "category": _fc,

@@ -187,28 +187,42 @@ class Composer:
                     video_stream = ffmpeg.concat(stream_a, stream_b, stream_c, v=1, a=0)
 
                 else:
-                    print(f"   ⚙️ Processing Scene {scene_id}: A/B Split Mode")
-                    path_a, path_b = video_pair
-                    duration_a = total_duration / 2
-                    duration_b = (total_duration / 2) + 0.5
+                    path_a = video_pair[0]
+                    path_b = video_pair[1] if len(video_pair) > 1 else None
 
-                    stream_a = (
-                        ffmpeg.input(path_a, stream_loop=-1)
-                        .trim(duration=duration_a)
-                        .setpts('PTS-STARTPTS')
-                        .filter('scale', 720, 1280)
-                        .filter('crop', 720, 1280)
-                        .filter('fps', fps=30, round='up')
-                    )
-                    stream_b = (
-                        ffmpeg.input(path_b, stream_loop=-1)
-                        .trim(duration=duration_b)
-                        .setpts('PTS-STARTPTS')
-                        .filter('scale', 720, 1280)
-                        .filter('crop', 720, 1280)
-                        .filter('fps', fps=30, round='up')
-                    )
-                    video_stream = ffmpeg.concat(stream_a, stream_b, v=1, a=0)
+                    if path_b is None:
+                        # Single AI-generated clip — loop it for the full scene duration
+                        print(f"   ⚙️ Processing Scene {scene_id}: AI Single Clip Mode")
+                        video_stream = (
+                            ffmpeg.input(path_a, stream_loop=-1)
+                            .trim(duration=total_duration + 0.5)
+                            .setpts('PTS-STARTPTS')
+                            .filter('scale', 720, 1280, force_original_aspect_ratio='increase')
+                            .filter('crop', 720, 1280)
+                            .filter('fps', fps=30, round='up')
+                        )
+                    else:
+                        print(f"   ⚙️ Processing Scene {scene_id}: A/B Split Mode")
+                        duration_a = total_duration / 2
+                        duration_b = (total_duration / 2) + 0.5
+
+                        stream_a = (
+                            ffmpeg.input(path_a, stream_loop=-1)
+                            .trim(duration=duration_a)
+                            .setpts('PTS-STARTPTS')
+                            .filter('scale', 720, 1280)
+                            .filter('crop', 720, 1280)
+                            .filter('fps', fps=30, round='up')
+                        )
+                        stream_b = (
+                            ffmpeg.input(path_b, stream_loop=-1)
+                            .trim(duration=duration_b)
+                            .setpts('PTS-STARTPTS')
+                            .filter('scale', 720, 1280)
+                            .filter('crop', 720, 1280)
+                            .filter('fps', fps=30, round='up')
+                        )
+                        video_stream = ffmpeg.concat(stream_a, stream_b, v=1, a=0)
 
             ffmpeg.output(
                 video_stream,

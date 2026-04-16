@@ -82,23 +82,66 @@ VIDEO_STYLES = {
 # ---------------------------------------------------------------------------
 
 _MODEL_DURATIONS = {
-    "fal-ai/kling-video/v2/standard/text-to-video": [5, 10],
+    "fal-ai/kling-video/v2.6/pro/text-to-video":      [5, 10],
+    "fal-ai/kling-video/v2/standard/text-to-video":   [5, 10],
     "fal-ai/kling-video/v1.6/standard/text-to-video": [5, 10],
-    "fal-ai/minimax/video-01-live": [6],
-    "fal-ai/runway-gen3/turbo/text-to-video": [5, 10],
-    "fal-ai/luma-dream-machine": [5],
-    "fal-ai/wan-i2v": [5],
-    "fal-ai/ovi": [5, 10, 15],
+    "fal-ai/minimax/video-01-live":                    [6],
+    "fal-ai/runway-gen3/turbo/text-to-video":          [5, 10],
+    "fal-ai/luma-dream-machine":                       [5],
+    "fal-ai/wan-i2v":                                  [5],
+    "fal-ai/ovi":                                      [5, 10, 15],
+}
+
+# Per-model FAL submit config
+# duration_str=True  → send duration as string "5"  (Kling style)
+# duration_str=False → send duration as integer 5   (OVI style)
+_MODEL_CONFIGS = {
+    "fal-ai/kling-video/v2.6/pro/text-to-video": {
+        "duration_str": True,
+        "extra": {
+            "generate_audio": False,
+            "negative_prompt": "blur, distort, and low quality",
+            "cfg_scale": 0.5,
+        },
+    },
+    "fal-ai/kling-video/v2/standard/text-to-video": {
+        "duration_str": True,
+        "extra": {"negative_prompt": "blur, distort, and low quality", "cfg_scale": 0.5},
+    },
+    "fal-ai/kling-video/v1.6/standard/text-to-video": {
+        "duration_str": True,
+        "extra": {"negative_prompt": "blur, distort, and low quality", "cfg_scale": 0.5},
+    },
+    "fal-ai/minimax/video-01-live": {
+        "duration_str": False,
+        "extra": {},
+    },
+    "fal-ai/runway-gen3/turbo/text-to-video": {
+        "duration_str": False,
+        "extra": {},
+    },
+    "fal-ai/luma-dream-machine": {
+        "duration_str": False,
+        "extra": {},
+    },
+    "fal-ai/wan-i2v": {
+        "duration_str": False,
+        "extra": {},
+    },
+    "fal-ai/ovi": {
+        "duration_str": False,   # OVI needs integer
+        "extra": {},
+    },
 }
 
 _DEFAULT_MODELS = {
-    "fal":     "fal-ai/kling-video/v2/standard/text-to-video",
-    "kling":   "fal-ai/kling-video/v2/standard/text-to-video",
+    "fal":     "fal-ai/kling-video/v2.6/pro/text-to-video",
+    "kling":   "fal-ai/kling-video/v2.6/pro/text-to-video",
     "runway":  "fal-ai/runway-gen3/turbo/text-to-video",
     "luma":    "fal-ai/luma-dream-machine",
     "minimax": "fal-ai/minimax/video-01-live",
-    "pika":    "fal-ai/kling-video/v2/standard/text-to-video",
-    "otro":    "fal-ai/kling-video/v2/standard/text-to-video",
+    "pika":    "fal-ai/kling-video/v2.6/pro/text-to-video",
+    "otro":    "fal-ai/kling-video/v2.6/pro/text-to-video",
 }
 
 _MOOD_MOTION = {
@@ -115,8 +158,8 @@ _MOOD_MOTION = {
 
 _FAL_BASE        = "https://queue.fal.run"
 _KLING_BASE      = "https://api.klingai.com/v1/videos/text2video"
-_POLL_INTERVAL   = 5      # seconds between status polls
-_POLL_TIMEOUT    = 180    # maximum seconds to wait for a clip
+_POLL_INTERVAL   = 8      # seconds between status polls
+_POLL_TIMEOUT    = 300    # maximum seconds to wait for a clip (5 min)
 _OUTPUT_DIR      = "assets/video_clips"
 
 
@@ -226,11 +269,13 @@ class AIVideoEngine:
     async def _submit_fal(self, prompt: str, duration: int, session_headers: dict) -> str:
         """Submit a generation request to the FAL.ai queue, return request_id."""
         url  = f"{_FAL_BASE}/{self.model}"
-        # Most FAL models accept duration as integer; sending as string causes 403 on some models (e.g. fal-ai/ovi)
+        _cfg = _MODEL_CONFIGS.get(self.model, {"duration_str": True, "extra": {}})
+        _dur_val = str(duration) if _cfg["duration_str"] else int(duration)
         body = {
             "prompt":       prompt,
-            "duration":     int(duration),
+            "duration":     _dur_val,
             "aspect_ratio": "9:16",
+            **_cfg.get("extra", {}),
         }
 
         def _post():
