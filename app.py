@@ -1912,18 +1912,52 @@ if st.session_state.get("video_source", "pexels") == "ai_video":
             "💡 FFmpeg trims each clip to the exact TTS audio length — actual total may vary ±2s."
         )
 
-        # Test mode: 1 scene only
-        st.markdown("")
-        if st.button(
-            "🧪 " + ("Modo Test — 1 escena / 5s" if lang_option == "es" else "Test Mode — 1 scene / 5s"),
-            key="ai_video_test_mode_btn",
-            use_container_width=True,
-            help="Genera solo 1 escena de 5s para verificar que el modelo funciona sin gastar créditos." if lang_option == "es" else "Generate only 1 scene of 5s to verify the model works without burning credits.",
-        ):
-            st.session_state["ai_video_total_duration"] = 5
-            st.session_state["ai_video_clip_duration"]  = 5
-            st.session_state["ai_video_num_scenes"]     = 1
-            st.rerun()
+        # ── Test Mode panel ──────────────────────────────────────────────────
+        _is_test_mode = (
+            st.session_state.get("ai_video_num_scenes", 6) == 1
+            and st.session_state.get("ai_video_clip_duration", 5) == 5
+        )
+        if _is_test_mode:
+            st.markdown(
+                """<div style="background:#fef9c3;border:2px solid #ca8a04;border-radius:10px;
+                padding:12px 14px;margin-top:10px">
+                <div style="font-size:0.9rem;font-weight:700;color:#92400e">
+                🧪 MODO TEST ACTIVO</div>
+                <div style="font-size:0.78rem;color:#78350f;margin-top:4px;line-height:1.4">
+                Solo se generará <b>1 escena de 5s</b>.<br>
+                Verifica que el video llegue correcto, luego ajusta las escenas para tu video real.
+                </div></div>""",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "✕ " + ("Desactivar Test Mode" if lang_option == "es" else "Exit Test Mode"),
+                key="ai_video_test_mode_btn",
+                use_container_width=True,
+            ):
+                st.session_state["ai_video_total_duration"] = 30
+                st.session_state["ai_video_clip_duration"]  = 5
+                st.session_state["ai_video_num_scenes"]     = 6
+                st.rerun()
+        else:
+            st.markdown(
+                f"""<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;
+                padding:11px 14px;margin-top:10px">
+                <div style="font-size:0.82rem;font-weight:700;color:#166534">
+                💡 {'¿Primera vez con este modelo?' if lang_option == 'es' else 'New model? Start here'}</div>
+                <div style="font-size:0.75rem;color:#15803d;margin-top:3px;line-height:1.4">
+                {'Usa <b>Test Mode</b> para generar solo 1 clip de 5s y confirmar que todo funciona antes de gastar créditos en el video completo.' if lang_option == 'es' else 'Use <b>Test Mode</b> to generate just 1 clip of 5s and confirm everything works before spending credits on the full video.'}
+                </div></div>""",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "🧪 " + ("Activar Test Mode (1 escena / 5s)" if lang_option == "es" else "Enable Test Mode (1 scene / 5s)"),
+                key="ai_video_test_mode_btn",
+                use_container_width=True,
+            ):
+                st.session_state["ai_video_total_duration"] = 5
+                st.session_state["ai_video_clip_duration"]  = 5
+                st.session_state["ai_video_num_scenes"]     = 1
+                st.rerun()
 
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
