@@ -3420,13 +3420,35 @@ with st.expander(
                 unsafe_allow_html=True,
             )
 
-        # ── Copy para redes ────────────────────────────────────────────────
-        _qcopy = _qdata.get("social_copy", "")
-        if _qcopy:
-            st.markdown(
-                "**📣 " + ("Copy para redes sociales" if _is_es_q else "Social media caption") + "**"
-            )
-            st.code(_qcopy, language=None)
+        # ── Copy por plataforma ────────────────────────────────────────────
+        st.markdown(
+            "**📣 " + ("Copy para redes sociales" if _is_es_q else "Social media captions") + "**"
+        )
+        _qct, _qci, _qcx = st.tabs(["🎵 TikTok", "📸 Instagram", "🐦 Twitter / X"])
+
+        with _qct:
+            _c_tt = _qdata.get("copy_tiktok", "")
+            if _c_tt:
+                st.caption("✅ #fyp #viral + hashtags de nicho para máximo alcance orgánico" if _is_es_q else "✅ #fyp #viral + niche hashtags for max organic reach")
+                st.code(_c_tt, language=None)
+            else:
+                st.info("—")
+
+        with _qci:
+            _c_ig = _qdata.get("copy_instagram", "")
+            if _c_ig:
+                st.caption("✅ Mix de hashtags amplios + medianos + nicho para explotar el algoritmo" if _is_es_q else "✅ Mix of broad + medium + niche hashtags to beat the algorithm")
+                st.code(_c_ig, language=None)
+            else:
+                st.info("—")
+
+        with _qcx:
+            _c_tw = _qdata.get("copy_twitter", "")
+            if _c_tw:
+                st.caption("✅ Frase directa + 1-2 hashtags trending — menos es más en X" if _is_es_q else "✅ Direct line + 1-2 trending hashtags — less is more on X")
+                st.code(_c_tw, language=None)
+            else:
+                st.info("—")
 
         st.markdown("---")
         _qt1, _qt2, _qt3 = st.tabs([
