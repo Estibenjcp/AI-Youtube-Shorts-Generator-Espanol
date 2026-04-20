@@ -1224,9 +1224,10 @@ FORMATO DE SALIDA (JSON estricto, sin markdown):
   "prompt_9_16": "prompt completo en inglés listo para pegar en Midjourney/DALL-E — incluye la frase como texto overlay especificado, composición vertical, iluminación, estilo",
   "prompt_1_1":  "prompt completo en inglés — composición cuadrada, misma frase como texto overlay",
   "prompt_16_9": "prompt completo en inglés — composición horizontal 16:9, misma frase como texto overlay",
-  "copy_tiktok": "1-2 líneas gancho + salto de línea + hashtags TikTok: SIEMPRE incluir #fyp #viral #parati al inicio + 3-4 hashtags de nicho específicos de la categoría de la frase. Total: 6-7 hashtags máximo. En español.",
-  "copy_instagram": "2-3 líneas reflexivas que inviten a guardar o compartir + doble salto de línea + bloque de 8-12 hashtags mezclando: 2-3 hashtags amplios (1M+ posts), 3-4 hashtags medianos (100K-1M), 3-5 hashtags de nicho específico (<100K). Estrategia de alcance máximo. En español.",
-  "copy_twitter": "1 frase impactante + 1-2 hashtags trending del tema. Máximo 280 caracteres total. En español."
+  "copy_tiktok": "1-2 líneas gancho + salto de línea + hashtags TikTok: SIEMPRE incluir #fyp #viral al inicio + 2 hashtags de nicho específicos. MAXIMO 4 hashtags en total. En español.",
+  "copy_instagram": "2-3 líneas reflexivas que inviten a guardar o compartir + doble salto de línea + EXACTAMENTE 4 hashtags: 1 amplio (1M+ posts) + 1 mediano (100K-1M) + 2 de nicho específico (<100K). MAXIMO 4 hashtags. En español.",
+  "copy_facebook": "2-3 líneas conversacionales que generen comentarios (pregunta al final) + MAXIMO 3 hashtags del nicho. Facebook penaliza el exceso de hashtags — menos es más. En español.",
+  "copy_twitter": "1 frase directa e impactante + MAXIMO 2 hashtags trending. Máximo 280 caracteres total. En español."
 }}
 
 REGLAS CRÍTICAS:
@@ -1272,9 +1273,10 @@ OUTPUT FORMAT (strict JSON, no markdown):
   "prompt_9_16": "complete English prompt ready to paste in Midjourney/DALL-E — includes the quote as specified text overlay, vertical composition, lighting, style",
   "prompt_1_1":  "complete English prompt — square composition, same quote as text overlay",
   "prompt_16_9": "complete English prompt — horizontal 16:9 composition, same quote as text overlay",
-  "copy_tiktok": "1-2 hook lines + line break + TikTok hashtags: ALWAYS start with #fyp #viral #foryou + 3-4 niche-specific hashtags from the quote's category. Total: 6-7 hashtags max. In English.",
-  "copy_instagram": "2-3 reflective lines inviting saves or shares + double line break + 8-12 hashtags mixing: 2-3 broad hashtags (1M+ posts), 3-4 medium hashtags (100K-1M), 3-5 niche-specific hashtags (<100K). Maximum reach strategy. In English.",
-  "copy_twitter": "1 impactful sentence + 1-2 trending hashtags on the topic. Max 280 characters total. In English."
+  "copy_tiktok": "1-2 hook lines + line break + TikTok hashtags: ALWAYS start with #fyp #viral + 2 niche-specific hashtags. MAXIMUM 4 hashtags total. In English.",
+  "copy_instagram": "2-3 reflective lines inviting saves or shares + double line break + EXACTLY 4 hashtags: 1 broad (1M+ posts) + 1 medium (100K-1M) + 2 niche-specific (<100K). MAXIMUM 4 hashtags. In English.",
+  "copy_facebook": "2-3 conversational lines that spark comments (end with a question) + MAXIMUM 3 niche hashtags. Facebook penalizes hashtag overload — less is more. In English.",
+  "copy_twitter": "1 direct impactful sentence + MAXIMUM 2 trending hashtags. Max 280 characters total. In English."
 }}
 
 CRITICAL RULES:
@@ -1301,6 +1303,7 @@ CRITICAL RULES:
                 "prompt_16_9":    self._sanitize(result.get("prompt_16_9", "")),
                 "copy_tiktok":    self._sanitize(result.get("copy_tiktok", "")),
                 "copy_instagram": self._sanitize(result.get("copy_instagram", "")),
+                "copy_facebook":  self._sanitize(result.get("copy_facebook", "")),
                 "copy_twitter":   self._sanitize(result.get("copy_twitter", "")),
             }
         except Exception:
@@ -1311,6 +1314,7 @@ CRITICAL RULES:
                 "prompt_16_9":    "",
                 "copy_tiktok":    "",
                 "copy_instagram": "",
+                "copy_facebook":  "",
                 "copy_twitter":   "",
             }
 

@@ -3424,12 +3424,12 @@ with st.expander(
         st.markdown(
             "**📣 " + ("Copy para redes sociales" if _is_es_q else "Social media captions") + "**"
         )
-        _qct, _qci, _qcx = st.tabs(["🎵 TikTok", "📸 Instagram", "🐦 Twitter / X"])
+        _qct, _qci, _qcfb, _qcx = st.tabs(["🎵 TikTok", "📸 Instagram", "👥 Facebook", "🐦 Twitter / X"])
 
         with _qct:
             _c_tt = _qdata.get("copy_tiktok", "")
             if _c_tt:
-                st.caption("✅ #fyp #viral + hashtags de nicho para máximo alcance orgánico" if _is_es_q else "✅ #fyp #viral + niche hashtags for max organic reach")
+                st.caption("✅ #fyp #viral fijos + 2 de nicho — máx 4 hashtags" if _is_es_q else "✅ #fyp #viral fixed + 2 niche — max 4 hashtags")
                 st.code(_c_tt, language=None)
             else:
                 st.info("—")
@@ -3437,15 +3437,23 @@ with st.expander(
         with _qci:
             _c_ig = _qdata.get("copy_instagram", "")
             if _c_ig:
-                st.caption("✅ Mix de hashtags amplios + medianos + nicho para explotar el algoritmo" if _is_es_q else "✅ Mix of broad + medium + niche hashtags to beat the algorithm")
+                st.caption("✅ 4 hashtags: 1 amplio + 1 mediano + 2 nicho — estrategia de 3 capas" if _is_es_q else "✅ 4 hashtags: 1 broad + 1 medium + 2 niche — 3-layer strategy")
                 st.code(_c_ig, language=None)
+            else:
+                st.info("—")
+
+        with _qcfb:
+            _c_fb = _qdata.get("copy_facebook", "")
+            if _c_fb:
+                st.caption("✅ Pregunta al final para generar comentarios — máx 3 hashtags" if _is_es_q else "✅ Question at the end to spark comments — max 3 hashtags")
+                st.code(_c_fb, language=None)
             else:
                 st.info("—")
 
         with _qcx:
             _c_tw = _qdata.get("copy_twitter", "")
             if _c_tw:
-                st.caption("✅ Frase directa + 1-2 hashtags trending — menos es más en X" if _is_es_q else "✅ Direct line + 1-2 trending hashtags — less is more on X")
+                st.caption("✅ Frase directa + máx 2 hashtags trending — menos es más en X" if _is_es_q else "✅ Direct line + max 2 trending hashtags — less is more on X")
                 st.code(_c_tw, language=None)
             else:
                 st.info("—")
