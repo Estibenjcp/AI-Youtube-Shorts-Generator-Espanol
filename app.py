@@ -3397,7 +3397,8 @@ with st.expander(
     ):
         with st.spinner("✨ " + ("Generando prompts para los 3 formatos..." if _is_es_q else "Generating prompts for all 3 formats...")):
             try:
-                _qbrain = ContentBrain()
+                from modules.brain import ContentBrain as _ContentBrain
+                _qbrain = _ContentBrain()
                 _qresult = _qbrain.generate_quote_card_prompts(
                     quote    = _qcustom.strip(),
                     category = _qcat_for_brain,
