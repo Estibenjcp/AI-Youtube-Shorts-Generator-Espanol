@@ -1123,6 +1123,182 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
+    def generate_quote_card_prompts(
+        self,
+        quote: str = "",
+        category: str = "",
+        lang: str = "es",
+    ) -> dict:
+        """
+        Genera prompts de imagen para una frase célebre o viral en 3 formatos:
+        9:16 (Reels/Stories), 1:1 (Instagram post), 16:9 (YouTube/LinkedIn).
+
+        Si no se provee frase, la IA elige una viral/célebre de la categoría dada.
+        Retorna dict con keys: quote_used, prompt_9_16, prompt_1_1, prompt_16_9
+        """
+        print(f"💬 Generando prompts de frase viral [{category or 'auto'}]...")
+
+        # ── Step 1: resolve quote ─────────────────────────────────────────────
+        if not quote.strip() and category.strip():
+            if lang == "es":
+                _qprompt = (
+                    f"Dame UNA frase célebre, viral o motivacional de la categoría: {category}.\n"
+                    f"Debe ser impactante, compartible y no demasiado larga (máximo 20 palabras).\n"
+                    f"Puede ser de un personaje famoso o una frase anónima que haya viralizado.\n"
+                    f"Responde SOLO con la frase y el autor si lo hay (formato: 'Frase.' — Autor). Nada más."
+                )
+            else:
+                _qprompt = (
+                    f"Give me ONE famous, viral or motivational quote from the category: {category}.\n"
+                    f"Must be impactful, shareable, not too long (max 20 words).\n"
+                    f"Can be from a famous person or an anonymous viral phrase.\n"
+                    f"Respond ONLY with the quote and author if known (format: 'Quote.' — Author). Nothing else."
+                )
+            quote = self._sanitize(self._generate(_qprompt).strip())
+        elif not quote.strip():
+            if lang == "es":
+                _qprompt = (
+                    f"Dame UNA frase célebre o viral de cualquier categoría que esté generando "
+                    f"mucha interacción en redes sociales actualmente. "
+                    f"Máximo 20 palabras. Formato: 'Frase.' — Autor (o 'Anónimo'). Solo la frase."
+                )
+            else:
+                _qprompt = (
+                    f"Give me ONE famous or viral quote from any category that's generating "
+                    f"high social media engagement right now. "
+                    f"Max 20 words. Format: 'Quote.' — Author (or 'Anonymous'). Just the quote."
+                )
+            quote = self._sanitize(self._generate(_qprompt).strip())
+
+        print(f"💬 Frase: {quote[:80]}")
+
+        # ── Step 2: common context for all 3 formats ──────────────────────────
+        _ctx = f"Quote / frase: \"{quote}\"\nCategory / categoría: {category or 'general'}"
+
+        _style_ref = (
+            "Visual style rules:\n"
+            "- Cinematic, dramatic, high-contrast\n"
+            "- The quote text MUST appear as an overlay on the image (specify exact text)\n"
+            "- Background: rich, atmospheric, relevant to the quote's theme\n"
+            "- Lighting: dramatic volumetric light (god rays, rim light, or neon glow)\n"
+            "- Color palette: deep moody tones OR vibrant energetic tones — match the quote's emotion\n"
+            "- Photorealistic or painterly — NO flat design, NO plain backgrounds\n"
+            "- PROHIBIDO: bordes blancos, fondos lisos, diseño minimalista sin textura\n"
+            "- The quote text overlay must be bold, legible, high contrast, in the quote's original language\n"
+            "- Do NOT add any text beyond the quote and optional author credit\n"
+        )
+
+        # ── Step 3: generate 3 format prompts in one LLM call ─────────────────
+        if lang == "es":
+            _main_prompt = f"""Eres un experto en diseño de contenido viral para redes sociales y un maestro generando prompts para IA de imagen (Midjourney, DALL-E, Flux, Ideogram).
+
+{_ctx}
+
+TAREA: Genera EXACTAMENTE 3 prompts de imagen — uno por formato — para una "quote card" (tarjeta con frase) de alto impacto visual que genere interacción masiva en redes sociales.
+
+{_style_ref}
+
+INSTRUCCIONES POR FORMATO:
+
+**FORMATO 9:16 (Reels / Stories / TikTok — VERTICAL)**
+- Composición vertical dominante
+- La frase ocupa el centro o la mitad inferior
+- Fondo: escena atmosférica vertical que no compite con el texto
+- Estilo: dramático, editorial, para capturar scroll en 0.5 segundos
+
+**FORMATO 1:1 (Instagram Post / Facebook — CUADRADO)**
+- Composición equilibrada y centrada
+- La frase puede estar arriba, centro o abajo con margen igual en todos lados
+- Fondo: equilibrado, no muy ocupado en los bordes
+- Estilo: limpio pero poderoso, optimizado para engagement de post
+
+**FORMATO 16:9 (YouTube / LinkedIn / Twitter — HORIZONTAL)**
+- La frase en el tercio izquierdo o centrada
+- Background dramático en el tercio derecho o detrás
+- Espacio visual izquierdo para texto, lado derecho con escena
+- Estilo: thumbnail cinematográfico, click-worthy
+
+FORMATO DE SALIDA (JSON estricto, sin markdown):
+{{
+  "quote_used": "la frase exacta que usarás",
+  "prompt_9_16": "prompt completo en inglés listo para pegar en Midjourney/DALL-E — incluye la frase como texto overlay especificado, composición vertical, iluminación, estilo",
+  "prompt_1_1":  "prompt completo en inglés — composición cuadrada, misma frase como texto overlay",
+  "prompt_16_9": "prompt completo en inglés — composición horizontal 16:9, misma frase como texto overlay"
+}}
+
+REGLAS CRÍTICAS:
+- Los prompts van en INGLÉS (para compatibilidad con los modelos de imagen)
+- El texto de la frase que aparece en la imagen va en el IDIOMA ORIGINAL de la frase
+- Cada prompt debe tener mínimo 80 palabras y máximo 200 palabras
+- Cada prompt debe especificar: sujeto/escena, composición, iluminación, estilo, texto overlay, ratio
+- NO repitas el mismo background en los 3 formatos — adapta el encuadre"""
+        else:
+            _main_prompt = f"""You are an expert in viral social media content design and a master at generating prompts for AI image generation (Midjourney, DALL-E, Flux, Ideogram).
+
+{_ctx}
+
+TASK: Generate EXACTLY 3 image prompts — one per format — for a high-impact "quote card" that drives massive engagement on social media.
+
+{_style_ref}
+
+FORMAT INSTRUCTIONS:
+
+**FORMAT 9:16 (Reels / Stories / TikTok — VERTICAL)**
+- Vertical dominant composition
+- Quote occupies center or lower half
+- Background: atmospheric vertical scene that doesn't compete with text
+- Style: dramatic, editorial, designed to stop scrolling in 0.5 seconds
+
+**FORMAT 1:1 (Instagram Post / Facebook — SQUARE)**
+- Balanced, centered composition
+- Quote can be top, center or bottom with equal margins on all sides
+- Background: balanced, not too busy at edges
+- Style: clean but powerful, optimized for post engagement
+
+**FORMAT 16:9 (YouTube / LinkedIn / Twitter — HORIZONTAL)**
+- Quote in left third or centered
+- Dramatic background in right third or behind
+- Left visual space for text, right side with scene
+- Style: cinematic thumbnail, click-worthy
+
+OUTPUT FORMAT (strict JSON, no markdown):
+{{
+  "quote_used": "the exact quote you're using",
+  "prompt_9_16": "complete English prompt ready to paste in Midjourney/DALL-E — includes the quote as specified text overlay, vertical composition, lighting, style",
+  "prompt_1_1":  "complete English prompt — square composition, same quote as text overlay",
+  "prompt_16_9": "complete English prompt — horizontal 16:9 composition, same quote as text overlay"
+}}
+
+CRITICAL RULES:
+- Prompts in ENGLISH (for AI image model compatibility)
+- The quote text that appears in the image stays in its original language
+- Each prompt: minimum 80 words, maximum 200 words
+- Each prompt must specify: subject/scene, composition, lighting, style, text overlay, ratio
+- Do NOT reuse the same background for all 3 formats — adapt the framing"""
+
+        raw   = self._generate(_main_prompt)
+        clean = raw.replace("```json", "").replace("```", "").strip()
+        bracket = clean.find("{")
+        if bracket > 0:
+            clean = clean[bracket:]
+        try:
+            import json as _j
+            result = _j.loads(clean)
+            return {
+                "quote_used":  result.get("quote_used", quote),
+                "prompt_9_16": self._sanitize(result.get("prompt_9_16", "")),
+                "prompt_1_1":  self._sanitize(result.get("prompt_1_1", "")),
+                "prompt_16_9": self._sanitize(result.get("prompt_16_9", "")),
+            }
+        except Exception:
+            # Fallback — return the raw text as 9:16 prompt
+            return {
+                "quote_used":  quote,
+                "prompt_9_16": clean[:800],
+                "prompt_1_1":  "",
+                "prompt_16_9": "",
+            }
+
     def generate_thumbnail_prompt(self, topic: str, script: list, lang: str = "es",
                                    mode: str = "auto", offer_text: str = "") -> str:
         print("🖼️ Generating thumbnail prompt...")

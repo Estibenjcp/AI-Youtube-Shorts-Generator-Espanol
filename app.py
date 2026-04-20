@@ -3310,3 +3310,141 @@ elif st.session_state.status == "error":
     if st.button(T["restart_btn"], key="restart_error", use_container_width=True, type="secondary"):
         _reset_session()
     st.markdown("</div>", unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 💬 GENERADOR DE FRASES VIRALES — siempre visible, independiente del pipeline
+# ══════════════════════════════════════════════════════════════════════════════
+
+st.markdown("---")
+_is_es_q = lang_option == "es"
+
+with st.expander(
+    "💬 " + ("Generador de Frases Virales" if _is_es_q else "Viral Quote Card Generator"),
+    expanded=False,
+):
+    st.caption(
+        "Genera prompts listos para Midjourney · DALL·E · Flux · Ideogram en los 3 formatos clave."
+        if _is_es_q else
+        "Generate ready-to-use prompts for Midjourney · DALL·E · Flux · Ideogram in all 3 key formats."
+    )
+
+    # ── Categorías disponibles ─────────────────────────────────────────────
+    _quote_categories_es = [
+        "Auto (IA elige)",
+        "Motivación y éxito",
+        "Filosofía y vida",
+        "Amor y relaciones",
+        "Liderazgo y negocios",
+        "Estoicismo",
+        "Psicología y mente",
+        "Espiritualidad",
+        "Historia y guerreros",
+        "Humor e ironía",
+        "Resiliencia y superación",
+        "Dinero e inversión",
+        "Ciencia y tecnología",
+        "Arte y creatividad",
+        "Política y poder",
+    ]
+    _quote_categories_en = [
+        "Auto (AI chooses)",
+        "Motivation & success",
+        "Philosophy & life",
+        "Love & relationships",
+        "Leadership & business",
+        "Stoicism",
+        "Psychology & mindset",
+        "Spirituality",
+        "History & warriors",
+        "Humor & irony",
+        "Resilience & growth",
+        "Money & investing",
+        "Science & technology",
+        "Art & creativity",
+        "Politics & power",
+    ]
+    _qcats = _quote_categories_es if _is_es_q else _quote_categories_en
+
+    _qcol1, _qcol2 = st.columns([2, 1])
+    with _qcol1:
+        _qcustom = st.text_area(
+            "✍️ " + ("Escribe la frase (opcional — vacío = IA elige)" if _is_es_q else "Type the quote (optional — empty = AI picks)"),
+            placeholder=(
+                'ej. "El único modo de hacer un gran trabajo es amar lo que haces." — Steve Jobs'
+                if _is_es_q else
+                'e.g. "The only way to do great work is to love what you do." — Steve Jobs'
+            ),
+            height=90,
+            key="qcard_custom_quote",
+        )
+    with _qcol2:
+        _qcat_sel = st.selectbox(
+            "🏷️ " + ("Categoría" if _is_es_q else "Category"),
+            options=_qcats,
+            key="qcard_category",
+        )
+        # Normalize "Auto" selection → empty string for brain
+        _qcat_for_brain = (
+            "" if _qcat_sel in ("Auto (IA elige)", "Auto (AI chooses)") else _qcat_sel
+        )
+
+    # ── Botón generar ─────────────────────────────────────────────────────
+    if st.button(
+        "🎨 " + ("Generar prompts de imagen" if _is_es_q else "Generate image prompts"),
+        key="qcard_generate_btn",
+        type="primary",
+        use_container_width=True,
+    ):
+        with st.spinner("✨ " + ("Generando prompts para los 3 formatos..." if _is_es_q else "Generating prompts for all 3 formats...")):
+            try:
+                _qbrain = ContentBrain()
+                _qresult = _qbrain.generate_quote_card_prompts(
+                    quote    = _qcustom.strip(),
+                    category = _qcat_for_brain,
+                    lang     = "es" if _is_es_q else "en",
+                )
+                st.session_state["qcard_result"] = _qresult
+            except Exception as _qe:
+                st.error(f"❌ {_qe}")
+
+    # ── Mostrar resultados ─────────────────────────────────────────────────
+    _qdata = st.session_state.get("qcard_result")
+    if _qdata:
+        _used_q = _qdata.get("quote_used", "")
+        if _used_q:
+            st.markdown(
+                f"<div style='background:#f0fdf4;border-left:4px solid #10b981;padding:10px 14px;"
+                f"border-radius:8px;margin:12px 0;font-style:italic;color:#065f46;font-size:0.92rem'>"
+                f"💬 {_used_q}</div>",
+                unsafe_allow_html=True,
+            )
+
+        _qt1, _qt2, _qt3 = st.tabs([
+            "📱 9:16 — Reels / Stories",
+            "⬛ 1:1 — Instagram Post",
+            "🖥️ 16:9 — YouTube / LinkedIn",
+        ])
+
+        with _qt1:
+            _p916 = _qdata.get("prompt_9_16", "")
+            if _p916:
+                st.caption("📋 " + ("Copia y pega en Midjourney, DALL·E, Flux o Ideogram" if _is_es_q else "Copy and paste into Midjourney, DALL·E, Flux or Ideogram"))
+                st.code(_p916, language=None)
+            else:
+                st.info("No disponible.")
+
+        with _qt2:
+            _p11 = _qdata.get("prompt_1_1", "")
+            if _p11:
+                st.caption("📋 " + ("Copia y pega en Midjourney, DALL·E, Flux o Ideogram" if _is_es_q else "Copy and paste into Midjourney, DALL·E, Flux or Ideogram"))
+                st.code(_p11, language=None)
+            else:
+                st.info("No disponible.")
+
+        with _qt3:
+            _p169 = _qdata.get("prompt_16_9", "")
+            if _p169:
+                st.caption("📋 " + ("Copia y pega en Midjourney, DALL·E, Flux o Ideogram" if _is_es_q else "Copy and paste into Midjourney, DALL·E, Flux or Ideogram"))
+                st.code(_p169, language=None)
+            else:
+                st.info("No disponible.")
