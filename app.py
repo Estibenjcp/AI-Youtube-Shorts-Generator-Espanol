@@ -3420,6 +3420,15 @@ with st.expander(
                 unsafe_allow_html=True,
             )
 
+        # ── Copy para redes ────────────────────────────────────────────────
+        _qcopy = _qdata.get("social_copy", "")
+        if _qcopy:
+            st.markdown(
+                "**📣 " + ("Copy para redes sociales" if _is_es_q else "Social media caption") + "**"
+            )
+            st.code(_qcopy, language=None)
+
+        st.markdown("---")
         _qt1, _qt2, _qt3 = st.tabs([
             "📱 9:16 — Reels / Stories",
             "⬛ 1:1 — Instagram Post",

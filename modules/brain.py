@@ -1223,7 +1223,8 @@ FORMATO DE SALIDA (JSON estricto, sin markdown):
   "quote_used": "la frase exacta que usarás",
   "prompt_9_16": "prompt completo en inglés listo para pegar en Midjourney/DALL-E — incluye la frase como texto overlay especificado, composición vertical, iluminación, estilo",
   "prompt_1_1":  "prompt completo en inglés — composición cuadrada, misma frase como texto overlay",
-  "prompt_16_9": "prompt completo en inglés — composición horizontal 16:9, misma frase como texto overlay"
+  "prompt_16_9": "prompt completo en inglés — composición horizontal 16:9, misma frase como texto overlay",
+  "social_copy": "copy corto para redes sociales en español — máximo 3 líneas + máximo 3 hashtags relevantes del nicho. Que invite a reflexionar o compartir. Sin emojis en exceso (máximo 1)."
 }}
 
 REGLAS CRÍTICAS:
@@ -1231,7 +1232,8 @@ REGLAS CRÍTICAS:
 - El texto de la frase que aparece en la imagen va en el IDIOMA ORIGINAL de la frase
 - Cada prompt debe tener mínimo 80 palabras y máximo 200 palabras
 - Cada prompt debe especificar: sujeto/escena, composición, iluminación, estilo, texto overlay, ratio
-- NO repitas el mismo background en los 3 formatos — adapta el encuadre"""
+- NO repitas el mismo background en los 3 formatos — adapta el encuadre
+- El social_copy va en español neutro, corto, directo y compartible"""
         else:
             _main_prompt = f"""You are an expert in viral social media content design and a master at generating prompts for AI image generation (Midjourney, DALL-E, Flux, Ideogram).
 
@@ -1266,7 +1268,8 @@ OUTPUT FORMAT (strict JSON, no markdown):
   "quote_used": "the exact quote you're using",
   "prompt_9_16": "complete English prompt ready to paste in Midjourney/DALL-E — includes the quote as specified text overlay, vertical composition, lighting, style",
   "prompt_1_1":  "complete English prompt — square composition, same quote as text overlay",
-  "prompt_16_9": "complete English prompt — horizontal 16:9 composition, same quote as text overlay"
+  "prompt_16_9": "complete English prompt — horizontal 16:9 composition, same quote as text overlay",
+  "social_copy": "short social media caption in English — max 3 lines + max 3 niche hashtags. Invites reflection or sharing. Max 1 emoji."
 }}
 
 CRITICAL RULES:
@@ -1274,7 +1277,8 @@ CRITICAL RULES:
 - The quote text that appears in the image stays in its original language
 - Each prompt: minimum 80 words, maximum 200 words
 - Each prompt must specify: subject/scene, composition, lighting, style, text overlay, ratio
-- Do NOT reuse the same background for all 3 formats — adapt the framing"""
+- Do NOT reuse the same background for all 3 formats — adapt the framing
+- social_copy must be short, punchy, and shareable"""
 
         raw   = self._generate(_main_prompt)
         clean = raw.replace("```json", "").replace("```", "").strip()
@@ -1289,6 +1293,7 @@ CRITICAL RULES:
                 "prompt_9_16": self._sanitize(result.get("prompt_9_16", "")),
                 "prompt_1_1":  self._sanitize(result.get("prompt_1_1", "")),
                 "prompt_16_9": self._sanitize(result.get("prompt_16_9", "")),
+                "social_copy": self._sanitize(result.get("social_copy", "")),
             }
         except Exception:
             # Fallback — return the raw text as 9:16 prompt
@@ -1297,6 +1302,7 @@ CRITICAL RULES:
                 "prompt_9_16": clean[:800],
                 "prompt_1_1":  "",
                 "prompt_16_9": "",
+                "social_copy": "",
             }
 
     def generate_thumbnail_prompt(self, topic: str, script: list, lang: str = "es",
