@@ -118,3 +118,34 @@ BOOK_CATEGORIES_EN = [
     "Habits and Discipline",
     "Marketing and Sales",
 ]
+
+# Categorías exclusivas del modo "Biblia"
+BIBLE_CATEGORIES = [
+    "Reflexiones",
+    "Palabras de Aliento",
+    "Motivaciones",
+    "Fe y Esperanza",
+    "Sabiduría Bíblica",
+    "Gratitud y Alabanza",
+    "Amor y Compasión",
+    "Fortaleza y Perseverancia",
+    "Promesas de Dios",
+    "Oración y Devoción",
+    "Sanación y Restauración",
+    "Propósito y Llamado",
+]
+
+BIBLE_CATEGORIES_EN = [
+    "Reflections",
+    "Words of Encouragement",
+    "Motivations",
+    "Faith and Hope",
+    "Biblical Wisdom",
+    "Gratitude and Praise",
+    "Love and Compassion",
+    "Strength and Perseverance",
+    "God's Promises",
+    "Prayer and Devotion",
+    "Healing and Restoration",
+    "Purpose and Calling",
+]

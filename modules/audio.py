@@ -409,32 +409,116 @@ class VoxCPMAudioEngine:
 class GoogleTTSAudioEngine:
     """Google Cloud Text-to-Speech via REST API.
     Only requires a Google Cloud API key — no extra SDK needed.
-    Supports Neural2 and Studio voices for ES and EN.
+    Supports Chirp3-HD, Journey, Studio, and Neural2 voices for ES and EN.
     """
 
     # label → (lang_code, voice_name)
     VOICES_ES = {
-        "es-US-Neural2-B  (Masculino Latino ★)":   ("es-US", "es-US-Neural2-B"),
-        "es-US-Neural2-A  (Femenina Latina)":       ("es-US", "es-US-Neural2-A"),
-        "es-US-Neural2-C  (Femenina Latina 2)":     ("es-US", "es-US-Neural2-C"),
-        "es-MX-Neural2-B  (Masculino México)":      ("es-MX", "es-MX-Neural2-B"),
-        "es-MX-Neural2-A  (Femenina México)":       ("es-MX", "es-MX-Neural2-A"),
-        "es-MX-Neural2-C  (Masculino México 2)":    ("es-MX", "es-MX-Neural2-C"),
-        "es-ES-Neural2-B  (Masculino España)":      ("es-ES", "es-ES-Neural2-B"),
-        "es-ES-Neural2-A  (Femenina España)":       ("es-ES", "es-ES-Neural2-A"),
-        "es-US-Studio-B   (Studio Masculino ★★)":   ("es-US", "es-US-Studio-B"),
+        # ── Chirp 3 HD (generación más nueva — nombres de estrellas) ──
+        "Achernar     [Chirp3-HD · F · Suave, tono alto]":        ("es-US", "es-US-Chirp3-HD-Achernar"),
+        "Achird       [Chirp3-HD · M · Amigable, tono medio-bajo]":("es-US", "es-US-Chirp3-HD-Achird"),
+        "Algenib      [Chirp3-HD · M · Ronco, tono bajo]":         ("es-US", "es-US-Chirp3-HD-Algenib"),
+        "Algieba      [Chirp3-HD · M · Suave, tono bajo]":         ("es-US", "es-US-Chirp3-HD-Algieba"),
+        "Alnilam      [Chirp3-HD · M · Firme, tono medio-bajo]":   ("es-US", "es-US-Chirp3-HD-Alnilam"),
+        "Aoede        [Chirp3-HD · F · Brisa, tono medio]":        ("es-US", "es-US-Chirp3-HD-Aoede"),
+        "Autonoe      [Chirp3-HD · F · Brillante, tono medio]":    ("es-US", "es-US-Chirp3-HD-Autonoe"),
+        "Callirrhoe   [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Callirrhoe"),
+        "Charon       [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Charon"),
+        "Despina      [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Despina"),
+        "Enceladus    [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Enceladus"),
+        "Erinome      [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Erinome"),
+        "Fenrir       [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Fenrir"),
+        "Gacrux       [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Gacrux"),
+        "Iapetus      [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Iapetus"),
+        "Kore         [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Kore"),
+        "Laomedeia    [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Laomedeia"),
+        "Leda         [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Leda"),
+        "Orus         [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Orus"),
+        "Pulcherrima  [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Pulcherrima"),
+        "Puck         [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Puck"),
+        "Rasalgethi   [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Rasalgethi"),
+        "Sadachbia    [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Sadachbia"),
+        "Sadaltager   [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Sadaltager"),
+        "Schedar      [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Schedar"),
+        "Sulafat      [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Sulafat"),
+        "Umbriel      [Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Umbriel"),
+        "Vindemiatrix [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Vindemiatrix"),
+        "Zephyr       [Chirp3-HD · F]":                            ("es-US", "es-US-Chirp3-HD-Zephyr"),
+        "Zubenelgenubi[Chirp3-HD · M]":                            ("es-US", "es-US-Chirp3-HD-Zubenelgenubi"),
+        # ── Journey (generación 3.x — conversacional) ──
+        "es-US-Journey-D  (Journey Masculino ★★★)":               ("es-US", "es-US-Journey-D"),
+        "es-US-Journey-F  (Journey Femenina ★★★)":                ("es-US", "es-US-Journey-F"),
+        "es-US-Journey-O  (Journey Femenina 2 ★★★)":              ("es-US", "es-US-Journey-O"),
+        # ── Studio ──
+        "es-US-Studio-B   (Studio Masculino ★★)":                 ("es-US", "es-US-Studio-B"),
+        # ── Neural2 US ──
+        "es-US-Neural2-B  (Masculino Latino ★)":                  ("es-US", "es-US-Neural2-B"),
+        "es-US-Neural2-A  (Femenina Latina)":                      ("es-US", "es-US-Neural2-A"),
+        "es-US-Neural2-C  (Femenina Latina 2)":                    ("es-US", "es-US-Neural2-C"),
+        # ── Neural2 México ──
+        "es-MX-Neural2-B  (Masculino México)":                    ("es-MX", "es-MX-Neural2-B"),
+        "es-MX-Neural2-A  (Femenina México)":                     ("es-MX", "es-MX-Neural2-A"),
+        "es-MX-Neural2-C  (Masculino México 2)":                  ("es-MX", "es-MX-Neural2-C"),
+        # ── Neural2 España ──
+        "es-ES-Neural2-B  (Masculino España)":                    ("es-ES", "es-ES-Neural2-B"),
+        "es-ES-Neural2-A  (Femenina España)":                     ("es-ES", "es-ES-Neural2-A"),
+        "es-ES-Neural2-C  (Femenina España 2)":                   ("es-ES", "es-ES-Neural2-C"),
+        "es-ES-Neural2-D  (Masculino España 2)":                  ("es-ES", "es-ES-Neural2-D"),
+        "es-ES-Neural2-E  (Femenina España 3)":                   ("es-ES", "es-ES-Neural2-E"),
+        "es-ES-Neural2-F  (Masculino España 3)":                  ("es-ES", "es-ES-Neural2-F"),
     }
 
     VOICES_EN = {
-        "en-US-Neural2-D  (Male, US ★)":       ("en-US", "en-US-Neural2-D"),
-        "en-US-Neural2-A  (Female, US)":        ("en-US", "en-US-Neural2-A"),
-        "en-US-Neural2-F  (Female, US 2)":      ("en-US", "en-US-Neural2-F"),
-        "en-US-Neural2-J  (Male, US 2)":        ("en-US", "en-US-Neural2-J"),
-        "en-US-Studio-Q   (Studio Male ★★)":    ("en-US", "en-US-Studio-Q"),
-        "en-US-Studio-O   (Studio Female ★★)":  ("en-US", "en-US-Studio-O"),
+        # ── Chirp 3 HD ──
+        "Achernar     [Chirp3-HD · F · Soft, higher pitch]":         ("en-US", "en-US-Chirp3-HD-Achernar"),
+        "Achird       [Chirp3-HD · M · Friendly, lower-mid pitch]":  ("en-US", "en-US-Chirp3-HD-Achird"),
+        "Algenib      [Chirp3-HD · M · Gravelly, lower pitch]":      ("en-US", "en-US-Chirp3-HD-Algenib"),
+        "Algieba      [Chirp3-HD · M · Smooth, lower pitch]":        ("en-US", "en-US-Chirp3-HD-Algieba"),
+        "Alnilam      [Chirp3-HD · M · Firm, lower-mid pitch]":      ("en-US", "en-US-Chirp3-HD-Alnilam"),
+        "Aoede        [Chirp3-HD · F · Breezy, mid pitch]":          ("en-US", "en-US-Chirp3-HD-Aoede"),
+        "Autonoe      [Chirp3-HD · F · Bright, mid pitch]":          ("en-US", "en-US-Chirp3-HD-Autonoe"),
+        "Callirrhoe   [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Callirrhoe"),
+        "Charon       [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Charon"),
+        "Despina      [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Despina"),
+        "Enceladus    [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Enceladus"),
+        "Erinome      [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Erinome"),
+        "Fenrir       [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Fenrir"),
+        "Gacrux       [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Gacrux"),
+        "Iapetus      [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Iapetus"),
+        "Kore         [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Kore"),
+        "Laomedeia    [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Laomedeia"),
+        "Leda         [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Leda"),
+        "Orus         [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Orus"),
+        "Pulcherrima  [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Pulcherrima"),
+        "Puck         [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Puck"),
+        "Rasalgethi   [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Rasalgethi"),
+        "Sadachbia    [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Sadachbia"),
+        "Sadaltager   [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Sadaltager"),
+        "Schedar      [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Schedar"),
+        "Sulafat      [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Sulafat"),
+        "Umbriel      [Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Umbriel"),
+        "Vindemiatrix [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Vindemiatrix"),
+        "Zephyr       [Chirp3-HD · F]":                              ("en-US", "en-US-Chirp3-HD-Zephyr"),
+        "Zubenelgenubi[Chirp3-HD · M]":                              ("en-US", "en-US-Chirp3-HD-Zubenelgenubi"),
+        # ── Journey ──
+        "en-US-Journey-D  (Journey Male ★★★)":                      ("en-US", "en-US-Journey-D"),
+        "en-US-Journey-F  (Journey Female ★★★)":                    ("en-US", "en-US-Journey-F"),
+        "en-US-Journey-O  (Journey Female 2 ★★★)":                  ("en-US", "en-US-Journey-O"),
+        # ── Studio ──
+        "en-US-Studio-Q   (Studio Male ★★)":                        ("en-US", "en-US-Studio-Q"),
+        "en-US-Studio-O   (Studio Female ★★)":                      ("en-US", "en-US-Studio-O"),
+        # ── Neural2 ──
+        "en-US-Neural2-D  (Male, US ★)":                            ("en-US", "en-US-Neural2-D"),
+        "en-US-Neural2-A  (Female, US)":                             ("en-US", "en-US-Neural2-A"),
+        "en-US-Neural2-F  (Female, US 2)":                           ("en-US", "en-US-Neural2-F"),
+        "en-US-Neural2-J  (Male, US 2)":                             ("en-US", "en-US-Neural2-J"),
+        "en-US-Neural2-I  (Male, US 3)":                             ("en-US", "en-US-Neural2-I"),
+        "en-US-Neural2-G  (Female, US 3)":                           ("en-US", "en-US-Neural2-G"),
+        "en-US-Neural2-H  (Female, US 4)":                           ("en-US", "en-US-Neural2-H"),
     }
 
-    _URL = "https://texttospeech.googleapis.com/v1/text:synthesize"
+    _URL      = "https://texttospeech.googleapis.com/v1/text:synthesize"
+    _URL_BETA = "https://texttospeech.googleapis.com/v1beta1/text:synthesize"
 
     def __init__(self, api_key: str, voice_name: str, lang_code: str,
                  speaking_rate: float = 1.0, pitch: float = 0.0):
@@ -461,19 +545,26 @@ class GoogleTTSAudioEngine:
         import requests
         import base64
         rate = speaking_rate if speaking_rate is not None else self.speaking_rate
-        payload = {
-            "input":  {"text": text},
-            "voice":  {"languageCode": self.lang_code, "name": self.voice_name},
-            "audioConfig": {
+        is_chirp3 = "Chirp3-HD" in self.voice_name
+        if is_chirp3:
+            audio_cfg = {"audioEncoding": "MP3"}
+        else:
+            audio_cfg = {
                 "audioEncoding":    "MP3",
                 "speakingRate":     round(max(0.25, min(rate, 4.0)), 3),
                 "pitch":            round(max(-20.0, min(self.pitch, 20.0)), 1),
                 "effectsProfileId": ["headphone-class-device"],
-            },
+            }
+        payload = {
+            "input":       {"text": text},
+            "voice":       {"languageCode": self.lang_code, "name": self.voice_name},
+            "audioConfig": audio_cfg,
         }
+        url = self._URL_BETA if is_chirp3 else self._URL
         r = requests.post(
-            self._URL,
+            url,
             params={"key": self.api_key},
+            headers={"Referer": "https://digency.streamlit.app/"},
             json=payload,
             timeout=30,
         )

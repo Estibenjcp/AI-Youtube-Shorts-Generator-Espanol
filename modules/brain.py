@@ -142,6 +142,27 @@ class ContentBrain:
                 f"- Exact format: 'Book Title — Author'\n"
                 f"- Return ONLY the title and author. Nothing else."
             )
+        elif mode == "biblia":
+            _excl = exclude_books or []
+            _excl_es = (f"- PROHIBIDO repetir estos pasajes/temas ya vistos: {', '.join(_excl)}.\n") if _excl else ""
+            _excl_en = (f"- FORBIDDEN to repeat these already-seen passages/themes: {', '.join(_excl)}.\n") if _excl else ""
+            prompt = (
+                f"Eres un experto en contenido bíblico y espiritual. Sugiere UN pasaje bíblico o tema espiritual de la categoría: {category}.\n"
+                f"Semilla: {seed} — úsala para variar entre versículos, parábolas, temas y libros bíblicos.\n"
+                f"REGLAS:\n"
+                f"{_excl_es}"
+                f"- Puede ser: un versículo específico (ej. 'Juan 3:16'), una parábola, un tema bíblico (ej. 'La fe que mueve montañas').\n"
+                f"- Formato: 'Tema o versículo — referencia bíblica (si aplica)'\n"
+                f"- Responde ÚNICAMENTE con el tema/versículo. Nada más."
+            ) if lang == "es" else (
+                f"You are an expert in biblical and spiritual content. Suggest ONE Bible passage or spiritual theme from the category: {category}.\n"
+                f"Seed: {seed} — use it to vary between verses, parables, themes, and biblical books.\n"
+                f"RULES:\n"
+                f"{_excl_en}"
+                f"- It can be: a specific verse (e.g. 'John 3:16'), a parable, a biblical theme (e.g. 'Faith that moves mountains').\n"
+                f"- Format: 'Theme or verse — biblical reference (if applicable)'\n"
+                f"- Return ONLY the theme/verse. Nothing else."
+            )
         else:
             prompt = (
                 f"Dame 1 tema específico, viral y fascinante para un Short Documental "
@@ -274,6 +295,7 @@ OUTPUT FORMAT (strict JSON, no markdown):
             "viral":      ("oscuro, impactante, histórico" if lang == "es" else "dark, shocking, historical"),
             "testimonio": ("misterioso, perturbador, cinematográfico" if lang == "es" else "mysterious, disturbing, cinematic"),
             "libro":      ("inspirador, revelador, educativo" if lang == "es" else "inspiring, revealing, educational"),
+            "biblia":     ("espiritual, esperanzador, edificante" if lang == "es" else "spiritual, hopeful, uplifting"),
             "auto":       ("viral, curioso, impactante" if lang == "es" else "viral, curious, shocking"),
             "category":   ("viral, curioso, impactante" if lang == "es" else "viral, curious, shocking"),
         }.get(mode, ("interesante, impactante" if lang == "es" else "interesting, impactful"))
@@ -348,6 +370,19 @@ OUTPUT FORMAT (strict JSON, no markdown):
             )
             tone_es = "inspirador e intrigante, que motive a leer el libro"
             tone_en = "inspiring and intriguing, motivating to read the book"
+        elif mode == "biblia":
+            types_es = (
+                "- TIPO A: promesa poderosa ('Dios prometio que nunca te abandonaria. Y hay un versiculo que lo prueba.')\n"
+                "- TIPO B: verdad que transforma ('La mayoria no conoce este versiculo. Pero cambia todo.')\n"
+                "- TIPO C: pregunta espiritual ('¿Que hace Dios cuando sientes que ya no puedes mas?')\n"
+            )
+            types_en = (
+                "- TYPE A: powerful promise ('God promised He would never leave you. And there is a verse that proves it.')\n"
+                "- TYPE B: transforming truth ('Most people don't know this verse. But it changes everything.')\n"
+                "- TYPE C: spiritual question ('What does God do when you feel like you can't go on?')\n"
+            )
+            tone_es = "espiritual, esperanzador y edificante, que toque el corazon"
+            tone_en = "spiritual, hopeful and uplifting, touching the heart"
         else:  # auto, category, viral
             types_es = (
                 "- TIPO A (Numero shockeante): cifra + consecuencia brutal ('40.000 personas murieron en 48 horas. Nadie lo investigo.')\n"

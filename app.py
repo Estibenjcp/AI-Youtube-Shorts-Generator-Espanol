@@ -19,6 +19,7 @@ from modules.categories import (
     VIRAL_CATEGORIES, VIRAL_CATEGORIES_EN,
     TESTIMONIO_CATEGORIES, TESTIMONIO_CATEGORIES_EN,
     BOOK_CATEGORIES, BOOK_CATEGORIES_EN,
+    BIBLE_CATEGORIES, BIBLE_CATEGORIES_EN,
 )
 from dotenv import set_key, load_dotenv
 
@@ -906,6 +907,10 @@ UI = {
         "libro_cat":         "Género del libro",
         "libro_topic":       "Título del libro (opcional — déjalo vacío para que la IA elija)",
         "libro_topic_ph":    "ej. Hábitos Atómicos — James Clear...",
+        "biblia_info":       "✝️ Reflexiones bíblicas de 60 seg que inspiran, edifican y tocan el corazón. Tono espiritual y esperanzador.",
+        "biblia_cat":        "Categoría espiritual",
+        "biblia_topic":      "Versículo o tema bíblico (opcional — déjalo vacío para que la IA elija)",
+        "biblia_topic_ph":   "ej. Juan 3:16 — Fe y amor de Dios...",
         "empleo_info":       "💼 Pega la oferta de empleo y la IA la convierte en un video promocional atractivo, sin inventar ni exagerar nada.",
         "empleo_label":      "Texto de la oferta de empleo",
         "empleo_ph":         "Pega aquí el texto completo: puesto, empresa, requisitos, salario, beneficios, cómo aplicar...",
@@ -991,6 +996,10 @@ UI = {
         "libro_cat":         "Book genre",
         "libro_topic":       "Book title (optional — leave blank for AI to choose)",
         "libro_topic_ph":    "e.g. Atomic Habits — James Clear...",
+        "biblia_info":       "✝️ 60-sec biblical reflections that inspire, uplift and touch the heart. Spiritual and hopeful tone.",
+        "biblia_cat":        "Spiritual category",
+        "biblia_topic":      "Verse or biblical theme (optional — leave blank for AI to choose)",
+        "biblia_topic_ph":   "e.g. John 3:16 — Faith and God's love...",
         "empleo_info":       "💼 Paste the job offer and AI turns it into an attractive promotional video — no invented or exaggerated details.",
         "empleo_label":      "Job offer text",
         "empleo_ph":         "Paste the full text here: position, company, requirements, salary, benefits, how to apply...",
@@ -1028,6 +1037,7 @@ for key, default in [
     ("generation_mode",   "auto"),
     ("hook_step",         "idle"),
     ("libro_used_books",  []),         # libros ya sugeridos — evita repetición
+    ("biblia_used_topics", []),        # temas bíblicos ya sugeridos — evita repetición
     ("video_source",      "pexels"),   # "pexels" | "ai_video" | "ai_video_test"
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
@@ -1134,6 +1144,17 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="libro")
+            script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
+                                                        chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
+                                                        max_words_per_scene=_max_wpsc)
+
+        elif pipeline_mode == "biblia":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="biblia")
             script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
                                                         chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                         max_words_per_scene=_max_wpsc)
@@ -2171,6 +2192,7 @@ with st.expander(voice_label_hint, expanded=False):
                         _tr = _req_test.post(
                             _GTTS._URL,
                             params={"key": gtts_api_key},
+                            headers={"Referer": "https://digency.streamlit.app/"},
                             json={
                                 "input": {"text": "ok"},
                                 "voice": {"languageCode": "es-US", "name": "es-US-Neural2-B"},
@@ -2433,6 +2455,7 @@ _mode_buttons = (
         ("viral",      "🔥 Viral"),
         ("testimonio", "👁️ Misterio"),
         ("libro",      "📚 Libro"),
+        ("biblia",     "✝️ Biblia"),
         ("empleo",     "💼 Empleo"),
         ("guion",      "✍️ Guión"),
         ("novela",     "🎬 Mininovela"),
@@ -2445,6 +2468,7 @@ _mode_buttons = (
         ("viral",      "🔥 Viral"),
         ("testimonio", "👁️ Mystery"),
         ("libro",      "📚 Book"),
+        ("biblia",     "✝️ Bible"),
         ("empleo",     "💼 Job Ad"),
         ("guion",      "✍️ Script"),
         ("novela",     "🎬 Miniseries"),
@@ -2685,6 +2709,35 @@ elif mode == "libro":
     num_scenes     = 9
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MODO BIBLIA
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "biblia":
+
+    st.markdown(f"<div class='auto-info'>{T['biblia_info']}</div>", unsafe_allow_html=True)
+
+    _bible_cats = BIBLE_CATEGORIES if lang_option == "es" else BIBLE_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>✝️ {T['biblia_cat']}</div>", unsafe_allow_html=True)
+    biblia_category = st.selectbox(
+        "bcat", options=[""] + _bible_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="biblia_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {T['biblia_topic']}</div>", unsafe_allow_html=True)
+    biblia_topic_input = st.text_input(
+        "btopic",
+        key="biblia_topic_input",
+        placeholder=T["biblia_topic_ph"],
+        label_visibility="collapsed",
+    )
+
+    final_topic    = biblia_topic_input.strip()
+    final_category = biblia_category
+    num_scenes     = 9
+
+# ══════════════════════════════════════════════════════════════════════════════
 # MODO OFERTA DE EMPLEO
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -2880,7 +2933,7 @@ elif mode == "podcast":
 
 # ── Generar / Hook flow ───────────────────────────────────────────────────────
 # Modos donde el hook se inyecta en la Escena 1 del guion
-_HOOK_MODES = {"auto", "category", "viral", "testimonio", "libro"}
+_HOOK_MODES = {"auto", "category", "viral", "testimonio", "libro", "biblia"}
 # "empleo" y "guion" no usan hooks — el texto ya viene definido por el usuario
 
 st.markdown("---")
@@ -2966,19 +3019,28 @@ if _hook_step == "idle":
 
                 # Paso 1: resolver tema + descripción
                 with st.spinner("🎯 " + ("Resolviendo tema del video..." if _is_es_hook else "Resolving video topic...")):
-                    # Para modo libro: pasar lista de libros ya vistos para evitar repetición
-                    _excl_books = st.session_state.get("libro_used_books", []) if mode == "libro" else []
+                    # Para modo libro/biblia: pasar lista de temas ya vistos para evitar repetición
+                    if mode == "libro":
+                        _excl_books = st.session_state.get("libro_used_books", [])
+                    elif mode == "biblia":
+                        _excl_books = st.session_state.get("biblia_used_topics", [])
+                    else:
+                        _excl_books = []
                     _td = _brain_h.get_topic_and_description(_ht, _hc, mode, lang_option,
                                                               exclude_books=_excl_books)
                     _resolved_topic = _td["topic"]
                     _topic_desc     = _td["description"]
-                    # Registrar el libro usado para no repetirlo en la próxima llamada
+                    # Registrar el tema usado para no repetirlo en la próxima llamada
                     if mode == "libro" and _resolved_topic:
                         _used = st.session_state.get("libro_used_books", [])
                         if _resolved_topic not in _used:
                             _used.append(_resolved_topic)
-                            # Mantener solo los últimos 20 para no hacer el prompt gigante
                             st.session_state["libro_used_books"] = _used[-20:]
+                    elif mode == "biblia" and _resolved_topic:
+                        _used = st.session_state.get("biblia_used_topics", [])
+                        if _resolved_topic not in _used:
+                            _used.append(_resolved_topic)
+                            st.session_state["biblia_used_topics"] = _used[-20:]
                     st.session_state["_pending_topic"]      = _resolved_topic
                     st.session_state["_pending_topic_desc"] = _topic_desc
                     st.session_state["_pending_category"]   = _hc
