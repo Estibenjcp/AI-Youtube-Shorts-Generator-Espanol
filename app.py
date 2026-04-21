@@ -1995,6 +1995,11 @@ if _voice_lang_key not in st.session_state:
     st.session_state.pop("voice_select", None)
     st.session_state[_voice_lang_key] = True
 
+# Aplicar voz recomendada pendiente ANTES de que el selectbox se dibuje
+_pending_vs = st.session_state.pop("_next_voice_select", None)
+if _pending_vs:
+    st.session_state["voice_select"] = _pending_vs
+
 # ── Estilo de Video IA (visible si video_source es ai_video o ai_video_test) ──
 if st.session_state.get("video_source", "pexels") in ("ai_video", "ai_video_test"):
     from modules.ai_video import VIDEO_STYLES
@@ -3354,7 +3359,7 @@ elif _hook_step == "selecting":
                     except Exception:
                         pass
                 elif _saved_eng == "edge_tts" and _saved_val:
-                    st.session_state["voice_select"] = _rec_label_show
+                    st.session_state["_next_voice_select"] = _rec_label_show
                 st.session_state["recommended_voice_label"] = ""
                 st.session_state["rec_voice_preview_path"]  = ""
                 st.success("✅ " + ("Voz aplicada." if _is_es else "Voice applied."))
