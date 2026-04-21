@@ -326,6 +326,59 @@ OUTPUT FORMAT (strict JSON, no markdown):
         print(f"📝 Description: {description}")
         return {"topic": topic, "description": description}
 
+    def recommend_voice(self, topic: str, category: str, mode: str, lang: str,
+                        tts_engine: str, voice_options: list) -> str:
+        """Picks the most suitable voice label from voice_options for the given topic/mode."""
+        if not voice_options:
+            return ""
+        mood_es = {
+            "testimonio": "voz masculina profunda, misteriosa, que genere suspenso",
+            "libro":      "voz cálida, clara e inspiradora",
+            "biblia":     "voz cálida, tranquila y espiritual",
+            "viral":      "voz enérgica e impactante",
+            "novela":     "voz dramática y expresiva",
+            "podcast":    "voz natural y conversacional",
+        }.get(mode, "voz clara y atractiva")
+        mood_en = {
+            "testimonio": "deep, mysterious, suspenseful male voice",
+            "libro":      "warm, clear, inspiring voice",
+            "biblia":     "warm, calm, spiritual voice",
+            "viral":      "energetic, impactful voice",
+            "novela":     "dramatic, expressive voice",
+            "podcast":    "natural, conversational voice",
+        }.get(mode, "clear, engaging voice")
+        opts_text = "\n".join(f"- {v}" for v in voice_options[:25])
+        if lang == "es":
+            prompt = (
+                f"Eres un director de casting de voz para videos de redes sociales.\n"
+                f"Contexto del video:\n"
+                f"- Tema: {topic}\n"
+                f"- Categoría: {category}\n"
+                f"- Modo: {mode}\n"
+                f"- Personalidad ideal: {mood_es}\n\n"
+                f"Elige UNA voz de esta lista que mejor encaje:\n{opts_text}\n\n"
+                f"Responde ÚNICAMENTE con el nombre EXACTO de la voz tal como aparece en la lista. Nada más."
+            )
+        else:
+            prompt = (
+                f"You are a voice casting director for social media videos.\n"
+                f"Video context:\n"
+                f"- Topic: {topic}\n"
+                f"- Category: {category}\n"
+                f"- Mode: {mode}\n"
+                f"- Ideal personality: {mood_en}\n\n"
+                f"Choose ONE voice from this list that fits best:\n{opts_text}\n\n"
+                f"Respond ONLY with the EXACT voice name as it appears in the list. Nothing else."
+            )
+        raw = self._generate(prompt).strip()
+        for opt in voice_options:
+            if raw == opt:
+                return opt
+        for opt in voice_options:
+            if raw[:30] in opt or opt[:30] in raw:
+                return opt
+        return voice_options[0]
+
     def get_hook_options(self, topic: str, category: str, mode: str = "auto", lang: str = "es", n: int = 3) -> list:
         """Genera N opciones de gancho viral para un tema dado.
         Si topic está vacío, usa la categoría como contexto principal."""

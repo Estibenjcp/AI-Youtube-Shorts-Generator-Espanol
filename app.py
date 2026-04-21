@@ -1036,8 +1036,10 @@ for key, default in [
     ("guion_raw_text",    ""),
     ("generation_mode",   "auto"),
     ("hook_step",         "idle"),
-    ("libro_used_books",  []),         # libros ya sugeridos — evita repetición
-    ("biblia_used_topics", []),        # temas bíblicos ya sugeridos — evita repetición
+    ("libro_used_books",        []),    # libros ya sugeridos — evita repetición
+    ("biblia_used_topics",      []),   # temas bíblicos ya sugeridos — evita repetición
+    ("recommended_voice_label", ""),   # voz sugerida por IA para el video actual
+    ("rec_voice_preview_path",  ""),   # ruta del audio preview de la voz recomendada
     ("video_source",      "pexels"),   # "pexels" | "ai_video" | "ai_video_test"
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
@@ -3053,6 +3055,49 @@ if _hook_step == "idle":
                     st.session_state["chosen_hook"]  = ""
                     st.session_state["hook_step"]    = "selecting"
 
+                # Paso 3: recomendar voz + generar preview
+                with st.spinner("🎙️ " + ("Recomendando voz para este video..." if _is_es_hook else "Recommending voice for this video...")):
+                    _cur_tts_r = st.session_state.get("tts_engine", "edge_tts")
+                    if _cur_tts_r == "google_tts":
+                        from modules.audio import GoogleTTSAudioEngine as _GTTS_r
+                        _v_map_r = _GTTS_r.VOICES_ES if lang_option == "es" else _GTTS_r.VOICES_EN
+                    elif _cur_tts_r == "edge_tts":
+                        _v_map_r = VOICES_ES if lang_option == "es" else VOICES_EN
+                    else:
+                        _v_map_r = None
+
+                    if _v_map_r:
+                        _voice_opts_r = list(_v_map_r.keys())
+                        _rec_label = _brain_h.recommend_voice(
+                            _resolved_topic, _hc, mode, lang_option, _cur_tts_r, _voice_opts_r
+                        )
+                        st.session_state["recommended_voice_label"] = _rec_label
+
+                        # Texto del preview: primer hook + descripción (max 220 chars)
+                        _prev_text_r = ((_hooks[0] + ". " + _topic_desc) if _hooks else _topic_desc).strip()[:220]
+                        _prev_rec_path = os.path.join(os.path.dirname(__file__), "assets", "temp", "rec_voice_preview.mp3")
+                        os.makedirs(os.path.dirname(_prev_rec_path), exist_ok=True)
+                        try:
+                            if _cur_tts_r == "google_tts":
+                                _gtts_key_r = os.getenv("GOOGLE_TTS_KEY", "")
+                                _rec_val = _v_map_r.get(_rec_label, list(_v_map_r.values())[0])
+                                _prev_eng_r = _GTTS_r(api_key=_gtts_key_r, voice_name=_rec_val[1],
+                                                      lang_code=_rec_val[0], speaking_rate=1.0, pitch=0.0)
+                                _prev_eng_r._synthesize(_prev_text_r, _prev_rec_path)
+                            elif _cur_tts_r == "edge_tts":
+                                import asyncio as _asyncio_r, edge_tts as _et_r
+                                _rec_voice_str = _v_map_r.get(_rec_label, list(_v_map_r.values())[0])
+                                async def _gen_rec_prev(t, v, p):
+                                    await _et_r.Communicate(t, v).save(p)
+                                _asyncio_r.run(_gen_rec_prev(_prev_text_r, _rec_voice_str, _prev_rec_path))
+                            st.session_state["rec_voice_preview_path"] = _prev_rec_path
+                        except Exception as _pe:
+                            st.session_state["rec_voice_preview_path"] = ""
+                            print(f"⚠️ Voice preview failed: {_pe}")
+                    else:
+                        st.session_state["recommended_voice_label"] = ""
+                        st.session_state["rec_voice_preview_path"]  = ""
+
             except Exception as _he:
                 _msg = str(_he)
                 if "NotFound" in _msg or "404" in _msg or "model" in _msg.lower():
@@ -3085,6 +3130,48 @@ elif _hook_step == "selecting":
             + "</div>",
             unsafe_allow_html=True,
         )
+
+    # ── Voz recomendada por IA ────────────────────────────────────────────────
+    _rec_label_show  = st.session_state.get("recommended_voice_label", "")
+    _rec_prev_path   = st.session_state.get("rec_voice_preview_path", "")
+    _cur_tts_show    = st.session_state.get("tts_engine", "edge_tts")
+
+    if _rec_label_show and _cur_tts_show != "voxcpm":
+        _display_label = _rec_label_show.split("(")[0].split("[")[0].strip()
+        st.markdown(
+            f"<div style='background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #16a34a;"
+            f"border-radius:8px;padding:12px 16px;margin-bottom:14px;'>"
+            f"<div style='font-size:0.75rem;font-weight:700;color:#16a34a;text-transform:uppercase;"
+            f"letter-spacing:.06em;margin-bottom:4px;'>{'🎙️ Voz recomendada para este video' if _is_es else '🎙️ Recommended voice for this video'}</div>"
+            f"<div style='font-size:0.95rem;font-weight:600;color:#14532d;'>{_display_label}</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        if _rec_prev_path and os.path.exists(_rec_prev_path) and os.path.getsize(_rec_prev_path) > 500:
+            st.audio(_rec_prev_path, format="audio/mp3")
+        _col_rv1, _col_rv2 = st.columns(2)
+        with _col_rv1:
+            if st.button("✅ " + ("Usar esta voz" if _is_es else "Use this voice"),
+                         key="apply_rec_voice", type="secondary", use_container_width=True):
+                if _cur_tts_show == "google_tts":
+                    from modules.audio import GoogleTTSAudioEngine as _GTTS_apply
+                    _v_map_apply = _GTTS_apply.VOICES_ES if lang_option == "es" else _GTTS_apply.VOICES_EN
+                    _apply_val = _v_map_apply.get(_rec_label_show)
+                    if _apply_val:
+                        st.session_state["gtts_lang_code"]  = _apply_val[0]
+                        st.session_state["gtts_voice_name"] = _apply_val[1]
+                        _gv_key = "gtts_voice_es" if lang_option == "es" else "gtts_voice_en"
+                        st.session_state[_gv_key] = _rec_label_show
+                else:
+                    st.session_state["voice_select"] = _rec_label_show
+                st.success("✅ " + ("Voz aplicada." if _is_es else "Voice applied."))
+                st.rerun()
+        with _col_rv2:
+            if st.button("✕ " + ("Ignorar" if _is_es else "Ignore"),
+                         key="dismiss_rec_voice", type="secondary", use_container_width=True):
+                st.session_state["recommended_voice_label"] = ""
+                st.session_state["rec_voice_preview_path"]  = ""
+                st.rerun()
 
     st.markdown(f"### 🎣 {'Elige el gancho para tu video' if _is_es else 'Pick your video hook'}")
     st.caption(
@@ -3134,10 +3221,12 @@ elif _hook_step == "selecting":
             _chosen_hook_val = st.session_state.get("chosen_hook", "")
 
             # Limpiar estado de hooks para que no queden en pantalla
-            st.session_state["hook_step"]            = "idle"
-            st.session_state["hook_options"]         = []
-            st.session_state["chosen_hook"]          = ""
-            st.session_state["_pending_topic_desc"]  = ""
+            st.session_state["hook_step"]               = "idle"
+            st.session_state["hook_options"]            = []
+            st.session_state["chosen_hook"]             = ""
+            st.session_state["_pending_topic_desc"]     = ""
+            st.session_state["recommended_voice_label"] = ""
+            st.session_state["rec_voice_preview_path"]  = ""
 
             # Restaurar contexto guardado
             _ft = st.session_state.pop("_pending_topic", final_topic)
