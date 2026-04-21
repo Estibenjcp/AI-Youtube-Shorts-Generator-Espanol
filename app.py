@@ -1027,6 +1027,7 @@ for key, default in [
     ("guion_raw_text",    ""),
     ("generation_mode",   "auto"),
     ("hook_step",         "idle"),
+    ("libro_used_books",  []),         # libros ya sugeridos — evita repetición
     ("video_source",      "pexels"),   # "pexels" | "ai_video" | "ai_video_test"
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
@@ -2965,9 +2966,19 @@ if _hook_step == "idle":
 
                 # Paso 1: resolver tema + descripción
                 with st.spinner("🎯 " + ("Resolviendo tema del video..." if _is_es_hook else "Resolving video topic...")):
-                    _td = _brain_h.get_topic_and_description(_ht, _hc, mode, lang_option)
+                    # Para modo libro: pasar lista de libros ya vistos para evitar repetición
+                    _excl_books = st.session_state.get("libro_used_books", []) if mode == "libro" else []
+                    _td = _brain_h.get_topic_and_description(_ht, _hc, mode, lang_option,
+                                                              exclude_books=_excl_books)
                     _resolved_topic = _td["topic"]
                     _topic_desc     = _td["description"]
+                    # Registrar el libro usado para no repetirlo en la próxima llamada
+                    if mode == "libro" and _resolved_topic:
+                        _used = st.session_state.get("libro_used_books", [])
+                        if _resolved_topic not in _used:
+                            _used.append(_resolved_topic)
+                            # Mantener solo los últimos 20 para no hacer el prompt gigante
+                            st.session_state["libro_used_books"] = _used[-20:]
                     st.session_state["_pending_topic"]      = _resolved_topic
                     st.session_state["_pending_topic_desc"] = _topic_desc
                     st.session_state["_pending_category"]   = _hc

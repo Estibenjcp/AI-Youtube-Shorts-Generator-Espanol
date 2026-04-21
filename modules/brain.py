@@ -52,7 +52,8 @@ class ContentBrain:
             return response.text
 
     def get_trending_topic(self, manual_topic: str = "", lang: str = "es",
-                           category_hint: str = "", mode: str = "auto") -> str:
+                           category_hint: str = "", mode: str = "auto",
+                           exclude_books: list = None) -> str:
         if manual_topic.strip():
             label = "Tema" if lang == "es" else "Topic"
             print(f"🎯 {label}: {manual_topic.strip()}")
@@ -74,7 +75,9 @@ class ContentBrain:
             categories = TOPIC_CATEGORIES.get(lang, TOPIC_CATEGORIES_ES)
             category   = _random.choice(categories)
 
-        seed = int(_random.random() * 99999)
+        import time as _time
+        # Seed compuesto: nanosegundos + aleatorio → prácticamente único cada llamada
+        seed = (int(_time.time_ns()) % 999983) ^ int(_random.random() * 999979)
 
         # Use mode-specific prompt so the topic matches the content style
         if mode == "viral":
@@ -108,22 +111,34 @@ class ContentBrain:
                 f"Seed: {seed}. Return ONLY the topic name, nothing else."
             )
         elif mode == "libro":
+            # Lista negra de libros ya usados en esta sesión
+            _excl = exclude_books or []
+            _excl_es = (
+                (f"- ESTRICTAMENTE PROHIBIDO elegir cualquiera de estos libros ya vistos: {', '.join(_excl)}.\n")
+                if _excl else ""
+            )
+            _excl_en = (
+                (f"- STRICTLY FORBIDDEN to choose any of these already-seen books: {', '.join(_excl)}.\n")
+                if _excl else ""
+            )
             prompt = (
                 f"Eres un curador literario experto. Necesito el título de UN libro real de la categoría: {category}.\n"
-                f"Semilla de aleatoriedad: {seed} — usa este número para seleccionar un libro DIFERENTE cada vez.\n"
+                f"Semilla de aleatoriedad: {seed} — este número cambia en cada llamada, úsalo para explorar el catálogo en orden diferente.\n"
                 f"REGLAS ESTRICTAS:\n"
-                f"- PROHIBIDO elegir siempre el libro más famoso de la categoría (ej: no siempre 'Hábitos Atómicos', no siempre 'El Poder del Ahora').\n"
-                f"- Elige un libro real, valioso, pero que NO sea el primero que se te ocurra.\n"
-                f"- Varía entre libros clásicos, modernos, latinoamericanos, europeos según la semilla.\n"
+                f"- PROHIBIDO: 'Hábitos Atómicos', 'El Poder del Ahora', 'Padre Rico Padre Pobre', 'El Monje que Vendió su Ferrari', 'Piense y Hágase Rico'.\n"
+                f"{_excl_es}"
+                f"- Elige un libro real, valioso pero NO el más obvio de la categoría.\n"
+                f"- Rota entre: clásicos del siglo XX, libros modernos (2010-2024), autores latinoamericanos, europeos, asiáticos.\n"
                 f"- Formato exacto: 'Título del Libro — Autor'\n"
                 f"- Responde ÚNICAMENTE con el título y autor. Nada más."
             ) if lang == "es" else (
                 f"You are an expert literary curator. Give me the title of ONE real book from the category: {category}.\n"
-                f"Randomness seed: {seed} — use this number to select a DIFFERENT book each time.\n"
+                f"Randomness seed: {seed} — this number changes each call, use it to explore the catalog in a different order.\n"
                 f"STRICT RULES:\n"
-                f"- FORBIDDEN to always pick the most famous book in the category (e.g. not always 'Atomic Habits', not always 'The Power of Now').\n"
-                f"- Choose a real, valuable book that is NOT the first one that comes to mind.\n"
-                f"- Vary between classic, modern, international books based on the seed.\n"
+                f"- FORBIDDEN: 'Atomic Habits', 'The Power of Now', 'Rich Dad Poor Dad', 'The 7 Habits of Highly Effective People', 'Think and Grow Rich'.\n"
+                f"{_excl_en}"
+                f"- Choose a real, valuable book that is NOT the most obvious one in the category.\n"
+                f"- Rotate between: 20th-century classics, modern books (2010-2024), authors from different continents.\n"
                 f"- Exact format: 'Book Title — Author'\n"
                 f"- Return ONLY the title and author. Nothing else."
             )
@@ -245,12 +260,14 @@ OUTPUT FORMAT (strict JSON, no markdown):
         return text
 
     def get_topic_and_description(self, manual_topic: str = "", category: str = "",
-                                   mode: str = "auto", lang: str = "es") -> dict:
+                                   mode: str = "auto", lang: str = "es",
+                                   exclude_books: list = None) -> dict:
         """Resuelve el tema final y genera una descripción breve de 1-2 oraciones.
         Retorna {"topic": str, "description": str}"""
         # Step 1: resolve topic (uses existing logic with category/mode fallback)
         topic = self.get_trending_topic(manual_topic, lang=lang,
-                                        category_hint=category, mode=mode)
+                                        category_hint=category, mode=mode,
+                                        exclude_books=exclude_books or [])
 
         # Step 2: generate a 1-2 sentence teaser about the video
         _tone_hint = {
