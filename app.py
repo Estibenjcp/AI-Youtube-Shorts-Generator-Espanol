@@ -1053,7 +1053,6 @@ for key, default in [
     ("sub_boxcolor",         "#000000"),
     ("sub_box_opacity",      0.4),
     ("sub_max_chars",        28),
-    ("sub_words_per_chunk",  2),
     ("sub_highlight",        False),
     ("sub_highlight_color",  "#FFD700"),
     ("sub_highlight_fontcolor", "#000000"),
@@ -2544,22 +2543,12 @@ with st.expander(_sub_label, expanded=False):
                 value=st.session_state.get("sub_bordercolor", "#000000"),
                 key="sub_bordercolor",
             )
-        # ── Palabras por segmento + highlight ──
-        _sw1, _sw2 = st.columns(2)
-        with _sw1:
-            _sub_wpc = st.slider(
-                "📝 " + ("Palabras por segmento" if lang_option == "es" else "Words per segment"),
-                min_value=1, max_value=4, step=1,
-                value=st.session_state.get("sub_words_per_chunk", 2),
-                key="sub_words_per_chunk",
-                help="1 = una palabra a la vez (TikTok)" if lang_option == "es" else "1 = one word at a time (TikTok style)",
-            )
-        with _sw2:
-            _sub_hl = st.toggle(
-                "✨ " + ("Highlight (caja de color)" if lang_option == "es" else "Highlight box"),
-                value=st.session_state.get("sub_highlight", False),
-                key="sub_highlight",
-            )
+        # ── Highlight ──
+        _sub_hl = st.toggle(
+            "✨ " + ("Highlight (caja de color)" if lang_option == "es" else "Highlight box"),
+            value=st.session_state.get("sub_highlight", False),
+            key="sub_highlight",
+        )
         if _sub_hl:
             _shl1, _shl2 = st.columns(2)
             with _shl1:
@@ -2613,7 +2602,6 @@ with st.expander(_sub_label, expanded=False):
             "boxcolor":             _hex_to_ffmpeg(st.session_state.get("sub_boxcolor", "#000000"))
                                     + f"@{st.session_state.get('sub_box_opacity', 0.4):.2f}",
             "max_chars":            st.session_state.get("sub_max_chars", 28),
-            "words_per_chunk":      st.session_state.get("sub_words_per_chunk", 2),
             "highlight_color":      _hex_to_ffmpeg(_sub_hlc) if st.session_state.get("sub_highlight", False) else "",
             "highlight_opacity":    0.9,
             "highlight_fontcolor":  _sub_hlfc,

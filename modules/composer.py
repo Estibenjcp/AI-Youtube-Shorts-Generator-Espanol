@@ -108,50 +108,99 @@ class Composer:
         return kwargs
 
     def _apply_timed_subtitle(self, stream, text: str, clip_idx: int,
-                               clip_duration: float, style: dict = None):
-        """Word-by-word karaoke subtitles with optional highlight box.
-        Groups words into small chunks; each chunk is shown for its proportional
-        share of the clip duration (char-count proxy for speech timing)."""
+                               clip_duration: float, style: dict = None,
+                               audio_path: str = None):
+        """Word-by-word karaoke subtitles.
+        Uses exact Edge TTS word-boundary timestamps when available
+        (.words.json next to the audio file); falls back to proportional
+        char-count timing for Google TTS / missing files."""
         s = {**self._DEFAULT_STYLE, **(style or {})}
         clean = self._clean_sub_text(text)
         if not clean:
             return stream
 
+        # ── Try exact timing from Edge TTS word boundaries ────────────────────
+        word_timing = None
+        if audio_path:
+            timing_file = audio_path + '.words.json'
+            if os.path.exists(timing_file):
+                import json as _json
+                try:
+                    with open(timing_file, 'r', encoding='utf-8') as f:
+                        word_timing = _json.load(f)
+                except Exception:
+                    word_timing = None
+
+        if word_timing:
+            return self._apply_exact_word_subtitle(stream, word_timing, clip_idx, clip_duration, s)
+
+        # ── Proportional fallback (Google TTS / no timing file) ───────────────
+        return self._apply_proportional_subtitle(stream, clean, clip_idx, clip_duration, s)
+
+    def _apply_exact_word_subtitle(self, stream, word_timing: list, clip_idx: int,
+                                    clip_duration: float, s: dict):
+        """Show each word at its exact Edge TTS timestamp."""
+        base_kw      = self._base_drawtext_kwargs(s)
+        max_chars    = s.get("max_chars", 28)
+        hl_color     = s.get("highlight_color", "")
+        hl_opacity   = s.get("highlight_opacity", 0.9)
+        hl_fontcolor = s.get("highlight_fontcolor", "black")
+
+        for ci, wt in enumerate(word_timing):
+            word = self._clean_sub_text(wt.get('word', ''))
+            if not word:
+                continue
+            t0 = wt['start']
+            # Show word until next word starts (or its own end + small gap)
+            next_start = word_timing[ci + 1]['start'] if ci + 1 < len(word_timing) else wt['end']
+            t1 = min(next_start + 0.02, clip_duration)
+            if t0 >= clip_duration:
+                break
+            sub_file = self._write_sub_file(word, clip_idx * 1000 + ci, max_chars=max_chars)
+            kw = {**base_kw,
+                  'textfile': sub_file,
+                  'enable':   f'between(t,{t0:.4f},{t1:.4f})'}
+            if hl_color:
+                kw['box']        = 1
+                kw['boxcolor']   = f"{hl_color}@{hl_opacity:.2f}"
+                kw['boxborderw'] = 10
+                kw['fontcolor']  = hl_fontcolor
+                kw['borderw']    = 0
+            stream = stream.filter('drawtext', **kw)
+
+        return stream
+
+    def _apply_proportional_subtitle(self, stream, clean: str, clip_idx: int,
+                                      clip_duration: float, s: dict):
+        """Proportional fallback: 2 words per segment, timing by char count."""
         words = clean.split()
         if not words:
             return stream
 
-        # Group into small chunks (words_per_chunk, default 2)
-        wpc = max(1, min(4, s.get("words_per_chunk", 2)))
         chunks = []
-        for i in range(0, len(words), wpc):
-            chunk = ' '.join(words[i:i + wpc])
+        for i in range(0, len(words), 2):
+            chunk = ' '.join(words[i:i + 2])
             if chunk:
                 chunks.append(chunk)
 
-        if not chunks:
-            return stream
-
-        # Distribute time proportionally to char length (proxy for speech duration)
         char_counts = [max(1, len(c)) for c in chunks]
         total_chars = sum(char_counts)
         raw_durs    = [(cc / total_chars) * clip_duration for cc in char_counts]
-        # Enforce a minimum chunk duration so very short words don't flash
-        min_dur = max(0.15, clip_duration / (len(chunks) * 4))
-        durs    = [max(min_dur, d) for d in raw_durs]
-        scale   = clip_duration / sum(durs)
-        durs    = [d * scale for d in durs]
+        min_dur     = max(0.15, clip_duration / (len(chunks) * 4))
+        durs        = [max(min_dur, d) for d in raw_durs]
+        scale       = clip_duration / sum(durs)
+        durs        = [d * scale for d in durs]
 
-        base_kw   = self._base_drawtext_kwargs(s)
-        max_chars = s.get("max_chars", 28)
-        hl_color  = s.get("highlight_color", "")   # e.g. "0xFFD700"
-        hl_opacity = s.get("highlight_opacity", 0.9)
+        base_kw      = self._base_drawtext_kwargs(s)
+        max_chars    = s.get("max_chars", 28)
+        hl_color     = s.get("highlight_color", "")
+        hl_opacity   = s.get("highlight_opacity", 0.9)
         hl_fontcolor = s.get("highlight_fontcolor", "black")
 
         t = 0.0
         for ci, (chunk, dur) in enumerate(zip(chunks, durs)):
             t0 = t
-            t1 = t + dur + 0.04  # tiny overlap → no blank flash
+            t1 = t + dur + 0.04
             t += dur
             sub_file = self._write_sub_file(chunk, clip_idx * 1000 + ci, max_chars=max_chars)
             kw = {**base_kw,
@@ -390,23 +439,27 @@ class Composer:
         # Merge user style with defaults
         _style = {**self._DEFAULT_STYLE, **(subtitle_style or {})}
 
-        # Collect raw scene texts (indexed by original video position)
-        sub_texts = {}
+        # Collect raw scene texts + audio paths (indexed by original video position)
+        sub_texts      = {}
+        sub_audio_paths = {}
         if use_subtitles and script_data:
             for i, scene in enumerate(script_data):
                 if i < len(video_paths):
-                    sub_texts[i] = scene.get('text', '')
+                    sub_texts[i]       = scene.get('text', '')
+                    sub_audio_paths[i] = scene.get('audio_path', '')
 
         # Pre-filter: drop any clip whose duration cannot be probed or is too short for xfade
-        v_trans      = 0.5
-        valid_paths  = []
-        valid_texts  = {}   # new_idx → raw text
+        v_trans          = 0.5
+        valid_paths      = []
+        valid_texts      = {}   # new_idx → raw text
+        valid_audio_paths = {}  # new_idx → audio path (for word timing lookup)
         for orig_i, vp in enumerate(video_paths):
             d = self.get_duration(vp)
             if d <= v_trans:
                 print(f"   ⚠️ Skipping clip {orig_i} in stitch — duration {d:.2f}s too short.")
                 continue
-            valid_texts[len(valid_paths)] = sub_texts.get(orig_i, '')
+            valid_texts[len(valid_paths)]       = sub_texts.get(orig_i, '')
+            valid_audio_paths[len(valid_paths)] = sub_audio_paths.get(orig_i, '')
             valid_paths.append(vp)
 
         if not valid_paths:
@@ -422,7 +475,8 @@ class Composer:
             v_stream = self._apply_timed_subtitle(v_stream, valid_texts[0],
                                                   clip_idx=0,
                                                   clip_duration=current_dur,
-                                                  style=_style)
+                                                  style=_style,
+                                                  audio_path=valid_audio_paths.get(0, ''))
 
         for i in range(1, len(valid_paths)):
             next_clip = ffmpeg.input(valid_paths[i])
@@ -433,7 +487,8 @@ class Composer:
                 next_v = self._apply_timed_subtitle(next_v, valid_texts[i],
                                                     clip_idx=i,
                                                     clip_duration=next_dur,
-                                                    style=_style)
+                                                    style=_style,
+                                                    audio_path=valid_audio_paths.get(i, ''))
 
             v_trans = 0.5   # video xfade duration
             a_trans = 0.05  # audio crossfade — near-instant cut, no pop, no overlap

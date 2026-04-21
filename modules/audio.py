@@ -92,12 +92,34 @@ class AudioEngine:
             return f"+{val}%" if val >= 0 else f"{val}%"
         return rate_str
 
+    @staticmethod
+    async def _stream_tts(communicate, output_path: str) -> list:
+        """Stream Edge TTS to file and capture WordBoundary timing events.
+        Returns list of {'word', 'start', 'end'} dicts (times in seconds)."""
+        word_times = []
+        with open(output_path, 'wb') as f:
+            async for chunk in communicate.stream():
+                if chunk['type'] == 'audio':
+                    f.write(chunk['data'])
+                elif chunk['type'] == 'WordBoundary':
+                    # offset/duration are in 100-nanosecond units
+                    start = chunk['offset'] / 10_000_000
+                    dur   = chunk['duration'] / 10_000_000
+                    word_times.append({
+                        'word':  chunk['text'],
+                        'start': round(start, 4),
+                        'end':   round(start + dur, 4),
+                    })
+        return word_times
+
     async def generate_audio(self, text, output_filename, retries=3, rate_override=None, voice_override=None):
         """
         Generates MP3 with retry logic to handle connection drops.
         After generation, verifies the file has valid duration.
         Falls back to no-normalization if file gets corrupted.
+        Also saves word-level timing to {output_path}.words.json for subtitle sync.
         """
+        import json as _json
         output_path = os.path.join(self.output_dir, output_filename)
 
         for attempt in range(retries):
@@ -105,7 +127,12 @@ class AudioEngine:
                 effective_rate = rate_override if rate_override is not None else self.rate
                 _voice = voice_override if voice_override else self.voice
                 communicate = edge_tts.Communicate(text, _voice, rate=effective_rate)
-                await communicate.save(output_path)
+                word_times = await self._stream_tts(communicate, output_path)
+
+                # Save word timing alongside audio for subtitle sync
+                if word_times:
+                    with open(output_path + '.words.json', 'w', encoding='utf-8') as tf:
+                        _json.dump(word_times, tf, ensure_ascii=False)
 
                 # Verify the file is valid BEFORE normalization
                 pre_duration = self.get_audio_duration(output_path)
@@ -121,7 +148,7 @@ class AudioEngine:
                     # Normalization corrupted it — regenerate clean copy
                     print(f"      ⚠️ File corrupted by normalization — regenerating clean copy...")
                     communicate2 = edge_tts.Communicate(text, _voice, rate=effective_rate)
-                    await communicate2.save(output_path)
+                    await self._stream_tts(communicate2, output_path)
 
                 return output_path
 
