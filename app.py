@@ -1038,8 +1038,10 @@ for key, default in [
     ("hook_step",         "idle"),
     ("libro_used_books",        []),    # libros ya sugeridos — evita repetición
     ("biblia_used_topics",      []),   # temas bíblicos ya sugeridos — evita repetición
-    ("recommended_voice_label", ""),   # voz sugerida por IA para el video actual
-    ("rec_voice_preview_path",  ""),   # ruta del audio preview de la voz recomendada
+    ("recommended_voice_label",  ""),  # label de la voz sugerida por IA
+    ("recommended_voice_value",  ""),  # valor real de la voz (string o JSON de tuple)
+    ("recommended_voice_engine", ""),  # engine al que pertenece la voz recomendada
+    ("rec_voice_preview_path",   ""),  # ruta del audio preview de la voz recomendada
     ("video_source",      "pexels"),   # "pexels" | "ai_video" | "ai_video_test"
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
@@ -3071,7 +3073,15 @@ if _hook_step == "idle":
                         _rec_label = _brain_h.recommend_voice(
                             _resolved_topic, _hc, mode, lang_option, _cur_tts_r, _voice_opts_r
                         )
-                        st.session_state["recommended_voice_label"] = _rec_label
+                        # Guardar el valor real resuelto (no sólo el label) para evitar fallos de lookup al aplicar
+                        _rec_resolved_val = _v_map_r.get(_rec_label, list(_v_map_r.values())[0])
+                        import json as _json_rv
+                        if isinstance(_rec_resolved_val, tuple):
+                            st.session_state["recommended_voice_value"] = _json_rv.dumps(list(_rec_resolved_val))
+                        else:
+                            st.session_state["recommended_voice_value"] = _rec_resolved_val
+                        st.session_state["recommended_voice_engine"] = _cur_tts_r
+                        st.session_state["recommended_voice_label"]  = _rec_label
 
                         # Texto del preview: primer hook + descripción (max 220 chars)
                         _prev_text_r = ((_hooks[0] + ". " + _topic_desc) if _hooks else _topic_desc).strip()[:220]
@@ -3153,17 +3163,22 @@ elif _hook_step == "selecting":
         with _col_rv1:
             if st.button("✅ " + ("Usar esta voz" if _is_es else "Use this voice"),
                          key="apply_rec_voice", type="secondary", use_container_width=True):
-                if _cur_tts_show == "google_tts":
-                    from modules.audio import GoogleTTSAudioEngine as _GTTS_apply
-                    _v_map_apply = _GTTS_apply.VOICES_ES if lang_option == "es" else _GTTS_apply.VOICES_EN
-                    _apply_val = _v_map_apply.get(_rec_label_show)
-                    if _apply_val:
-                        st.session_state["gtts_lang_code"]  = _apply_val[0]
-                        st.session_state["gtts_voice_name"] = _apply_val[1]
+                import json as _json_apply
+                _saved_val   = st.session_state.get("recommended_voice_value", "")
+                _saved_eng   = st.session_state.get("recommended_voice_engine", _cur_tts_show)
+                if _saved_eng == "google_tts" and _saved_val:
+                    try:
+                        _gtts_tuple = _json_apply.loads(_saved_val)
+                        st.session_state["gtts_lang_code"]  = _gtts_tuple[0]
+                        st.session_state["gtts_voice_name"] = _gtts_tuple[1]
                         _gv_key = "gtts_voice_es" if lang_option == "es" else "gtts_voice_en"
                         st.session_state[_gv_key] = _rec_label_show
-                else:
+                    except Exception:
+                        pass
+                elif _saved_eng == "edge_tts" and _saved_val:
                     st.session_state["voice_select"] = _rec_label_show
+                st.session_state["recommended_voice_label"] = ""
+                st.session_state["rec_voice_preview_path"]  = ""
                 st.success("✅ " + ("Voz aplicada." if _is_es else "Voice applied."))
                 st.rerun()
         with _col_rv2:
@@ -3225,8 +3240,10 @@ elif _hook_step == "selecting":
             st.session_state["hook_options"]            = []
             st.session_state["chosen_hook"]             = ""
             st.session_state["_pending_topic_desc"]     = ""
-            st.session_state["recommended_voice_label"] = ""
-            st.session_state["rec_voice_preview_path"]  = ""
+            st.session_state["recommended_voice_label"]  = ""
+            st.session_state["recommended_voice_value"]  = ""
+            st.session_state["recommended_voice_engine"] = ""
+            st.session_state["rec_voice_preview_path"]   = ""
 
             # Restaurar contexto guardado
             _ft = st.session_state.pop("_pending_topic", final_topic)
