@@ -139,24 +139,37 @@ class Composer:
 
     def _apply_exact_word_subtitle(self, stream, word_timing: list, clip_idx: int,
                                     clip_duration: float, s: dict):
-        """Show each word at its exact Edge TTS timestamp."""
+        """Show words in groups of 3, each group timed to when those words are spoken.
+        The group appears when the first word starts and stays until the next group starts."""
+        _WPG = 3  # words per group — feels natural, not karaoke
+
+        # Build groups: join every 3 consecutive words, record start/end from timing
+        groups = []
+        for i in range(0, len(word_timing), _WPG):
+            chunk_wt = word_timing[i:i + _WPG]
+            text = ' '.join(
+                self._clean_sub_text(wt.get('word', '')) for wt in chunk_wt
+            ).strip()
+            if not text:
+                continue
+            t_start = chunk_wt[0]['start']
+            # End when next group begins (seamless handoff), or last word's end
+            if i + _WPG < len(word_timing):
+                t_end = word_timing[i + _WPG]['start']
+            else:
+                t_end = chunk_wt[-1]['end'] + 0.15
+            groups.append((text, t_start, min(t_end, clip_duration)))
+
         base_kw      = self._base_drawtext_kwargs(s)
         max_chars    = s.get("max_chars", 28)
         hl_color     = s.get("highlight_color", "")
         hl_opacity   = s.get("highlight_opacity", 0.9)
         hl_fontcolor = s.get("highlight_fontcolor", "black")
 
-        for ci, wt in enumerate(word_timing):
-            word = self._clean_sub_text(wt.get('word', ''))
-            if not word:
-                continue
-            t0 = wt['start']
-            # Show word until next word starts (or its own end + small gap)
-            next_start = word_timing[ci + 1]['start'] if ci + 1 < len(word_timing) else wt['end']
-            t1 = min(next_start + 0.02, clip_duration)
+        for ci, (text, t0, t1) in enumerate(groups):
             if t0 >= clip_duration:
                 break
-            sub_file = self._write_sub_file(word, clip_idx * 1000 + ci, max_chars=max_chars)
+            sub_file = self._write_sub_file(text, clip_idx * 1000 + ci, max_chars=max_chars)
             kw = {**base_kw,
                   'textfile': sub_file,
                   'enable':   f'between(t,{t0:.4f},{t1:.4f})'}
@@ -172,14 +185,14 @@ class Composer:
 
     def _apply_proportional_subtitle(self, stream, clean: str, clip_idx: int,
                                       clip_duration: float, s: dict):
-        """Proportional fallback: 2 words per segment, timing by char count."""
+        """Proportional fallback: 3 words per segment, timing by char count."""
         words = clean.split()
         if not words:
             return stream
 
         chunks = []
-        for i in range(0, len(words), 2):
-            chunk = ' '.join(words[i:i + 2])
+        for i in range(0, len(words), 3):
+            chunk = ' '.join(words[i:i + 3])
             if chunk:
                 chunks.append(chunk)
 
