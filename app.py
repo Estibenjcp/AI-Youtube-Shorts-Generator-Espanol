@@ -1049,10 +1049,14 @@ for key, default in [
     ("sub_fontcolor",    "#FFFFFF"),
     ("sub_borderw",      3),
     ("sub_bordercolor",  "#000000"),
-    ("sub_box",          False),
-    ("sub_boxcolor",     "#000000"),
-    ("sub_box_opacity",  0.4),
-    ("sub_max_chars",    28),
+    ("sub_box",              False),
+    ("sub_boxcolor",         "#000000"),
+    ("sub_box_opacity",      0.4),
+    ("sub_max_chars",        28),
+    ("sub_words_per_chunk",  2),
+    ("sub_highlight",        False),
+    ("sub_highlight_color",  "#FFD700"),
+    ("sub_highlight_fontcolor", "#000000"),
     # ── Música de fondo ──
     ("use_music",        False),
     ("music_volume",     15),
@@ -2540,6 +2544,40 @@ with st.expander(_sub_label, expanded=False):
                 value=st.session_state.get("sub_bordercolor", "#000000"),
                 key="sub_bordercolor",
             )
+        # ── Palabras por segmento + highlight ──
+        _sw1, _sw2 = st.columns(2)
+        with _sw1:
+            _sub_wpc = st.slider(
+                "📝 " + ("Palabras por segmento" if lang_option == "es" else "Words per segment"),
+                min_value=1, max_value=4, step=1,
+                value=st.session_state.get("sub_words_per_chunk", 2),
+                key="sub_words_per_chunk",
+                help="1 = una palabra a la vez (TikTok)" if lang_option == "es" else "1 = one word at a time (TikTok style)",
+            )
+        with _sw2:
+            _sub_hl = st.toggle(
+                "✨ " + ("Highlight (caja de color)" if lang_option == "es" else "Highlight box"),
+                value=st.session_state.get("sub_highlight", False),
+                key="sub_highlight",
+            )
+        if _sub_hl:
+            _shl1, _shl2 = st.columns(2)
+            with _shl1:
+                _sub_hlc = st.color_picker(
+                    "🎨 " + ("Color highlight" if lang_option == "es" else "Highlight color"),
+                    value=st.session_state.get("sub_highlight_color", "#FFD700"),
+                    key="sub_highlight_color",
+                )
+            with _shl2:
+                _sub_hlfc = st.color_picker(
+                    "🔤 " + ("Color texto (highlight)" if lang_option == "es" else "Text color (highlight)"),
+                    value=st.session_state.get("sub_highlight_fontcolor", "#000000"),
+                    key="sub_highlight_fontcolor",
+                )
+        else:
+            _sub_hlc  = st.session_state.get("sub_highlight_color", "#FFD700")
+            _sub_hlfc = st.session_state.get("sub_highlight_fontcolor", "#000000")
+
         _sub_box = st.toggle(
             "🟦 " + ("Fondo detrás del texto" if lang_option == "es" else "Background box"),
             value=st.session_state.get("sub_box", False),
@@ -2566,15 +2604,19 @@ with st.expander(_sub_label, expanded=False):
 
         _pos_map = {"top": "h*0.08", "center": "h*0.45", "bottom": "h*0.82"}
         subtitle_style = {
-            "fontsize":    st.session_state.get("sub_fontsize", 44),
-            "fontcolor":   _hex_to_ffmpeg(st.session_state.get("sub_fontcolor", "#FFFFFF")),
-            "y":           _pos_map.get(st.session_state.get("sub_position", "bottom"), "h*0.82"),
-            "borderw":     st.session_state.get("sub_borderw", 3),
-            "bordercolor": _hex_to_ffmpeg(st.session_state.get("sub_bordercolor", "#000000")),
-            "box":         1 if st.session_state.get("sub_box", False) else 0,
-            "boxcolor":    _hex_to_ffmpeg(st.session_state.get("sub_boxcolor", "#000000"))
-                           + f"@{st.session_state.get('sub_box_opacity', 0.4):.2f}",
-            "max_chars":   st.session_state.get("sub_max_chars", 28),
+            "fontsize":             st.session_state.get("sub_fontsize", 44),
+            "fontcolor":            _hex_to_ffmpeg(st.session_state.get("sub_fontcolor", "#FFFFFF")),
+            "y":                    _pos_map.get(st.session_state.get("sub_position", "bottom"), "h*0.82"),
+            "borderw":              st.session_state.get("sub_borderw", 3),
+            "bordercolor":          _hex_to_ffmpeg(st.session_state.get("sub_bordercolor", "#000000")),
+            "box":                  1 if st.session_state.get("sub_box", False) else 0,
+            "boxcolor":             _hex_to_ffmpeg(st.session_state.get("sub_boxcolor", "#000000"))
+                                    + f"@{st.session_state.get('sub_box_opacity', 0.4):.2f}",
+            "max_chars":            st.session_state.get("sub_max_chars", 28),
+            "words_per_chunk":      st.session_state.get("sub_words_per_chunk", 2),
+            "highlight_color":      _hex_to_ffmpeg(_sub_hlc) if st.session_state.get("sub_highlight", False) else "",
+            "highlight_opacity":    0.9,
+            "highlight_fontcolor":  _sub_hlfc,
         }
     else:
         subtitle_style = {}

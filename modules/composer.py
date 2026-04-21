@@ -62,6 +62,9 @@ class Composer:
             '\u2026': ',', '\u2014': '-', '\u2013': '-',
             '\u201c': '"', '\u201d': '"', '\u2018': "'", '\u2019': "'",
             '\u00ab': '"', '\u00bb': '"', '\u2022': '-', '\u00b7': '-',
+            '\u00a0': ' ',  # non-breaking space → regular space
+            '\u00bf': '',   # ¿ → drop
+            '\u00a1': '',   # ¡ → drop
             '\u00e1': 'a', '\u00e9': 'e', '\u00ed': 'i', '\u00f3': 'o', '\u00fa': 'u',
             '\u00c1': 'A', '\u00c9': 'E', '\u00cd': 'I', '\u00d3': 'O', '\u00da': 'U',
             '\u00f1': 'n', '\u00d1': 'N', '\u00fc': 'u', '\u00dc': 'U',
@@ -70,6 +73,9 @@ class Composer:
             text = text.replace(ch, rep)
         # Drop any remaining non-ASCII
         text = _re.sub(r'[^\x00-\x7F]', '', text)
+        # Drop ASCII control characters (0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F, 0x7F)
+        # that FFmpeg drawtext renders as □ boxes
+        text = _re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
         return _re.sub(r'\s+', ' ', text).strip()
 
     def _write_sub_file(self, text: str, index: int, max_chars: int = 28) -> str:
@@ -103,34 +109,60 @@ class Composer:
 
     def _apply_timed_subtitle(self, stream, text: str, clip_idx: int,
                                clip_duration: float, style: dict = None):
-        """Progressive subtitles: splits text into 2-3 timed chunks.
-        Each chunk appears for its portion of the clip duration."""
+        """Word-by-word karaoke subtitles with optional highlight box.
+        Groups words into small chunks; each chunk is shown for its proportional
+        share of the clip duration (char-count proxy for speech timing)."""
         s = {**self._DEFAULT_STYLE, **(style or {})}
         clean = self._clean_sub_text(text)
         if not clean:
             return stream
 
-        words    = clean.split()
-        n_words  = len(words)
-        n_chunks = 1 if n_words <= 7 else (2 if n_words <= 20 else 3)
+        words = clean.split()
+        if not words:
+            return stream
 
-        # Build word-count chunks
-        size   = max(1, n_words // n_chunks)
-        chunks = [' '.join(words[i*size:(i+1)*size]) for i in range(n_chunks - 1)]
-        chunks.append(' '.join(words[(n_chunks - 1)*size:]))
-        chunks = [c for c in chunks if c.strip()]
+        # Group into small chunks (words_per_chunk, default 2)
+        wpc = max(1, min(4, s.get("words_per_chunk", 2)))
+        chunks = []
+        for i in range(0, len(words), wpc):
+            chunk = ' '.join(words[i:i + wpc])
+            if chunk:
+                chunks.append(chunk)
 
-        seg        = clip_duration / len(chunks)
-        base_kw    = self._base_drawtext_kwargs(s)
-        max_chars  = s.get("max_chars", 28)
+        if not chunks:
+            return stream
 
-        for ci, chunk in enumerate(chunks):
-            t0 = ci * seg
-            t1 = (ci + 1) * seg + 0.06   # tiny overlap → no blank flash between chunks
-            sub_file = self._write_sub_file(chunk, clip_idx * 10 + ci, max_chars=max_chars)
+        # Distribute time proportionally to char length (proxy for speech duration)
+        char_counts = [max(1, len(c)) for c in chunks]
+        total_chars = sum(char_counts)
+        raw_durs    = [(cc / total_chars) * clip_duration for cc in char_counts]
+        # Enforce a minimum chunk duration so very short words don't flash
+        min_dur = max(0.15, clip_duration / (len(chunks) * 4))
+        durs    = [max(min_dur, d) for d in raw_durs]
+        scale   = clip_duration / sum(durs)
+        durs    = [d * scale for d in durs]
+
+        base_kw   = self._base_drawtext_kwargs(s)
+        max_chars = s.get("max_chars", 28)
+        hl_color  = s.get("highlight_color", "")   # e.g. "0xFFD700"
+        hl_opacity = s.get("highlight_opacity", 0.9)
+        hl_fontcolor = s.get("highlight_fontcolor", "black")
+
+        t = 0.0
+        for ci, (chunk, dur) in enumerate(zip(chunks, durs)):
+            t0 = t
+            t1 = t + dur + 0.04  # tiny overlap → no blank flash
+            t += dur
+            sub_file = self._write_sub_file(chunk, clip_idx * 1000 + ci, max_chars=max_chars)
             kw = {**base_kw,
                   'textfile': sub_file,
                   'enable':   f'between(t,{t0:.3f},{t1:.3f})'}
+            if hl_color:
+                kw['box']        = 1
+                kw['boxcolor']   = f"{hl_color}@{hl_opacity:.2f}"
+                kw['boxborderw'] = 10
+                kw['fontcolor']  = hl_fontcolor
+                kw['borderw']    = 0
             stream = stream.filter('drawtext', **kw)
 
         return stream
