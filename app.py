@@ -1056,6 +1056,9 @@ for key, default in [
     ("sub_highlight",        False),
     ("sub_highlight_color",  "#FFD700"),
     ("sub_highlight_fontcolor", "#000000"),
+    # ── Duración y estructura ──
+    ("target_total_secs",   60),
+    ("global_num_scenes",    9),
     # ── Música de fondo ──
     ("use_music",        False),
     ("music_volume",     15),
@@ -1139,7 +1142,12 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             _ai_clip_dur   = 5
 
         # Palabras máx por escena para guiar al LLM (TTS ≈ 2.3 pal/s)
-        _max_wpsc = max(8, int(_ai_clip_dur * 2.3)) if _video_src in ("ai_video", "ai_video_test") else 999
+        if _video_src in ("ai_video", "ai_video_test"):
+            _max_wpsc = max(8, int(_ai_clip_dur * 2.3))
+        else:
+            _target_secs   = params.get("target_total_secs", 0)
+            _secs_per_scene = (_target_secs / max(1, _ai_num_scenes)) if _target_secs > 0 else 0
+            _max_wpsc = max(8, int(_secs_per_scene * 2.3)) if _secs_per_scene > 0 else 999
 
         if pipeline_mode == "viral":
             topic       = params.get("topic", "").strip()
@@ -2110,6 +2118,39 @@ if st.session_state.get("video_source", "pexels") in ("ai_video", "ai_video_test
                      "To test the model without spending credits, select '🧪 Test IA' as video source.")
         )
 
+# ── Expander: Duración y escenas ─────────────────────────────────────────────
+_dur_label = "📐 Duración y escenas" if lang_option == "es" else "📐 Duration & scenes"
+with st.expander(_dur_label, expanded=False):
+    _dur_opts   = [15, 30, 45, 60, 90, 120, 150, 180]
+    _dur_labels = {15: "15s", 30: "30s", 45: "45s", 60: "1 min",
+                   90: "1:30 min", 120: "2 min", 150: "2:30 min", 180: "3 min"}
+    _cur_dur = st.session_state.get("target_total_secs", 60)
+    if _cur_dur not in _dur_opts:
+        _cur_dur = 60
+    target_total_secs = st.select_slider(
+        "⏱️ " + ("Duración total del video" if lang_option == "es" else "Total video duration"),
+        options=_dur_opts,
+        value=_cur_dur,
+        format_func=lambda v: _dur_labels[v],
+        key="target_total_secs",
+    )
+    global_num_scenes = st.slider(
+        "🎬 " + ("Número de escenas" if lang_option == "es" else "Number of scenes"),
+        min_value=4, max_value=15,
+        value=st.session_state.get("global_num_scenes", 9),
+        key="global_num_scenes",
+    )
+    _wps = round(target_total_secs / global_num_scenes * 2.3)
+    st.caption(
+        f"≈ {round(target_total_secs / global_num_scenes, 1)}s por escena · "
+        f"≈ {_wps} palabras por escena · "
+        f"≈ {round(target_total_secs / 60, 1)} min total"
+        if lang_option == "es" else
+        f"≈ {round(target_total_secs / global_num_scenes, 1)}s per scene · "
+        f"≈ {_wps} words per scene · "
+        f"≈ {round(target_total_secs / 60, 1)} min total"
+    )
+
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
 
@@ -2754,7 +2795,7 @@ if mode == "auto":
         ),
     )
 
-    num_scenes     = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
     final_topic    = manual_topic_auto.strip()
     final_category = ""
 
@@ -2832,7 +2873,7 @@ elif mode == "category":
         placeholder=T["topic_placeholder"],
     )
 
-    num_scenes     = st.slider(T["scenes_label"], min_value=5, max_value=12, value=9)
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
     final_category = selected_category
     final_topic    = st.session_state.get("manual_topic_input", "").strip() or st.session_state.get("selected_topic", "").strip()
 
@@ -2863,7 +2904,7 @@ elif mode == "viral":
 
     final_topic   = viral_topic_input.strip()
     final_category = viral_category
-    num_scenes    = 9  # no usado en modo viral, la IA decide
+    num_scenes    = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO TESTIMONIO MISTERIOSO
@@ -2892,7 +2933,7 @@ elif mode == "testimonio":
 
     final_topic    = test_topic_input.strip()
     final_category = test_category
-    num_scenes     = 9
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO RESUMEN DE LIBRO
@@ -2921,7 +2962,7 @@ elif mode == "libro":
 
     final_topic    = libro_topic_input.strip()
     final_category = libro_category
-    num_scenes     = 9
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO BIBLIA
@@ -2950,7 +2991,7 @@ elif mode == "biblia":
 
     final_topic    = biblia_topic_input.strip()
     final_category = biblia_category
-    num_scenes     = 9
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO OFERTA DE EMPLEO
@@ -3019,7 +3060,7 @@ elif mode == "guion":
         final_topic = ""
 
     final_category = ""
-    num_scenes     = 9
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO MININOVELA (solo con AI Video)
@@ -3195,6 +3236,7 @@ def _launch_pipeline():
         "ai_video_style":       st.session_state.get("ai_video_style", "cinematic"),
         "ai_video_num_scenes":  st.session_state.get("ai_video_num_scenes", 6),
         "ai_video_clip_duration": st.session_state.get("ai_video_clip_duration", 5),
+        "target_total_secs":    st.session_state.get("target_total_secs", 60),
         "novela_theme":         st.session_state.get("novela_theme_input", ""),
         "podcast_topic":        st.session_state.get("podcast_topic_input", ""),
         "host_name":            st.session_state.get("podcast_host_name", "Host"),
@@ -3508,6 +3550,7 @@ elif _hook_step == "selecting":
                 "ai_video_model":        os.getenv("AI_VIDEO_MODEL", ""),
                 "ai_video_num_scenes":   st.session_state.get("ai_video_num_scenes", 6),
                 "ai_video_clip_duration":st.session_state.get("ai_video_clip_duration", 5),
+                "target_total_secs":     st.session_state.get("target_total_secs", 60),
                 "novela_theme":          st.session_state.get("novela_theme_input", ""),
                 "podcast_topic":         st.session_state.get("podcast_topic_input", ""),
                 "host_name":             st.session_state.get("podcast_host_name", "Host"),
