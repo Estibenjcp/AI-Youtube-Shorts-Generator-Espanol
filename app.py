@@ -2136,7 +2136,7 @@ with st.expander(_dur_label, expanded=False):
     )
     global_num_scenes = st.slider(
         "🎬 " + ("Número de escenas" if lang_option == "es" else "Number of scenes"),
-        min_value=4, max_value=15,
+        min_value=2, max_value=15,
         value=st.session_state.get("global_num_scenes", 9),
         key="global_num_scenes",
     )
