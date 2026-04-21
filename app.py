@@ -2261,6 +2261,11 @@ with st.expander(voice_label_hint, expanded=False):
             _gv_map = _GTTS.VOICES_ES if lang_option == "es" else _GTTS.VOICES_EN
             _gv_opts = list(_gv_map.keys())
             _gv_default_key = "gtts_voice_es" if lang_option == "es" else "gtts_voice_en"
+            # Apply pending recommended Google TTS voice BEFORE selectbox renders
+            _pending_gtts_vs = st.session_state.pop("_next_gtts_voice_select", None)
+            if _pending_gtts_vs and _pending_gtts_vs in _gv_opts:
+                st.session_state["gtts_voice_select"] = _pending_gtts_vs
+                st.session_state[_gv_default_key] = _pending_gtts_vs
             _gv_saved = st.session_state.get(_gv_default_key, _gv_opts[0])
             _gv_idx   = _gv_opts.index(_gv_saved) if _gv_saved in _gv_opts else 0
             gtts_voice_label = st.selectbox(
@@ -3352,8 +3357,9 @@ elif _hook_step == "selecting":
                 if _saved_eng == "google_tts" and _saved_val:
                     try:
                         _gtts_tuple = _json_apply.loads(_saved_val)
-                        st.session_state["gtts_lang_code"]  = _gtts_tuple[0]
-                        st.session_state["gtts_voice_name"] = _gtts_tuple[1]
+                        # Guardar voz para que el selectbox la tome en el próximo render
+                        # (no podemos escribir en gtts_voice_select aquí — ya fue renderizado)
+                        st.session_state["_next_gtts_voice_select"] = _rec_label_show
                         _gv_key = "gtts_voice_es" if lang_option == "es" else "gtts_voice_en"
                         st.session_state[_gv_key] = _rec_label_show
                     except Exception:
