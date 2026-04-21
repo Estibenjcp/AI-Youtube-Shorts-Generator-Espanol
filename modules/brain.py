@@ -782,6 +782,103 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
+    def generate_bible_script(self, verse: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9, max_words_per_scene: int = 999) -> list:
+        """Reflexión bíblica de 60 seg centrada en UN versículo como fuente de toda la narración."""
+        import re as _re
+        print(f"✝️ Generando reflexión bíblica: {verse}...")
+
+        if lang == "es":
+            prompt = f"""Eres un narrador espiritual que habla directamente al corazon del espectador. Tu voz sera leida por texto a voz, cada frase debe sonar natural al pronunciarse.
+
+VERSÍCULO FUENTE: "{verse}"
+Este versículo es el UNICO fundamento de todo el guion. Todo gira en torno a el.
+
+Estructura (EXACTAMENTE {num_scenes} escenas / {num_scenes * 15}-{num_scenes * 18} palabras en total / MAXIMO {max_words_per_scene} palabras por escena):
+  Escena 1 - GANCHO: Una pregunta o verdad poderosa que conecta con la vida del espectador. Directo al corazon.
+  Escena 2 - EL VERSICULO: Cita el texto EXACTO del versiculo y su referencia biblica. Claro y solemne.
+  Escenas 3-{max(4, num_scenes - 3)} - REFLEXION + GIRO: Que significa este versiculo, la idea mas profunda e inesperada que encierra.
+  Escena {num_scenes - 1} - EN TU VIDA: Como aplicar este versiculo hoy mismo, con un ejemplo concreto y practico.
+  Escena {num_scenes} - CIERRE + CTA: Una frase que quede resonando y llamada a la accion (guardar, compartir, reflexionar).
+
+REGLAS CRITICAS:
+- Cada escena: maximo 15 palabras. Frases cortas. Una idea por escena.
+- Usa comas donde harias una pausa al hablar.
+- Habla en 2da persona: "tu", "te", "tu vida".
+- Tono: espiritual, esperanzador, como un pastor que le habla a un amigo.
+- PROHIBIDO: emojis, palabras rebuscadas, lenguaje religioso forzado o fanático.
+- PROHIBIDO: caracteres especiales Unicode. Solo letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion.
+- NO inventes versiculos. Usa solo el versiculo fuente indicado.
+{f'HOOK PRE-SELECCIONADO (OBLIGATORIO usar este texto EXACTO en Escena 1): "{chosen_hook}"' if chosen_hook else ""}
+
+Categoria: {category}
+
+FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
+[
+  {{"id":1,"text":"texto corto y natural aqui","visual_1":"person praying sunrise","visual_2":"open bible candle light","mood":"inspiring"}},
+  {{"id":2,"text":"texto corto y natural aqui","visual_1":"peaceful nature light","visual_2":"person meditating calm","mood":"inspiring"}}
+]
+
+REGLAS DEL JSON:
+- "text": el texto narrado. Maximo 15 palabras. Sin caracteres especiales.
+- "visual_1" y "visual_2": terminos en INGLES para Pexels (2-4 palabras). Espirituales y luminosos: persona orando, biblia abierta, naturaleza tranquila, luz solar, familia unida, esperanza. EVITAR visuals oscuros.
+- "mood": siempre "inspiring"."""
+        else:
+            prompt = f"""You are a spiritual narrator speaking directly into the viewer's heart. Your voice will be read by text-to-speech, every sentence must sound natural when spoken.
+
+SOURCE VERSE: "{verse}"
+This verse is the ONLY foundation of the entire script. Everything revolves around it.
+
+Structure (EXACTLY {num_scenes} scenes / {num_scenes * 15}-{num_scenes * 18} words total / MAX {max_words_per_scene} words per scene):
+  Scene 1 - HOOK: A powerful question or truth that connects with the viewer's life. Straight to the heart.
+  Scene 2 - THE VERSE: Quote the EXACT text of the verse and its biblical reference. Clear and solemn.
+  Scenes 3-{max(4, num_scenes - 3)} - REFLECTION + TWIST: What this verse means, the deepest and most unexpected idea it holds.
+  Scene {num_scenes - 1} - IN YOUR LIFE: How to apply this verse today, with a concrete practical example.
+  Scene {num_scenes} - CLOSE + CTA: A line that keeps echoing and a call to action (save, share, reflect).
+
+CRITICAL RULES:
+- Each scene: maximum 15 words. Short sentences. One idea per scene.
+- Use commas where you would pause when speaking.
+- Speak in 2nd person: "you", "your", "your life".
+- Tone: spiritual, hopeful, like a pastor talking to a friend.
+- FORBIDDEN: emojis, complex vocabulary, forced or fanatical religious language.
+- FORBIDDEN: special Unicode characters. Only letters, numbers, commas, periods, exclamation marks, question marks.
+- Do NOT invent verses. Use only the source verse provided.
+- LANGUAGE: ENGLISH ONLY.
+{f'PRE-SELECTED HOOK (MANDATORY use this EXACT text in Scene 1): "{chosen_hook}"' if chosen_hook else ""}
+
+Category: {category}
+
+OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
+[
+  {{"id":1,"text":"short natural text here","visual_1":"person praying sunrise","visual_2":"open bible candle light","mood":"inspiring"}},
+  {{"id":2,"text":"short natural text here","visual_1":"peaceful nature light","visual_2":"person meditating calm","mood":"inspiring"}}
+]
+
+JSON RULES:
+- "text": narrated text. Maximum 15 words. No special characters.
+- "visual_1" and "visual_2": English Pexels search terms (2-4 words). Spiritual and luminous: person praying, open bible, peaceful nature, sunlight, united family, hope. AVOID dark visuals.
+- "mood": always "inspiring"."""
+
+        raw   = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
+                s.setdefault('mood', 'inspiring')
+            if len(scenes) > num_scenes:
+                scenes = scenes[:num_scenes]
+            print(f"✅ {len(scenes)} bible scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
+            return [
+                {"id": i+1, "text": self._sanitize(s), "visual_1": "person praying sunrise", "visual_2": "open bible light", "mood": "inspiring"}
+                for i, s in enumerate(sentences)
+            ]
+
     def generate_job_offer_script(self, offer_text: str, lang: str = "es") -> list:
         """Convierte una oferta de empleo en un guion de video promocional.
         Preserva TODA la información original — solo la presenta de forma atractiva."""

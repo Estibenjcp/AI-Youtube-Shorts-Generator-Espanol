@@ -1155,9 +1155,9 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                  category_hint=category, mode="biblia")
-            script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
-                                                        chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
-                                                        max_words_per_scene=_max_wpsc)
+            script = brain.generate_bible_script(topic, category, lang=pipeline_lang,
+                                                 chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
+                                                 max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "empleo":
             offer_text = params.get("job_offer_text", "").strip()
