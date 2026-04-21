@@ -1042,6 +1042,25 @@ for key, default in [
     ("recommended_voice_value",  ""),  # valor real de la voz (string o JSON de tuple)
     ("recommended_voice_engine", ""),  # engine al que pertenece la voz recomendada
     ("rec_voice_preview_path",   ""),  # ruta del audio preview de la voz recomendada
+    # ── Subtítulos ──
+    ("use_subtitles",    False),
+    ("sub_position",     "bottom"),
+    ("sub_fontsize",     44),
+    ("sub_fontcolor",    "#FFFFFF"),
+    ("sub_borderw",      3),
+    ("sub_bordercolor",  "#000000"),
+    ("sub_box",          False),
+    ("sub_boxcolor",     "#000000"),
+    ("sub_box_opacity",  0.4),
+    ("sub_max_chars",    28),
+    # ── Música de fondo ──
+    ("use_music",        False),
+    ("music_volume",     15),
+    ("music_fade_in",    1.0),
+    ("music_fade_out",   2.0),
+    ("music_loop",       True),
+    ("music_file_path",  ""),
+    # ──
     ("video_source",      "pexels"),   # "pexels" | "ai_video" | "ai_video_test"
     ("tts_engine",        "edge_tts"),
     ("vox_voice_desc",    ""),
@@ -1342,9 +1361,23 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             log_q.put("ERROR:No scenes were rendered.")
             return
 
-        composer.concatenate_with_transitions(final_scene_paths, script_data=script,
-                                              use_subtitles=params.get("use_subtitles", False),
-                                              subtitle_style=params.get("subtitle_style", {}))
+        final_video_path = composer.concatenate_with_transitions(
+            final_scene_paths, script_data=script,
+            use_subtitles=params.get("use_subtitles", False),
+            subtitle_style=params.get("subtitle_style", {}),
+        )
+
+        if params.get("use_music") and params.get("music_file_path") and final_video_path:
+            log_q.put("🎵 Mezclando música de fondo...")
+            composer.mix_background_music(
+                final_video_path,
+                music_path=params["music_file_path"],
+                volume=params.get("music_volume", 0.15),
+                fade_in=params.get("music_fade_in", 1.0),
+                fade_out=params.get("music_fade_out", 2.0),
+                loop=params.get("music_loop", True),
+            )
+
         log_q.put("🧹 Metadatos eliminados del video final.")
 
         for folder in ["audio_clips", "video_clips", "temp"]:
@@ -2447,8 +2480,146 @@ with st.expander(voice_label_hint, expanded=False):
             st.session_state.setdefault("vox_clone_ref", "")
 
     use_avatar    = st.toggle(T["avatar_toggle"],    value=False, help=T["avatar_help"],    key="avatar_toggle")
-    use_subtitles = False
-    subtitle_style = {}
+
+# ── Expander: Subtítulos ──────────────────────────────────────────────────────
+def _hex_to_ffmpeg(h: str) -> str:
+    return "0x" + h.lstrip("#").upper()
+
+_sub_label = "💬 Subtítulos" if lang_option == "es" else "💬 Subtitles"
+with st.expander(_sub_label, expanded=False):
+    use_subtitles = st.toggle(
+        "Activar subtítulos" if lang_option == "es" else "Enable subtitles",
+        value=st.session_state.get("use_subtitles", False),
+        key="use_subtitles",
+    )
+    if use_subtitles:
+        _sc1, _sc2 = st.columns(2)
+        with _sc1:
+            _sub_pos = st.select_slider(
+                "📍 " + ("Posición" if lang_option == "es" else "Position"),
+                options=["top", "center", "bottom"],
+                value=st.session_state.get("sub_position", "bottom"),
+                key="sub_position",
+            )
+            _sub_fs = st.slider(
+                "🔤 " + ("Tamaño fuente" if lang_option == "es" else "Font size"),
+                min_value=20, max_value=72, step=2,
+                value=st.session_state.get("sub_fontsize", 44),
+                key="sub_fontsize",
+            )
+            _sub_mc = st.slider(
+                "📏 " + ("Chars por línea" if lang_option == "es" else "Chars per line"),
+                min_value=15, max_value=45, step=1,
+                value=st.session_state.get("sub_max_chars", 28),
+                key="sub_max_chars",
+            )
+        with _sc2:
+            _sub_fc = st.color_picker(
+                "🎨 " + ("Color texto" if lang_option == "es" else "Text color"),
+                value=st.session_state.get("sub_fontcolor", "#FFFFFF"),
+                key="sub_fontcolor",
+            )
+            _sub_bw = st.slider(
+                "✏️ " + ("Borde (px)" if lang_option == "es" else "Border (px)"),
+                min_value=0, max_value=8, step=1,
+                value=st.session_state.get("sub_borderw", 3),
+                key="sub_borderw",
+            )
+            _sub_bc = st.color_picker(
+                "🖊️ " + ("Color borde" if lang_option == "es" else "Border color"),
+                value=st.session_state.get("sub_bordercolor", "#000000"),
+                key="sub_bordercolor",
+            )
+        _sub_box = st.toggle(
+            "🟦 " + ("Fondo detrás del texto" if lang_option == "es" else "Background box"),
+            value=st.session_state.get("sub_box", False),
+            key="sub_box",
+        )
+        if _sub_box:
+            _sbc1, _sbc2 = st.columns(2)
+            with _sbc1:
+                _sub_boxc = st.color_picker(
+                    "Color fondo" if lang_option == "es" else "Box color",
+                    value=st.session_state.get("sub_boxcolor", "#000000"),
+                    key="sub_boxcolor",
+                )
+            with _sbc2:
+                _sub_box_op = st.slider(
+                    "Opacidad" if lang_option == "es" else "Opacity",
+                    min_value=0.0, max_value=1.0, step=0.05,
+                    value=st.session_state.get("sub_box_opacity", 0.4),
+                    key="sub_box_opacity",
+                )
+        else:
+            _sub_boxc   = st.session_state.get("sub_boxcolor", "#000000")
+            _sub_box_op = st.session_state.get("sub_box_opacity", 0.4)
+
+        _pos_map = {"top": "h*0.08", "center": "h*0.45", "bottom": "h*0.82"}
+        subtitle_style = {
+            "fontsize":    st.session_state.get("sub_fontsize", 44),
+            "fontcolor":   _hex_to_ffmpeg(st.session_state.get("sub_fontcolor", "#FFFFFF")),
+            "y":           _pos_map.get(st.session_state.get("sub_position", "bottom"), "h*0.82"),
+            "borderw":     st.session_state.get("sub_borderw", 3),
+            "bordercolor": _hex_to_ffmpeg(st.session_state.get("sub_bordercolor", "#000000")),
+            "box":         1 if st.session_state.get("sub_box", False) else 0,
+            "boxcolor":    _hex_to_ffmpeg(st.session_state.get("sub_boxcolor", "#000000"))
+                           + f"@{st.session_state.get('sub_box_opacity', 0.4):.2f}",
+            "max_chars":   st.session_state.get("sub_max_chars", 28),
+        }
+    else:
+        subtitle_style = {}
+
+# ── Expander: Música de fondo ─────────────────────────────────────────────────
+_mus_label = "🎵 Música de fondo" if lang_option == "es" else "🎵 Background music"
+with st.expander(_mus_label, expanded=False):
+    use_music = st.toggle(
+        "Activar música de fondo" if lang_option == "es" else "Enable background music",
+        value=st.session_state.get("use_music", False),
+        key="use_music",
+    )
+    if use_music:
+        _mu_file = st.file_uploader(
+            "🎶 " + ("Archivo de música (MP3 / WAV / M4A)" if lang_option == "es" else "Music file (MP3 / WAV / M4A)"),
+            type=["mp3", "wav", "m4a", "ogg"],
+            key="music_uploader",
+        )
+        if _mu_file:
+            _mu_save_dir = os.path.join(os.path.dirname(__file__), "assets", "temp")
+            os.makedirs(_mu_save_dir, exist_ok=True)
+            _mu_save_path = os.path.join(_mu_save_dir, "bgm_upload" + os.path.splitext(_mu_file.name)[1])
+            with open(_mu_save_path, "wb") as _mf:
+                _mf.write(_mu_file.read())
+            st.session_state["music_file_path"] = _mu_save_path
+            st.caption(f"✅ {_mu_file.name}")
+
+        _mu1, _mu2 = st.columns(2)
+        with _mu1:
+            _mu_vol = st.slider(
+                "🔊 " + ("Volumen música %" if lang_option == "es" else "Music volume %"),
+                min_value=0, max_value=100, step=5,
+                value=st.session_state.get("music_volume", 15),
+                key="music_volume",
+            )
+            _mu_fi = st.slider(
+                "⬆️ Fade in (s)",
+                min_value=0.0, max_value=5.0, step=0.5,
+                value=st.session_state.get("music_fade_in", 1.0),
+                key="music_fade_in",
+            )
+        with _mu2:
+            _mu_fo = st.slider(
+                "⬇️ Fade out (s)",
+                min_value=0.0, max_value=5.0, step=0.5,
+                value=st.session_state.get("music_fade_out", 2.0),
+                key="music_fade_out",
+            )
+            _mu_loop = st.toggle(
+                "🔁 " + ("Repetir si es corta" if lang_option == "es" else "Loop if too short"),
+                value=st.session_state.get("music_loop", True),
+                key="music_loop",
+            )
+        if not st.session_state.get("music_file_path", ""):
+            st.caption("⚠️ " + ("Sube un archivo de música para activar esta función." if lang_option == "es" else "Upload a music file to enable this feature."))
 
 # ── Selector de modo (grid 2×N de botones) ───────────────────────────────────
 
@@ -2953,8 +3124,15 @@ def _launch_pipeline():
     params = {
         "topic": final_topic, "num_scenes": num_scenes,
         "voice": selected_voice, "rate": rate_str,
-        "use_avatar": use_avatar, "use_subtitles": False,
+        "use_avatar": use_avatar,
+        "use_subtitles": use_subtitles,
         "subtitle_style": subtitle_style,
+        "use_music":      st.session_state.get("use_music", False),
+        "music_file_path":st.session_state.get("music_file_path", ""),
+        "music_volume":   st.session_state.get("music_volume", 15) / 100.0,
+        "music_fade_in":  st.session_state.get("music_fade_in", 1.0),
+        "music_fade_out": st.session_state.get("music_fade_out", 2.0),
+        "music_loop":     st.session_state.get("music_loop", True),
         "lang": lang_option, "mode": mode,
         "category": final_category,
         "webhook_url": _wh_url,
@@ -3259,8 +3437,15 @@ elif _hook_step == "selecting":
             _params = {
                 "topic": _ft, "num_scenes": _fn,
                 "voice": selected_voice, "rate": rate_str,
-                "use_avatar": use_avatar, "use_subtitles": False,
+                "use_avatar": use_avatar,
+                "use_subtitles": use_subtitles,
                 "subtitle_style": subtitle_style,
+                "use_music":      st.session_state.get("use_music", False),
+                "music_file_path":st.session_state.get("music_file_path", ""),
+                "music_volume":   st.session_state.get("music_volume", 15) / 100.0,
+                "music_fade_in":  st.session_state.get("music_fade_in", 1.0),
+                "music_fade_out": st.session_state.get("music_fade_out", 2.0),
+                "music_loop":     st.session_state.get("music_loop", True),
                 "lang": lang_option, "mode": mode,
                 "category": _fc,
                 "webhook_url": _wh_url,

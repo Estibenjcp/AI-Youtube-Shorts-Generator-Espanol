@@ -445,6 +445,47 @@ class Composer:
             print(f"❌ Stitching Error: {e.stderr.decode('utf8') if e.stderr else str(e)}")
             return None
 
+    def mix_background_music(self, video_path: str, music_path: str,
+                             volume: float = 0.15, fade_in: float = 1.0,
+                             fade_out: float = 2.0, loop: bool = True) -> str:
+        """Mezcla música de fondo bajo el audio TTS del video final."""
+        import subprocess
+        if not os.path.exists(music_path):
+            print(f"⚠️ Music file not found: {music_path}")
+            return video_path
+        vid_dur = self.get_duration(video_path)
+        if vid_dur <= 0:
+            return video_path
+        fade_out_start = max(0.0, vid_dur - fade_out)
+        out_tmp = video_path.replace(".mp4", "_bgm.mp4")
+        vol_clamped = max(0.01, min(float(volume), 2.0))
+        if loop:
+            music_prep = f"[1:a]aloop=loop=-1:size=2000000000,atrim=duration={vid_dur},asetpts=PTS-STARTPTS,volume={vol_clamped},afade=t=in:d={fade_in},afade=t=out:st={fade_out_start}:d={fade_out}[bgm]"
+        else:
+            music_prep = f"[1:a]volume={vol_clamped},afade=t=in:d={fade_in},afade=t=out:st={fade_out_start}:d={fade_out}[bgm]"
+        filter_graph = f"{music_prep};[0:a][bgm]amix=inputs=2:duration=first:dropout_transition=2[aout]"
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", video_path,
+            "-i", music_path,
+            "-filter_complex", filter_graph,
+            "-map", "0:v",
+            "-map", "[aout]",
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-shortest",
+            out_tmp,
+        ]
+        result = subprocess.run(cmd, capture_output=True)
+        if result.returncode == 0 and os.path.exists(out_tmp):
+            os.replace(out_tmp, video_path)
+            print("🎵 Background music mixed successfully.")
+        else:
+            print(f"❌ Music mix failed: {result.stderr.decode('utf-8', errors='ignore')[-300:]}")
+            if os.path.exists(out_tmp):
+                os.remove(out_tmp)
+        return video_path
+
     @staticmethod
     def _strip_metadata(video_path: str) -> None:
         """Remove all metadata from the final video using FFmpeg stream copy (no re-encode).
