@@ -312,6 +312,21 @@ OUTPUT FORMAT (strict JSON, no markdown):
                                         category_hint=category, mode=mode,
                                         exclude_books=exclude_books or [])
 
+        # Local dedup check — only when topic was auto-generated (no manual input)
+        # Costs 0 tokens: pure Python SequenceMatcher comparison
+        if not manual_topic.strip():
+            try:
+                from modules.topic_history import is_duplicate as _is_dup
+                for _retry in range(4):
+                    if not _is_dup(topic, lang=lang):
+                        break
+                    print(f"   ♻️ Topic duplicate detected, retrying ({_retry+1}/4)...")
+                    topic = self.get_trending_topic("", lang=lang,
+                                                    category_hint=category, mode=mode,
+                                                    exclude_books=exclude_books or [])
+            except Exception:
+                pass
+
         # Step 2: generate a 1-2 sentence teaser about the video
         _tone_hint = {
             "viral":      ("oscuro, impactante, histórico" if lang == "es" else "dark, shocking, historical"),
