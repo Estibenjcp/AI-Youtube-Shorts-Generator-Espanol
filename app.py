@@ -14,6 +14,7 @@ import shutil
 import io
 
 from modules.config import load_config, check_config, PROVIDER_DEFAULTS
+import modules.topic_history as _topic_history
 from modules.categories import (
     TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN,
     VIRAL_CATEGORIES, VIRAL_CATEGORIES_EN,
@@ -1150,45 +1151,59 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             _max_wpsc = max(8, int(_secs_per_scene * 2.3)) if _secs_per_scene > 0 else 999
 
         if pipeline_mode == "viral":
+            # Load topic history to prevent repetition
+            from modules import topic_history as _th
+            _used = _th.topics_for_prompt(lang=pipeline_lang)
+
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="viral")
+                                                 category_hint=category, mode="viral",
+                                                 used_topics=_used)
             script = brain.generate_viral_script(topic, category, lang=pipeline_lang,
                                                  chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                  max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "testimonio":
+            from modules import topic_history as _th
+            _used = _th.topics_for_prompt(lang=pipeline_lang)
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="testimonio")
+                                                 category_hint=category, mode="testimonio",
+                                                 used_topics=_used)
             script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang,
                                                       chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                       max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "libro":
+            from modules import topic_history as _th
+            _used = _th.topics_for_prompt(lang=pipeline_lang)
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="libro")
+                                                 category_hint=category, mode="libro",
+                                                 used_topics=_used)
             script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
                                                         chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                         max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "biblia":
+            from modules import topic_history as _th
+            _used = _th.topics_for_prompt(lang=pipeline_lang)
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="biblia")
+                                                 category_hint=category, mode="biblia",
+                                                 used_topics=_used)
             script = brain.generate_bible_script(topic, category, lang=pipeline_lang,
                                                  chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                  max_words_per_scene=_max_wpsc)
@@ -1248,9 +1263,12 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             script = brain.generate_miniseries_script(bible, lang=pipeline_lang, num_scenes=_ai_num_scenes)
 
         else:
+            from modules import topic_history as _th
+            _used = _th.topics_for_prompt(lang=pipeline_lang)
             chosen_hook = params.get("chosen_hook", "").strip()
             topic  = brain.get_trending_topic(params.get("topic", ""),
-                                              lang=pipeline_lang, mode="auto")
+                                              lang=pipeline_lang, mode="auto",
+                                              used_topics=_used)
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
                                            lang=pipeline_lang, chosen_hook=chosen_hook)
 
@@ -1408,6 +1426,18 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         log_q.put(f"THUMB:{thumb_prompt}")
         log_q.put(f"SCRIPT:{__import__('json').dumps(script)}")
         log_q.put(f"TOPIC:{topic}")
+
+        # ── Registrar tema usado (evita repeticiones futuras) ─────────────────
+        try:
+            from modules import topic_history as _th
+            _th.add_topic(
+                topic,
+                mode=pipeline_mode,
+                lang=pipeline_lang,
+                category=params.get("category", ""),
+            )
+        except Exception:
+            pass
 
         # ── Enviar a webhook n8n ──────────────────────────────
         webhook_url = params.get("webhook_url", "").strip()
@@ -2151,6 +2181,57 @@ with st.expander(_dur_label, expanded=False):
         f"≈ {round(target_total_secs / 60, 1)} min total"
     )
 
+# ── Historial de temas usados ─────────────────────────────────────────────────
+_hist_stats  = _topic_history.get_stats()
+_hist_total  = _hist_stats["total"]
+_hist_lang   = _hist_stats.get("es" if lang_option == "es" else "en", 0)
+_hist_label  = (
+    f"📋 Historial de temas ({_hist_total} generados)"
+    if lang_option == "es" else
+    f"📋 Topic history ({_hist_total} generated)"
+)
+with st.expander(_hist_label, expanded=False):
+    if _hist_total == 0:
+        st.caption(
+            "Aún no hay temas registrados. Cada video generado se guardará aquí automáticamente."
+            if lang_option == "es" else
+            "No topics recorded yet. Every generated video will be saved here automatically."
+        )
+    else:
+        _c1, _c2 = st.columns(2)
+        with _c1:
+            st.metric(
+                "🌐 " + ("Total" if lang_option == "es" else "Total"),
+                _hist_total,
+            )
+        with _c2:
+            st.metric(
+                ("🌍 Este idioma" if lang_option == "es" else "🌍 This language"),
+                _hist_lang,
+            )
+        st.caption(
+            "El LLM recibe esta lista automáticamente y tiene PROHIBIDO repetir esos temas."
+            if lang_option == "es" else
+            "The LLM receives this list automatically and is FORBIDDEN from repeating those topics."
+        )
+        _hcol1, _hcol2 = st.columns(2)
+        with _hcol1:
+            if st.button(
+                ("🗑️ Borrar todo" if lang_option == "es" else "🗑️ Clear all"),
+                use_container_width=True,
+            ):
+                _topic_history.clear_history()
+                st.rerun()
+        with _hcol2:
+            if st.button(
+                (f"🗑️ Borrar solo {'ES' if lang_option == 'es' else 'EN'}"
+                 if lang_option == "es" else
+                 f"🗑️ Clear only {'ES' if lang_option == 'es' else 'EN'}"),
+                use_container_width=True,
+            ):
+                _topic_history.clear_history(lang=lang_option)
+                st.rerun()
+
 voice_label_hint = "🎙️ Voz y velocidad" if lang_option == "es" else "🎙️ Voice & speed"
 with st.expander(voice_label_hint, expanded=False):
 
@@ -2832,7 +2913,10 @@ elif mode == "category":
         with st.spinner(f"{T['suggest_spinner']} '{selected_category}'..."):
             try:
                 from modules.brain import ContentBrain as _BS
-                suggestions = _BS().get_topic_suggestions(selected_category, n=6, lang=lang_option)
+                _hist_for_sug = _topic_history.topics_for_prompt(lang=lang_option)
+                suggestions = _BS().get_topic_suggestions(
+                    selected_category, n=6, lang=lang_option, used_topics=_hist_for_sug
+                )
                 st.session_state.topic_suggestions = suggestions
                 st.session_state.selected_topic    = ""
                 st.rerun()

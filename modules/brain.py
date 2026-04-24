@@ -53,11 +53,29 @@ class ContentBrain:
 
     def get_trending_topic(self, manual_topic: str = "", lang: str = "es",
                            category_hint: str = "", mode: str = "auto",
-                           exclude_books: list = None) -> str:
+                           exclude_books: list = None,
+                           used_topics: list = None) -> str:
         if manual_topic.strip():
             label = "Tema" if lang == "es" else "Topic"
             print(f"🎯 {label}: {manual_topic.strip()}")
             return manual_topic.strip()
+
+        # Build exclusion block from topic history
+        _hist = used_topics or []
+        if _hist:
+            _hist_list = "\n".join(f"- {t}" for t in _hist[:150])
+            _excl_block_es = (
+                f"\n⛔ TEMAS YA PUBLICADOS — ABSOLUTAMENTE PROHIBIDO repetir alguno de estos "
+                f"o algo conceptualmente similar:\n{_hist_list}\n"
+                f"Elige algo COMPLETAMENTE DIFERENTE a todo lo anterior.\n"
+            )
+            _excl_block_en = (
+                f"\n⛔ ALREADY PUBLISHED TOPICS — ABSOLUTELY FORBIDDEN to repeat any of these "
+                f"or anything conceptually similar:\n{_hist_list}\n"
+                f"Choose something COMPLETELY DIFFERENT from all of the above.\n"
+            )
+        else:
+            _excl_block_es = _excl_block_en = ""
 
         import random as _random
         from modules.categories import VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES, BOOK_CATEGORIES, BOOK_CATEGORIES_EN
@@ -87,13 +105,16 @@ class ContentBrain:
                 f"Debe ser un hecho histórico real, catástrofe, near miss, mortandad o conspiración documentada. "
                 f"Estilo: MrBeast + Dark History. Impacto máximo, dato que shockee. "
                 f"Semilla: {seed}. "
+                f"{_excl_block_es}"
                 f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
             ) if lang == "es" else (
                 f"Give me 1 dark, shocking and little-known topic for a viral YouTube Short "
                 f"in the category: {category}. "
                 f"Must be a real historical fact, catastrophe, near miss, or documented conspiracy. "
                 f"MrBeast + Dark History style. Maximum shock value. "
-                f"Seed: {seed}. Return ONLY the topic name, nothing else."
+                f"Seed: {seed}. "
+                f"{_excl_block_en}"
+                f"Return ONLY the topic name, nothing else."
             )
         elif mode == "testimonio":
             prompt = (
@@ -102,13 +123,16 @@ class ContentBrain:
                 f"Debe sonar como un testimonio real: una secta, ritual, aparición, revelación aterradora, ocultismo. "
                 f"Estilo Archimosfera — tono oscuro y escalofriante. "
                 f"Semilla: {seed}. "
+                f"{_excl_block_es}"
                 f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
             ) if lang == "es" else (
                 f"Give me 1 horror, mystery or disturbing testimony topic for a cinematic Short "
                 f"in the category: {category}. "
                 f"Must sound like a real testimony: a cult, ritual, apparition, terrifying revelation, occultism. "
                 f"Archimosfera style — dark and chilling tone. "
-                f"Seed: {seed}. Return ONLY the topic name, nothing else."
+                f"Seed: {seed}. "
+                f"{_excl_block_en}"
+                f"Return ONLY the topic name, nothing else."
             )
         elif mode == "libro":
             # Lista negra de libros ya usados en esta sesión
@@ -170,6 +194,7 @@ class ContentBrain:
                 f"Debe ser un dato sorprendente o un evento real poco conocido. "
                 f"Hazlo DIFERENTE e INESPERADO — evita temas comunes. "
                 f"Semilla de unicidad: {seed}. "
+                f"{_excl_block_es}"
                 f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
             ) if lang == "es" else (
                 f"Give me 1 specific, viral, and deeply fascinating topic for a Short Documentary "
@@ -177,6 +202,7 @@ class ContentBrain:
                 f"It must be a surprising 'Did you know' fact or a little-known true event. "
                 f"Make it DIFFERENT and UNEXPECTED — avoid common topics. "
                 f"Seed for uniqueness: {seed}. "
+                f"{_excl_block_en}"
                 f"Return ONLY the topic name, nothing else."
             )
 
@@ -184,9 +210,24 @@ class ContentBrain:
         print(f"🎯 Auto Topic [{category}]: {topic}")
         return topic
 
-    def get_topic_suggestions(self, category: str, n: int = 6, lang: str = "es") -> list:
+    def get_topic_suggestions(self, category: str, n: int = 6, lang: str = "es",
+                               used_topics: list = None) -> list:
         label = "Generando sugerencias para" if lang == "es" else "Generating suggestions for"
         print(f"💡 {label}: {category}...")
+
+        _hist = used_topics or []
+        if _hist:
+            _hist_list = "\n".join(f"- {t}" for t in _hist[:150])
+            _excl_block_es = (
+                f"\n⛔ TEMAS YA PUBLICADOS — PROHIBIDO sugerir alguno de estos ni nada similar:\n{_hist_list}\n"
+                f"Sugiere temas COMPLETAMENTE DISTINTOS a todos los anteriores.\n"
+            )
+            _excl_block_en = (
+                f"\n⛔ ALREADY PUBLISHED TOPICS — FORBIDDEN to suggest any of these or anything similar:\n{_hist_list}\n"
+                f"Suggest topics COMPLETELY DIFFERENT from all the above.\n"
+            )
+        else:
+            _excl_block_es = _excl_block_en = ""
 
         if lang == "es":
             prompt = f"""Eres un investigador experto en contenido viral para YouTube Shorts. Tu especialidad es encontrar HECHOS REALES que la gente no conoce.
@@ -216,7 +257,7 @@ FUENTES VÁLIDAS de donde debes extraer (usa tu conocimiento entrenado):
 - Misterios históricos reales (El Triángulo de las Bermudas, El Arca Perdida, etc.)
 - Noticias científicas o sociales reales de los últimos años
 - Fábulas con origen histórico verificable
-
+{_excl_block_es}
 FORMATO DE SALIDA (JSON estricto, sin markdown):
 ["tema 1", "tema 2", "tema 3", "tema 4", "tema 5", "tema 6"]"""
         else:
@@ -246,7 +287,7 @@ VALID SOURCES to draw from (use your trained knowledge):
 - Real historical mysteries (Lost Ark, Atlantis, Stonehenge, etc.)
 - Real scientific or social news from recent years
 - Fables with verifiable historical origins
-
+{_excl_block_en}
 OUTPUT FORMAT (strict JSON, no markdown):
 ["topic 1", "topic 2", "topic 3", "topic 4", "topic 5", "topic 6"]"""
 
