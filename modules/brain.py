@@ -60,22 +60,7 @@ class ContentBrain:
             print(f"🎯 {label}: {manual_topic.strip()}")
             return manual_topic.strip()
 
-        # Build exclusion block from topic history
-        _hist = used_topics or []
-        if _hist:
-            _hist_list = "\n".join(f"- {t}" for t in _hist[:150])
-            _excl_block_es = (
-                f"\n⛔ TEMAS YA PUBLICADOS — ABSOLUTAMENTE PROHIBIDO repetir alguno de estos "
-                f"o algo conceptualmente similar:\n{_hist_list}\n"
-                f"Elige algo COMPLETAMENTE DIFERENTE a todo lo anterior.\n"
-            )
-            _excl_block_en = (
-                f"\n⛔ ALREADY PUBLISHED TOPICS — ABSOLUTELY FORBIDDEN to repeat any of these "
-                f"or anything conceptually similar:\n{_hist_list}\n"
-                f"Choose something COMPLETELY DIFFERENT from all of the above.\n"
-            )
-        else:
-            _excl_block_es = _excl_block_en = ""
+        _excl_block_es = _excl_block_en = ""  # no token cost — dedup done locally after generation
 
         import random as _random
         from modules.categories import VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES, BOOK_CATEGORIES, BOOK_CATEGORIES_EN
@@ -214,20 +199,7 @@ class ContentBrain:
                                used_topics: list = None) -> list:
         label = "Generando sugerencias para" if lang == "es" else "Generating suggestions for"
         print(f"💡 {label}: {category}...")
-
-        _hist = used_topics or []
-        if _hist:
-            _hist_list = "\n".join(f"- {t}" for t in _hist[:150])
-            _excl_block_es = (
-                f"\n⛔ TEMAS YA PUBLICADOS — PROHIBIDO sugerir alguno de estos ni nada similar:\n{_hist_list}\n"
-                f"Sugiere temas COMPLETAMENTE DISTINTOS a todos los anteriores.\n"
-            )
-            _excl_block_en = (
-                f"\n⛔ ALREADY PUBLISHED TOPICS — FORBIDDEN to suggest any of these or anything similar:\n{_hist_list}\n"
-                f"Suggest topics COMPLETELY DIFFERENT from all the above.\n"
-            )
-        else:
-            _excl_block_es = _excl_block_en = ""
+        _excl_block_es = _excl_block_en = ""  # dedup done locally after generation, no tokens
 
         if lang == "es":
             prompt = f"""Eres un investigador experto en contenido viral para YouTube Shorts. Tu especialidad es encontrar HECHOS REALES que la gente no conoce.
@@ -296,15 +268,24 @@ OUTPUT FORMAT (strict JSON, no markdown):
         try:
             suggestions = json.loads(clean)
             if isinstance(suggestions, list) and len(suggestions) > 0:
-                return [s.strip() for s in suggestions if isinstance(s, str)][:n]
-        except (json.JSONDecodeError, Exception):
+                suggestions = [s.strip() for s in suggestions if isinstance(s, str)]
+            else:
+                raise ValueError
+        except Exception:
+            lines = [
+                l.strip().strip('"').strip("'").strip('-').strip()
+                for l in clean.splitlines() if l.strip()
+            ]
+            suggestions = [l for l in lines if len(l) > 10]
+
+        # ── Local dedup — filter out topics too similar to already-used ones (zero tokens) ──
+        try:
+            from modules.topic_history import is_duplicate as _is_dup
+            suggestions = [s for s in suggestions if not _is_dup(s, lang=lang)]
+        except Exception:
             pass
-        lines = [
-            l.strip().strip('"').strip("'").strip('-').strip()
-            for l in clean.splitlines() if l.strip()
-        ]
-        result = [l for l in lines if len(l) > 10][:n]
-        return result or [f"Viral topic about {category}"]
+
+        return suggestions[:n] or [f"Viral topic about {category}"]
 
     @staticmethod
     def _sanitize(text: str) -> str:

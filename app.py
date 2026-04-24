@@ -1151,59 +1151,62 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             _max_wpsc = max(8, int(_secs_per_scene * 2.3)) if _secs_per_scene > 0 else 999
 
         if pipeline_mode == "viral":
-            # Load topic history to prevent repetition
-            from modules import topic_history as _th
-            _used = _th.topics_for_prompt(lang=pipeline_lang)
-
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="viral",
-                                                 used_topics=_used)
+                                                 category_hint=category, mode="viral")
+                # Local dedup retry — zero extra tokens
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="viral")
             script = brain.generate_viral_script(topic, category, lang=pipeline_lang,
                                                  chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                  max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "testimonio":
-            from modules import topic_history as _th
-            _used = _th.topics_for_prompt(lang=pipeline_lang)
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="testimonio",
-                                                 used_topics=_used)
+                                                 category_hint=category, mode="testimonio")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="testimonio")
             script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang,
                                                       chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                       max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "libro":
-            from modules import topic_history as _th
-            _used = _th.topics_for_prompt(lang=pipeline_lang)
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="libro",
-                                                 used_topics=_used)
+                                                 category_hint=category, mode="libro")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="libro")
             script = brain.generate_book_summary_script(topic, category, lang=pipeline_lang,
                                                         chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                         max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "biblia":
-            from modules import topic_history as _th
-            _used = _th.topics_for_prompt(lang=pipeline_lang)
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
             chosen_hook = params.get("chosen_hook", "").strip()
             if not topic:
                 topic = brain.get_trending_topic("", lang=pipeline_lang,
-                                                 category_hint=category, mode="biblia",
-                                                 used_topics=_used)
+                                                 category_hint=category, mode="biblia")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="biblia")
             script = brain.generate_bible_script(topic, category, lang=pipeline_lang,
                                                  chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                  max_words_per_scene=_max_wpsc)
@@ -1263,12 +1266,13 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             script = brain.generate_miniseries_script(bible, lang=pipeline_lang, num_scenes=_ai_num_scenes)
 
         else:
-            from modules import topic_history as _th
-            _used = _th.topics_for_prompt(lang=pipeline_lang)
             chosen_hook = params.get("chosen_hook", "").strip()
             topic  = brain.get_trending_topic(params.get("topic", ""),
-                                              lang=pipeline_lang, mode="auto",
-                                              used_topics=_used)
+                                              lang=pipeline_lang, mode="auto")
+            if not params.get("topic", "").strip():
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang, mode="auto")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
                                            lang=pipeline_lang, chosen_hook=chosen_hook)
 
@@ -2913,10 +2917,7 @@ elif mode == "category":
         with st.spinner(f"{T['suggest_spinner']} '{selected_category}'..."):
             try:
                 from modules.brain import ContentBrain as _BS
-                _hist_for_sug = _topic_history.topics_for_prompt(lang=lang_option)
-                suggestions = _BS().get_topic_suggestions(
-                    selected_category, n=6, lang=lang_option, used_topics=_hist_for_sug
-                )
+                suggestions = _BS().get_topic_suggestions(selected_category, n=6, lang=lang_option)
                 st.session_state.topic_suggestions = suggestions
                 st.session_state.selected_topic    = ""
                 st.rerun()

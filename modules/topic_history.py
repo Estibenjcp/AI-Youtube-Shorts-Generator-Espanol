@@ -58,10 +58,19 @@ def get_used_topics(lang: str = None) -> list:
     return [t["topic"] for t in topics]
 
 
-def topics_for_prompt(lang: str = None) -> list:
-    """Return the most-recent topics suitable for injecting into an LLM prompt.
-    Most recent first, capped at _MAX_TO_LLM to stay within token budget."""
-    return list(reversed(get_used_topics(lang)))[:_MAX_TO_LLM]
+def is_duplicate(topic: str, lang: str = None, threshold: float = 0.68) -> bool:
+    """Check if a topic is too similar to any already-used topic.
+    Uses SequenceMatcher ratio (pure Python, zero tokens).
+    threshold=0.68 catches near-identical titles while allowing related-but-distinct topics."""
+    from difflib import SequenceMatcher
+    if not topic or not topic.strip():
+        return False
+    topic_lower = topic.lower().strip()
+    for used in get_used_topics(lang):
+        ratio = SequenceMatcher(None, topic_lower, used.lower().strip()).ratio()
+        if ratio >= threshold:
+            return True
+    return False
 
 
 def get_stats() -> dict:
