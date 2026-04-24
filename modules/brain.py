@@ -82,40 +82,60 @@ class ContentBrain:
         # Seed compuesto: nanosegundos + aleatorio → prácticamente único cada llamada
         seed = (int(_time.time_ns()) % 999983) ^ int(_random.random() * 999979)
 
+        # Bloque de advertencia anti-alucinación — incluido en TODOS los modos
+        _real_warning_es = (
+            f"⚠️ REGLA CRÍTICA: El tema DEBE ser un evento real y verificable que pueda encontrarse "
+            f"en Wikipedia, libros de historia o noticias documentadas. "
+            f"ABSOLUTAMENTE PROHIBIDO inventar operaciones, fechas, nombres o conspiraciones que no existan. "
+            f"Si no estás 100% seguro de que ocurrió → NO lo sugieras. "
+            f"Prefiere temas menos conocidos pero 100% reales antes que temas inventados que suenan impactantes.\n"
+        )
+        _real_warning_en = (
+            f"⚠️ CRITICAL RULE: The topic MUST be a real, verifiable event that can be found "
+            f"in Wikipedia, history books, or documented news. "
+            f"ABSOLUTELY FORBIDDEN to invent operations, dates, names, or conspiracies that don't exist. "
+            f"If you are not 100% certain it happened → DO NOT suggest it. "
+            f"Prefer lesser-known but 100% real topics over invented ones that sound shocking.\n"
+        )
+
         # Use mode-specific prompt so the topic matches the content style
         if mode == "viral":
             prompt = (
-                f"Dame 1 tema oscuro, impactante y poco conocido para un YouTube Short viral "
+                f"Dame 1 tema oscuro, impactante y REAL para un YouTube Short viral "
                 f"en la categoría: {category}. "
-                f"Debe ser un hecho histórico real, catástrofe, near miss, mortandad o conspiración documentada. "
-                f"Estilo: MrBeast + Dark History. Impacto máximo, dato que shockee. "
+                f"Debe ser un hecho histórico documentado: catástrofe real, near miss registrado, "
+                f"mortandad histórica comprobada, o experimento gubernamental que realmente existió. "
                 f"Semilla: {seed}. "
+                f"{_real_warning_es}"
                 f"{_excl_block_es}"
                 f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
             ) if lang == "es" else (
-                f"Give me 1 dark, shocking and little-known topic for a viral YouTube Short "
+                f"Give me 1 dark, shocking and REAL topic for a viral YouTube Short "
                 f"in the category: {category}. "
-                f"Must be a real historical fact, catastrophe, near miss, or documented conspiracy. "
-                f"MrBeast + Dark History style. Maximum shock value. "
+                f"Must be a documented historical event: real catastrophe, recorded near miss, "
+                f"verified mass death, or government experiment that actually existed. "
                 f"Seed: {seed}. "
+                f"{_real_warning_en}"
                 f"{_excl_block_en}"
                 f"Return ONLY the topic name, nothing else."
             )
         elif mode == "testimonio":
             prompt = (
-                f"Dame 1 tema de horror, misterio o testimonio perturbador para un Short cinematográfico "
+                f"Dame 1 tema de horror o misterio DOCUMENTADO para un Short cinematográfico "
                 f"en la categoría: {category}. "
-                f"Debe sonar como un testimonio real: una secta, ritual, aparición, revelación aterradora, ocultismo. "
-                f"Estilo Archimosfera — tono oscuro y escalofriante. "
+                f"Debe basarse en hechos reales: una secta que realmente existió, un ritual documentado, "
+                f"un caso policial real, un fenómeno registrado por autoridades o investigadores. "
                 f"Semilla: {seed}. "
+                f"{_real_warning_es}"
                 f"{_excl_block_es}"
                 f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
             ) if lang == "es" else (
-                f"Give me 1 horror, mystery or disturbing testimony topic for a cinematic Short "
+                f"Give me 1 documented horror or mystery topic for a cinematic Short "
                 f"in the category: {category}. "
-                f"Must sound like a real testimony: a cult, ritual, apparition, terrifying revelation, occultism. "
-                f"Archimosfera style — dark and chilling tone. "
+                f"Must be based on real facts: a cult that actually existed, a documented ritual, "
+                f"a real criminal case, a phenomenon recorded by authorities or investigators. "
                 f"Seed: {seed}. "
+                f"{_real_warning_en}"
                 f"{_excl_block_en}"
                 f"Return ONLY the topic name, nothing else."
             )
@@ -174,19 +194,19 @@ class ContentBrain:
             )
         else:
             prompt = (
-                f"Dame 1 tema específico, viral y fascinante para un Short Documental "
+                f"Dame 1 tema específico y fascinante para un Short Documental "
                 f"en la categoría: {category}. "
-                f"Debe ser un dato sorprendente o un evento real poco conocido. "
-                f"Hazlo DIFERENTE e INESPERADO — evita temas comunes. "
+                f"Debe ser un dato real y verificable, o un evento histórico poco conocido pero documentado. "
                 f"Semilla de unicidad: {seed}. "
+                f"{_real_warning_es}"
                 f"{_excl_block_es}"
                 f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
             ) if lang == "es" else (
-                f"Give me 1 specific, viral, and deeply fascinating topic for a Short Documentary "
+                f"Give me 1 specific and fascinating topic for a Short Documentary "
                 f"in the category of: {category}. "
-                f"It must be a surprising 'Did you know' fact or a little-known true event. "
-                f"Make it DIFFERENT and UNEXPECTED — avoid common topics. "
+                f"Must be a real, verifiable fact or a little-known but documented historical event. "
                 f"Seed for uniqueness: {seed}. "
+                f"{_real_warning_en}"
                 f"{_excl_block_en}"
                 f"Return ONLY the topic name, nothing else."
             )
@@ -194,6 +214,42 @@ class ContentBrain:
         topic = self._generate(prompt).strip()
         print(f"🎯 Auto Topic [{category}]: {topic}")
         return topic
+
+    def _verify_topic_is_real(self, topic: str, lang: str = "es") -> bool:
+        """Ask the LLM to fact-check its own topic suggestion.
+        Returns True if real/documented, False if invented/uncertain.
+        Costs ~1 small LLM call but prevents publishing fabricated history."""
+        if lang == "es":
+            prompt = (
+                f"Actúa como un verificador de hechos estricto.\n"
+                f"Tema propuesto: \"{topic}\"\n\n"
+                f"Pregunta: ¿Este evento/hecho REALMENTE OCURRIÓ y está documentado en "
+                f"Wikipedia, enciclopedias históricas, archivos oficiales o libros de historia reconocidos?\n\n"
+                f"CRITERIO: Si el evento mezcla personas reales con acciones que NO están documentadas "
+                f"(ej. 'Hitler ordenó X' pero esa orden específica no existe en ningún archivo), "
+                f"o si incluye fechas/operaciones inventadas → es INVENTADO.\n\n"
+                f"Responde ÚNICAMENTE con una de estas dos palabras:\n"
+                f"REAL → si está documentado y verificable\n"
+                f"INVENTADO → si es falso, incierto, o mezcla hechos reales con detalles fabricados"
+            )
+        else:
+            prompt = (
+                f"Act as a strict fact-checker.\n"
+                f"Proposed topic: \"{topic}\"\n\n"
+                f"Question: Did this event/fact REALLY HAPPEN and is it documented in "
+                f"Wikipedia, historical encyclopedias, official archives, or recognized history books?\n\n"
+                f"CRITERION: If the event mixes real people with actions that are NOT documented "
+                f"(e.g. 'Hitler ordered X' but that specific order exists in no archive), "
+                f"or if it includes invented dates/operations → it is INVENTED.\n\n"
+                f"Answer ONLY with one of these two words:\n"
+                f"REAL → if documented and verifiable\n"
+                f"INVENTED → if false, uncertain, or mixes real facts with fabricated details"
+            )
+        result = self._generate(prompt).strip().upper()
+        is_real = "REAL" in result and "INVENTADO" not in result and "INVENTED" not in result
+        if not is_real:
+            print(f"   ⚠️ Fact-check FAILED for: '{topic}' → result: {result}")
+        return is_real
 
     def get_topic_suggestions(self, category: str, n: int = 6, lang: str = "es",
                                used_topics: list = None) -> list:
@@ -216,10 +272,12 @@ TAREA: Dame exactamente {n} temas REALES de la categoría indicada. Deben proven
 
 REGLAS ABSOLUTAS:
 - PROHIBIDO inventar eventos, personas o datos que no existan.
-- PROHIBIDO mezclar hechos reales con detalles ficticios.
+- PROHIBIDO mezclar hechos reales con detalles ficticios o inventados.
+- PROHIBIDO crear títulos que combinen personas históricas reales con acciones que NO están documentadas en ningún archivo o enciclopedia (ej. "Hitler planeó X" si esa operación específica no existe en registros históricos).
+- Antes de sugerir cada tema, pregúntate: ¿Puedo encontrar esto en Wikipedia o en un libro de historia reconocido? Si la respuesta es NO → no lo incluyas.
 - Cada tema debe ser algo que realmente ocurrió, que realmente se dice, o que realmente existe como leyenda o teoría en la cultura popular.
 - Longitud: máximo 12 palabras por tema.
-- Estilo: titular directo, impactante, que genere curiosidad real.
+- Estilo: titular directo, que genere curiosidad real.
 - Idioma: español neutro latino.
 
 FUENTES VÁLIDAS de donde debes extraer (usa tu conocimiento entrenado):
@@ -247,10 +305,12 @@ TASK: Give me exactly {n} REAL topics from the given category. They must come fr
 
 ABSOLUTE RULES:
 - FORBIDDEN: inventing events, people, or data that do not exist.
-- FORBIDDEN: mixing real facts with fictional details.
+- FORBIDDEN: mixing real facts with fictional details or invented actions.
+- FORBIDDEN: creating titles that combine real historical figures with actions that are NOT documented in any archive or encyclopedia (e.g. "Hitler planned X" if that specific operation doesn't exist in historical records).
+- Before suggesting each topic ask yourself: Can this be found in Wikipedia or a recognized history book? If NO → do not include it.
 - Each topic must be something that actually happened, is actually said, or actually exists as a legend or theory in popular culture.
 - Length: maximum 12 words per topic.
-- Style: direct, impactful headline that creates genuine curiosity.
+- Style: direct headline that creates genuine curiosity.
 
 VALID SOURCES to draw from (use your trained knowledge):
 - Documented world history
@@ -312,20 +372,23 @@ OUTPUT FORMAT (strict JSON, no markdown):
                                         category_hint=category, mode=mode,
                                         exclude_books=exclude_books or [])
 
-        # Local dedup check — only when topic was auto-generated (no manual input)
-        # Costs 0 tokens: pure Python SequenceMatcher comparison
+        # Quality checks — only when topic was auto-generated (no manual input)
         if not manual_topic.strip():
             try:
                 from modules.topic_history import is_duplicate as _is_dup
-                for _retry in range(4):
-                    if not _is_dup(topic, lang=lang):
-                        break
-                    print(f"   ♻️ Topic duplicate detected, retrying ({_retry+1}/4)...")
-                    topic = self.get_trending_topic("", lang=lang,
-                                                    category_hint=category, mode=mode,
-                                                    exclude_books=exclude_books or [])
             except Exception:
-                pass
+                _is_dup = None
+
+            for _retry in range(4):
+                _dup = _is_dup(topic, lang=lang) if _is_dup else False
+                _fake = not self._verify_topic_is_real(topic, lang=lang)
+                if not _dup and not _fake:
+                    break
+                reason = "duplicado" if _dup else "inventado/no verificado"
+                print(f"   ♻️ Topic {reason}, regenerando ({_retry+1}/4): '{topic}'")
+                topic = self.get_trending_topic("", lang=lang,
+                                                category_hint=category, mode=mode,
+                                                exclude_books=exclude_books or [])
 
         # Step 2: generate a 1-2 sentence teaser about the video
         _tone_hint = {
