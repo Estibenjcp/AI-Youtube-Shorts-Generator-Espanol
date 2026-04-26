@@ -573,32 +573,40 @@ class GoogleTTSAudioEngine:
         import re as _re
         return [w for w in text.split() if w]
 
+    @staticmethod
+    def _build_ssml(words: list) -> str:
+        """Build a valid SSML string with a <mark> before each word.
+        Uses only the 5 predefined XML entities (&amp; &lt; &gt; &apos; &quot;)
+        so every character is safe inside an XML document."""
+        _XML_ESC = str.maketrans({
+            '&':  '&amp;',
+            '<':  '&lt;',
+            '>':  '&gt;',
+            '"':  '&quot;',
+            "'":  '&apos;',
+        })
+        parts = []
+        for i, w in enumerate(words):
+            safe = w.translate(_XML_ESC)
+            parts.append(f'<mark name="{i}"/>{safe}')
+        return '<speak>' + ' '.join(parts) + '</speak>'
+
     def _synthesize(self, text: str, output_path: str,
                     speaking_rate: float | None = None) -> str:
         """Synthesize audio and save per-word timestamps to {output_path}.words.json.
 
-        All voice families support SSML marks + enableTimePointing:
-          • Chirp3-HD  → beta endpoint; speakingRate/pitch/effects NOT supported
-          • Neural2 / Studio / Journey → v1 endpoint, full audioConfig
+        Tries SSML+marks first (gives exact word timing).
+        If Google rejects the SSML (400), falls back to plain-text synthesis
+        (audio is saved, no .words.json → proportional subtitle fallback).
         """
-        import requests, base64, json as _json, re as _re, html as _html
+        import requests, base64, json as _json, re as _re
         rate      = speaking_rate if speaking_rate is not None else self.speaking_rate
         is_chirp3 = "Chirp3-HD" in self.voice_name
 
-        # ── Build SSML with one <mark> per word ───────────────────────────────
-        # html.escape handles & < > ' " in the word text so the SSML stays valid
-        words     = self._words_from_text(text)
-        ssml_body = " ".join(
-            f'<mark name="{i}"/>{_html.escape(w)}' for i, w in enumerate(words)
-        )
-        ssml = f"<speak>{ssml_body}</speak>"
-
         if is_chirp3:
-            # Chirp3-HD: beta endpoint; speakingRate/pitch/effectsProfileId not supported
             audio_cfg = {"audioEncoding": "MP3"}
-            url = self._URL_BETA
+            url       = self._URL_BETA
         else:
-            # Neural2 / Studio / Journey — full audio config
             audio_cfg = {
                 "audioEncoding":    "MP3",
                 "speakingRate":     round(max(0.25, min(rate, 4.0)), 3),
@@ -607,16 +615,41 @@ class GoogleTTSAudioEngine:
             }
             url = self._URL
 
+        # ── Attempt 1: SSML with marks (exact word timing) ───────────────────
+        words   = self._words_from_text(text)
+        ssml    = self._build_ssml(words)
         payload = {
             "input":              {"ssml": ssml},
             "voice":              {"languageCode": self.lang_code, "name": self.voice_name},
             "audioConfig":        audio_cfg,
             "enableTimePointing": ["SSML_MARK"],
         }
-
         r = requests.post(url, params={"key": self.api_key},
                           headers={"Referer": "https://digency.streamlit.app/"},
                           json=payload, timeout=30)
+
+        if r.status_code == 400:
+            # SSML rejected — log the reason, retry with plain text
+            try:
+                reason = r.json().get("error", {}).get("message", r.text[:200])
+            except Exception:
+                reason = r.text[:200]
+            print(f"      ⚠️  SSML rejected (400): {reason}")
+            print(f"      🔄  Retrying with plain text (no word timing)...")
+            payload_plain = {
+                "input":       {"text": text},
+                "voice":       {"languageCode": self.lang_code, "name": self.voice_name},
+                "audioConfig": audio_cfg,
+            }
+            r = requests.post(url, params={"key": self.api_key},
+                              headers={"Referer": "https://digency.streamlit.app/"},
+                              json=payload_plain, timeout=30)
+            r.raise_for_status()
+            with open(output_path, "wb") as f:
+                f.write(base64.b64decode(r.json()["audioContent"]))
+            print(f"      ✅  Plain-text fallback succeeded (proportional subtitles)")
+            return output_path
+
         r.raise_for_status()
         data = r.json()
 
@@ -632,16 +665,15 @@ class GoogleTTSAudioEngine:
                     idx   = int(tp["markName"])
                     start = float(tp["timeSeconds"])
                     if idx < len(words):
-                        clean = _re.sub(r'[^\w\s\'\-]', '', words[idx]).strip()
+                        clean_w = _re.sub(r'[^\w\s\'\-]', '', words[idx]).strip()
                         word_times.append({
-                            "word":  clean or words[idx],
+                            "word":  clean_w or words[idx],
                             "start": round(start, 4),
                             "end":   round(start, 4),
                         })
                 except (KeyError, ValueError):
                     continue
 
-            # Fill end times: each word ends when the next one starts
             for i in range(len(word_times) - 1):
                 word_times[i]["end"] = word_times[i + 1]["start"]
             if word_times:
@@ -650,7 +682,7 @@ class GoogleTTSAudioEngine:
                     _json.dump(word_times, tf, ensure_ascii=False)
                 print(f"      ⏱️  Word timing saved ({len(word_times)} words)")
         else:
-            print(f"      ⚠️  No timepoints from Google — subtitles will use proportional fallback")
+            print(f"      ⚠️  No timepoints returned — proportional subtitle fallback")
 
         return output_path
 
