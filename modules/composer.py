@@ -54,27 +54,32 @@ class Composer:
 
     @staticmethod
     def _clean_sub_text(text: str) -> str:
-        """Strip Unicode chars that fonts can't render (avoids □ boxes)."""
+        """Clean text for FFmpeg drawtext.
+
+        Keeps full UTF-8 (Spanish accents, ñ, etc.) — Arial on Windows
+        handles them fine.  Only strips:
+          • Windows CRLF → LF
+          • ASCII control chars (0x00-0x1F, 0x7F) that render as □ boxes
+          • Fancy Unicode typography → plain ASCII equivalents
+          • Non-breaking space → regular space
+          • ¿ ¡ (FFmpeg drawtext can't center them reliably) → drop
+        """
         import re as _re
-        # Strip carriage returns first (Windows CRLF → LF)
         text = text.replace('\r\n', '\n').replace('\r', '')
-        replacements = {
-            '\u2026': ',', '\u2014': '-', '\u2013': '-',
-            '\u201c': '"', '\u201d': '"', '\u2018': "'", '\u2019': "'",
-            '\u00ab': '"', '\u00bb': '"', '\u2022': '-', '\u00b7': '-',
-            '\u00a0': ' ',  # non-breaking space → regular space
-            '\u00bf': '',   # ¿ → drop
-            '\u00a1': '',   # ¡ → drop
-            '\u00e1': 'a', '\u00e9': 'e', '\u00ed': 'i', '\u00f3': 'o', '\u00fa': 'u',
-            '\u00c1': 'A', '\u00c9': 'E', '\u00cd': 'I', '\u00d3': 'O', '\u00da': 'U',
-            '\u00f1': 'n', '\u00d1': 'N', '\u00fc': 'u', '\u00dc': 'U',
+        # Typography → plain ASCII
+        typo = {
+            '\u2026': '...', '\u2014': ' - ', '\u2013': ' - ',
+            '\u201c': '"',   '\u201d': '"',
+            '\u2018': "'",   '\u2019': "'",
+            '\u00ab': '"',   '\u00bb': '"',
+            '\u2022': '-',   '\u00b7': '-',
+            '\u00a0': ' ',   # non-breaking space
+            '\u00bf': '',    # ¿
+            '\u00a1': '',    # ¡
         }
-        for ch, rep in replacements.items():
+        for ch, rep in typo.items():
             text = text.replace(ch, rep)
-        # Drop any remaining non-ASCII
-        text = _re.sub(r'[^\x00-\x7F]', '', text)
-        # Drop ASCII control characters (0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F, 0x7F)
-        # that FFmpeg drawtext renders as □ boxes
+        # Drop ASCII control characters — they render as □ in drawtext
         text = _re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
         return _re.sub(r'\s+', ' ', text).strip()
 
@@ -472,12 +477,11 @@ class Composer:
             return None
 
         # ── Step 1: Build xfade chain WITHOUT subtitles ───────────────────────
-        # IMPORTANT: v_trans and a_trans MUST be equal so that the video PTS
-        # and audio PTS advance by the same amount per transition.
-        # If they differ (e.g., video=0.5s, audio=0.05s), each transition
-        # accumulates a 0.45 s drift → subtitles fall out of sync with the
-        # voice by ~0.45 s * N after N scenes.
-        a_trans     = v_trans   # keep audio crossfade = video xfade (both 0.5 s)
+        # v_trans: video xfade overlap (0.5s — visual blend looks good)
+        # a_trans: audio crossfade overlap (0.05s — near-instant cut, no voice overlap)
+        # These intentionally differ. The subtitle abs_starts below uses a_trans
+        # so that drawtext fires at the correct AUDIO playback time.
+        a_trans     = 0.05
         input0      = ffmpeg.input(valid_paths[0])
         v_stream    = input0.video
         a_stream    = input0.audio
@@ -504,11 +508,13 @@ class Composer:
             current_dur = (current_dur + valid_durs[i]) - v_trans
 
         # ── Step 2: Calculate absolute start time of each clip in the final video
-        # Both video and audio now use the same overlap (v_trans = a_trans = 0.5s),
-        # so the formula is consistent for both streams.
+        # Subtitles must follow the AUDIO timeline (not the video xfade timeline).
+        # clip[i] audio starts at: sum(dur[0..i-1]) - i * a_trans
+        # Using a_trans (0.05s) here — NOT v_trans (0.5s) — is what keeps
+        # subtitles in sync with the voice for all clips, not just the first one.
         abs_starts = [0.0]
         for i in range(1, len(valid_paths)):
-            abs_starts.append(abs_starts[i - 1] + valid_durs[i - 1] - v_trans)
+            abs_starts.append(abs_starts[i - 1] + valid_durs[i - 1] - a_trans)
 
         # ── Step 3: Burn subtitles onto the fully-concatenated v_stream ────────
         if use_subtitles:
