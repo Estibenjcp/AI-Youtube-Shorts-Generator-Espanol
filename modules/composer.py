@@ -472,6 +472,12 @@ class Composer:
             return None
 
         # ── Step 1: Build xfade chain WITHOUT subtitles ───────────────────────
+        # IMPORTANT: v_trans and a_trans MUST be equal so that the video PTS
+        # and audio PTS advance by the same amount per transition.
+        # If they differ (e.g., video=0.5s, audio=0.05s), each transition
+        # accumulates a 0.45 s drift → subtitles fall out of sync with the
+        # voice by ~0.45 s * N after N scenes.
+        a_trans     = v_trans   # keep audio crossfade = video xfade (both 0.5 s)
         input0      = ffmpeg.input(valid_paths[0])
         v_stream    = input0.video
         a_stream    = input0.audio
@@ -479,7 +485,6 @@ class Composer:
 
         for i in range(1, len(valid_paths)):
             next_clip = ffmpeg.input(valid_paths[i])
-            a_trans   = 0.05
             offset    = current_dur - v_trans
             effect    = random.choice(self.transitions)
             print(f"   ✨ Transition {i}: '{effect}' at {offset:.2f}s")
@@ -499,8 +504,8 @@ class Composer:
             current_dur = (current_dur + valid_durs[i]) - v_trans
 
         # ── Step 2: Calculate absolute start time of each clip in the final video
-        # clip[0] starts at 0; each subsequent clip starts after the previous
-        # duration minus the xfade overlap (v_trans = 0.5s per transition).
+        # Both video and audio now use the same overlap (v_trans = a_trans = 0.5s),
+        # so the formula is consistent for both streams.
         abs_starts = [0.0]
         for i in range(1, len(valid_paths)):
             abs_starts.append(abs_starts[i - 1] + valid_durs[i - 1] - v_trans)
