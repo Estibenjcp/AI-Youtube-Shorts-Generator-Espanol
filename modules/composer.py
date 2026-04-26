@@ -112,29 +112,72 @@ class Composer:
             kwargs['fontfile'] = self._WINDOWS_FONT.replace('\\', '/')
         return kwargs
 
+    # ── Proportional-fallback helpers ────────────────────────────────────────
+
+    @staticmethod
+    def _syllables(word: str) -> int:
+        """Rough syllable count — works for Spanish and English.
+        Consecutive vowels (diphthongs) count as one syllable."""
+        vowels = set('aeiouáéíóúüAEIOUÁÉÍÓÚÜ')
+        count, prev_vowel = 0, False
+        for ch in word:
+            v = ch in vowels
+            if v and not prev_vowel:
+                count += 1
+            prev_vowel = v
+        return max(1, count)
+
+    @staticmethod
+    def _detect_speech_window(audio_path: str, clip_duration: float) -> tuple:
+        """Run FFmpeg silencedetect to find where speech starts and ends.
+        Returns (speech_start_s, speech_end_s).
+        Falls back to (0.12, clip_duration - 0.08) on any error."""
+        import subprocess, re as _re
+        _DEFAULT = (0.12, max(0.2, clip_duration - 0.08))
+        if not audio_path or not os.path.exists(audio_path):
+            return _DEFAULT
+        try:
+            result = subprocess.run(
+                ['ffmpeg', '-i', audio_path,
+                 '-af', 'silencedetect=noise=-38dB:d=0.04',
+                 '-f', 'null', '-'],
+                capture_output=True, text=True, errors='replace', timeout=8,
+            )
+            out = result.stderr
+            silence_ends   = [float(m) for m in _re.findall(r'silence_end:\s*([\d.]+)', out)]
+            silence_starts = [float(m) for m in _re.findall(r'silence_start:\s*([\d.]+)', out)]
+
+            # First silence_end = end of leading silence = speech start
+            speech_start = silence_ends[0] if silence_ends else _DEFAULT[0]
+            # Last silence_start = start of trailing silence = speech end
+            speech_end = silence_starts[-1] if silence_starts else _DEFAULT[1]
+
+            # Sanity clamps
+            speech_start = max(0.0, min(speech_start, clip_duration * 0.25))
+            speech_end   = max(clip_duration * 0.5, min(speech_end, clip_duration))
+            if speech_end <= speech_start:
+                return _DEFAULT
+            return speech_start, speech_end
+        except Exception:
+            return _DEFAULT
+
     def _apply_subtitles_to_stream(self, stream, scene_list: list, style: dict):
         """Burn subtitles onto a fully-concatenated stream with ABSOLUTE timestamps.
 
-        This must be called AFTER all xfade/concat filters so that `t` in FFmpeg
-        drawtext refers to the global PTS of the final video, not a per-clip PTS.
+        Must be called AFTER all xfade filters — `t` in drawtext is the global
+        PTS of the final video, so timestamps must be absolute.
 
-        scene_list: list of dicts, each with keys:
-            abs_start   – absolute start time of this clip in the final video (s)
-            clip_duration – duration of this clip (s)
-            text        – subtitle text
-            audio_path  – path to the .mp3 (used to find .words.json)
-            idx         – global index (for unique temp-file naming)
+        scene_list items: abs_start, clip_duration, text, audio_path, idx
         """
         import json as _json
 
-        s         = style
-        base_kw   = self._base_drawtext_kwargs(s)
-        max_chars = s.get("max_chars", 28)
-        hl_color  = s.get("highlight_color", "")
+        s            = style
+        base_kw      = self._base_drawtext_kwargs(s)
+        max_chars    = s.get("max_chars", 28)
+        hl_color     = s.get("highlight_color", "")
         hl_opacity   = s.get("highlight_opacity", 0.9)
         hl_fontcolor = s.get("highlight_fontcolor", "black")
-
-        _WPG = 3   # words shown per subtitle group
+        _WPG         = 3   # words per subtitle group
 
         for scene in scene_list:
             abs_start     = scene["abs_start"]
@@ -147,7 +190,7 @@ class Composer:
             if not clean:
                 continue
 
-            # ── Try exact word timing from .words.json ────────────────────────
+            # ── Try exact word timing (.words.json) ───────────────────────────
             word_timing = None
             if audio_path:
                 timing_file = audio_path + ".words.json"
@@ -158,68 +201,63 @@ class Composer:
                     except Exception:
                         word_timing = None
 
+            def _add_group(chunk_text, t0_abs, t1_abs, counter):
+                sub_file = self._write_sub_file(chunk_text, idx * 1000 + counter,
+                                                max_chars=max_chars)
+                kw = {**base_kw,
+                      "textfile": sub_file,
+                      "enable":   f"between(t,{t0_abs:.4f},{t1_abs:.4f})"}
+                if hl_color:
+                    kw["box"]        = 1
+                    kw["boxcolor"]   = f"{hl_color}@{hl_opacity:.2f}"
+                    kw["boxborderw"] = 10
+                    kw["fontcolor"]  = hl_fontcolor
+                    kw["borderw"]    = 0
+                return kw
+
             if word_timing:
-                # Build 3-word groups with exact timing, offset to absolute time
+                # ── Exact timing path ─────────────────────────────────────────
                 for gi in range(0, len(word_timing), _WPG):
-                    chunk_wt = word_timing[gi:gi + _WPG]
+                    chunk_wt   = word_timing[gi:gi + _WPG]
                     chunk_text = " ".join(
                         self._clean_sub_text(wt.get("word", "")) for wt in chunk_wt
                     ).strip()
                     if not chunk_text:
                         continue
-                    # Absolute times in the final video
                     t0 = abs_start + chunk_wt[0]["start"]
-                    if gi + _WPG < len(word_timing):
-                        t1 = abs_start + word_timing[gi + _WPG]["start"]
-                    else:
-                        t1 = abs_start + chunk_wt[-1]["end"] + 0.15
+                    t1 = abs_start + (word_timing[gi + _WPG]["start"]
+                                      if gi + _WPG < len(word_timing)
+                                      else chunk_wt[-1]["end"] + 0.15)
                     t1 = min(t1, abs_start + clip_duration)
-
-                    sub_file = self._write_sub_file(chunk_text, idx * 1000 + gi,
-                                                    max_chars=max_chars)
-                    kw = {**base_kw,
-                          "textfile": sub_file,
-                          "enable":   f"between(t,{t0:.4f},{t1:.4f})"}
-                    if hl_color:
-                        kw["box"]        = 1
-                        kw["boxcolor"]   = f"{hl_color}@{hl_opacity:.2f}"
-                        kw["boxborderw"] = 10
-                        kw["fontcolor"]  = hl_fontcolor
-                        kw["borderw"]    = 0
-                    stream = stream.filter("drawtext", **kw)
+                    stream = stream.filter("drawtext",
+                                           **_add_group(chunk_text, t0, t1, gi))
 
             else:
-                # ── Proportional fallback (no .words.json) ────────────────────
-                words = clean.split()
-                if not words:
-                    continue
-                chunks = [" ".join(words[i:i + _WPG]) for i in range(0, len(words), _WPG)]
+                # ── Proportional fallback (Chirp3-HD / no timing) ─────────────
+                # 1. Detect actual speech window from the audio file
+                sp_start, sp_end = self._detect_speech_window(audio_path, clip_duration)
+                speech_dur = max(0.1, sp_end - sp_start)
+
+                # 2. Build 3-word chunks
+                words  = clean.split()
+                chunks = [" ".join(words[i:i + _WPG])
+                          for i in range(0, len(words), _WPG)]
                 chunks = [c for c in chunks if c]
                 n = len(chunks)
 
-                # Uniform distribution over the speech window (skip TTS leading silence)
-                _LEAD  = 0.15
-                _TRAIL = 0.10
-                speech_dur = max(0.1, clip_duration - _LEAD - _TRAIL)
-                chunk_dur  = speech_dur / n
+                # 3. Weight each chunk by syllable count (more syllables = more time)
+                syls       = [sum(self._syllables(w) for w in c.split()) for c in chunks]
+                total_syls = max(1, sum(syls))
+                chunk_durs = [(s / total_syls) * speech_dur for s in syls]
 
-                t_rel = _LEAD
-                for ci, chunk in enumerate(chunks):
+                # 4. Emit drawtext filters with absolute times
+                t_rel = sp_start
+                for ci, (chunk, dur) in enumerate(zip(chunks, chunk_durs)):
                     t0 = abs_start + t_rel
-                    t1 = abs_start + (t_rel + chunk_dur if ci < n - 1 else clip_duration)
-                    t_rel += chunk_dur
-                    sub_file = self._write_sub_file(chunk, idx * 1000 + ci,
-                                                    max_chars=max_chars)
-                    kw = {**base_kw,
-                          "textfile": sub_file,
-                          "enable":   f"between(t,{t0:.3f},{t1:.3f})"}
-                    if hl_color:
-                        kw["box"]        = 1
-                        kw["boxcolor"]   = f"{hl_color}@{hl_opacity:.2f}"
-                        kw["boxborderw"] = 10
-                        kw["fontcolor"]  = hl_fontcolor
-                        kw["borderw"]    = 0
-                    stream = stream.filter("drawtext", **kw)
+                    t1 = abs_start + (t_rel + dur if ci < n - 1 else sp_end)
+                    t_rel += dur
+                    stream = stream.filter("drawtext",
+                                           **_add_group(chunk, t0, t1, ci))
 
         return stream
 
