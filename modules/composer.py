@@ -184,25 +184,32 @@ class Composer:
         return stream
 
     def _apply_proportional_subtitle(self, stream, clean: str, clip_idx: int,
-                                      clip_duration: float, s: dict):
-        """Proportional fallback: 3 words per segment, timing by char count."""
+                                      clip_duration: float, s: dict,
+                                      audio_path: str = ""):
+        """Proportional fallback: 3 words per segment, timing by word count.
+
+        Uses word count (not char count) for more uniform pacing. Skips the
+        leading TTS silence (~0.15 s) so subtitles start when the voice starts.
+        """
         words = clean.split()
         if not words:
             return stream
 
+        # ── build 3-word chunks ───────────────────────────────────────────────
         chunks = []
         for i in range(0, len(words), 3):
             chunk = ' '.join(words[i:i + 3])
             if chunk:
                 chunks.append(chunk)
 
-        char_counts = [max(1, len(c)) for c in chunks]
-        total_chars = sum(char_counts)
-        raw_durs    = [(cc / total_chars) * clip_duration for cc in char_counts]
-        min_dur     = max(0.15, clip_duration / (len(chunks) * 4))
-        durs        = [max(min_dur, d) for d in raw_durs]
-        scale       = clip_duration / sum(durs)
-        durs        = [d * scale for d in durs]
+        n = len(chunks)
+
+        # ── timing: distribute speech window uniformly by chunk (word-count) ──
+        # Reserve ~0.15 s of leading silence and ~0.10 s of trailing silence
+        _LEAD  = 0.15   # TTS engines always have a small pre-speech gap
+        _TRAIL = 0.10
+        speech_dur = max(0.1, clip_duration - _LEAD - _TRAIL)
+        chunk_dur  = speech_dur / n
 
         base_kw      = self._base_drawtext_kwargs(s)
         max_chars    = s.get("max_chars", 28)
@@ -210,11 +217,12 @@ class Composer:
         hl_opacity   = s.get("highlight_opacity", 0.9)
         hl_fontcolor = s.get("highlight_fontcolor", "black")
 
-        t = 0.0
-        for ci, (chunk, dur) in enumerate(zip(chunks, durs)):
+        t = _LEAD
+        for ci, chunk in enumerate(chunks):
             t0 = t
-            t1 = t + dur + 0.04
-            t += dur
+            # last chunk runs to end of clip; others hand off instantly
+            t1 = (t + chunk_dur) if ci < n - 1 else clip_duration
+            t += chunk_dur
             sub_file = self._write_sub_file(chunk, clip_idx * 1000 + ci, max_chars=max_chars)
             kw = {**base_kw,
                   'textfile': sub_file,

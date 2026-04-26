@@ -575,76 +575,82 @@ class GoogleTTSAudioEngine:
 
     def _synthesize(self, text: str, output_path: str,
                     speaking_rate: float | None = None) -> str:
-        """Synthesize audio. For Neural2/Studio/Journey voices also saves
-        per-word timestamps to {output_path}.words.json via SSML marks."""
-        import requests, base64, json as _json, re as _re
-        rate     = speaking_rate if speaking_rate is not None else self.speaking_rate
+        """Synthesize audio and save per-word timestamps to {output_path}.words.json.
+
+        All voice families support SSML marks + enableTimePointing:
+          • Chirp3-HD  → beta endpoint; speakingRate/pitch/effects NOT supported
+          • Neural2 / Studio / Journey → v1 endpoint, full audioConfig
+        """
+        import requests, base64, json as _json, re as _re, html as _html
+        rate      = speaking_rate if speaking_rate is not None else self.speaking_rate
         is_chirp3 = "Chirp3-HD" in self.voice_name
 
-        if is_chirp3:
-            # Chirp3-HD: beta endpoint, plain text, no timing support
-            audio_cfg = {"audioEncoding": "MP3"}
-            payload = {
-                "input":       {"text": text},
-                "voice":       {"languageCode": self.lang_code, "name": self.voice_name},
-                "audioConfig": audio_cfg,
-            }
-            url = self._URL_BETA
-            r = requests.post(url, params={"key": self.api_key},
-                              headers={"Referer": "https://digency.streamlit.app/"},
-                              json=payload, timeout=30)
-            r.raise_for_status()
-            with open(output_path, "wb") as f:
-                f.write(base64.b64decode(r.json()["audioContent"]))
-        else:
-            # Neural2 / Studio / Journey: use SSML marks to get per-word timestamps
-            words = self._words_from_text(text)
-            ssml_body = " ".join(f'<mark name="{i}"/>{w}' for i, w in enumerate(words))
-            ssml = f"<speak>{ssml_body}</speak>"
+        # ── Build SSML with one <mark> per word ───────────────────────────────
+        # html.escape handles & < > ' " in the word text so the SSML stays valid
+        words     = self._words_from_text(text)
+        ssml_body = " ".join(
+            f'<mark name="{i}"/>{_html.escape(w)}' for i, w in enumerate(words)
+        )
+        ssml = f"<speak>{ssml_body}</speak>"
 
+        if is_chirp3:
+            # Chirp3-HD: beta endpoint; speakingRate/pitch/effectsProfileId not supported
+            audio_cfg = {"audioEncoding": "MP3"}
+            url = self._URL_BETA
+        else:
+            # Neural2 / Studio / Journey — full audio config
             audio_cfg = {
                 "audioEncoding":    "MP3",
                 "speakingRate":     round(max(0.25, min(rate, 4.0)), 3),
                 "pitch":            round(max(-20.0, min(self.pitch, 20.0)), 1),
                 "effectsProfileId": ["headphone-class-device"],
             }
-            payload = {
-                "input":               {"ssml": ssml},
-                "voice":               {"languageCode": self.lang_code, "name": self.voice_name},
-                "audioConfig":         audio_cfg,
-                "enableTimePointing":  ["SSML_MARK"],
-            }
-            r = requests.post(self._URL, params={"key": self.api_key},
-                              headers={"Referer": "https://digency.streamlit.app/"},
-                              json=payload, timeout=30)
-            r.raise_for_status()
-            data = r.json()
-            with open(output_path, "wb") as f:
-                f.write(base64.b64decode(data["audioContent"]))
+            url = self._URL
 
-            # Build and save word timing from SSML mark timepoints
-            timepoints = data.get("timepoints", [])
-            if timepoints and words:
-                word_times = []
-                for tp in timepoints:
-                    try:
-                        idx   = int(tp["markName"])
-                        start = float(tp["timeSeconds"])
-                        if idx < len(words):
-                            clean = _re.sub(r'[^\w\s\'\-]', '', words[idx]).strip()
-                            word_times.append({"word": clean or words[idx],
-                                               "start": round(start, 4),
-                                               "end":   round(start, 4)})
-                    except (KeyError, ValueError):
-                        continue
-                # Fill end times: each word ends when the next one starts
-                for i in range(len(word_times) - 1):
-                    word_times[i]["end"] = word_times[i + 1]["start"]
-                if word_times:
-                    word_times[-1]["end"] = round(word_times[-1]["start"] + 0.35, 4)
-                    with open(output_path + ".words.json", "w", encoding="utf-8") as tf:
-                        _json.dump(word_times, tf, ensure_ascii=False)
-                    print(f"      ⏱️ Word timing saved ({len(word_times)} words)")
+        payload = {
+            "input":              {"ssml": ssml},
+            "voice":              {"languageCode": self.lang_code, "name": self.voice_name},
+            "audioConfig":        audio_cfg,
+            "enableTimePointing": ["SSML_MARK"],
+        }
+
+        r = requests.post(url, params={"key": self.api_key},
+                          headers={"Referer": "https://digency.streamlit.app/"},
+                          json=payload, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+
+        with open(output_path, "wb") as f:
+            f.write(base64.b64decode(data["audioContent"]))
+
+        # ── Parse timepoints → save .words.json ──────────────────────────────
+        timepoints = data.get("timepoints", [])
+        if timepoints and words:
+            word_times = []
+            for tp in timepoints:
+                try:
+                    idx   = int(tp["markName"])
+                    start = float(tp["timeSeconds"])
+                    if idx < len(words):
+                        clean = _re.sub(r'[^\w\s\'\-]', '', words[idx]).strip()
+                        word_times.append({
+                            "word":  clean or words[idx],
+                            "start": round(start, 4),
+                            "end":   round(start, 4),
+                        })
+                except (KeyError, ValueError):
+                    continue
+
+            # Fill end times: each word ends when the next one starts
+            for i in range(len(word_times) - 1):
+                word_times[i]["end"] = word_times[i + 1]["start"]
+            if word_times:
+                word_times[-1]["end"] = round(word_times[-1]["start"] + 0.35, 4)
+                with open(output_path + ".words.json", "w", encoding="utf-8") as tf:
+                    _json.dump(word_times, tf, ensure_ascii=False)
+                print(f"      ⏱️  Word timing saved ({len(word_times)} words)")
+        else:
+            print(f"      ⚠️  No timepoints from Google — subtitles will use proportional fallback")
 
         return output_path
 
