@@ -107,133 +107,114 @@ class Composer:
             kwargs['fontfile'] = self._WINDOWS_FONT.replace('\\', '/')
         return kwargs
 
-    def _apply_timed_subtitle(self, stream, text: str, clip_idx: int,
-                               clip_duration: float, style: dict = None,
-                               audio_path: str = None):
-        """Word-by-word karaoke subtitles.
-        Uses exact Edge TTS word-boundary timestamps when available
-        (.words.json next to the audio file); falls back to proportional
-        char-count timing for Google TTS / missing files."""
-        s = {**self._DEFAULT_STYLE, **(style or {})}
-        clean = self._clean_sub_text(text)
-        if not clean:
-            return stream
+    def _apply_subtitles_to_stream(self, stream, scene_list: list, style: dict):
+        """Burn subtitles onto a fully-concatenated stream with ABSOLUTE timestamps.
 
-        # ── Try exact timing from Edge TTS word boundaries ────────────────────
-        word_timing = None
-        if audio_path:
-            timing_file = audio_path + '.words.json'
-            if os.path.exists(timing_file):
-                import json as _json
-                try:
-                    with open(timing_file, 'r', encoding='utf-8') as f:
-                        word_timing = _json.load(f)
-                except Exception:
-                    word_timing = None
+        This must be called AFTER all xfade/concat filters so that `t` in FFmpeg
+        drawtext refers to the global PTS of the final video, not a per-clip PTS.
 
-        if word_timing:
-            return self._apply_exact_word_subtitle(stream, word_timing, clip_idx, clip_duration, s)
-
-        # ── Proportional fallback (Google TTS / no timing file) ───────────────
-        return self._apply_proportional_subtitle(stream, clean, clip_idx, clip_duration, s)
-
-    def _apply_exact_word_subtitle(self, stream, word_timing: list, clip_idx: int,
-                                    clip_duration: float, s: dict):
-        """Show words in groups of 3, each group timed to when those words are spoken.
-        The group appears when the first word starts and stays until the next group starts."""
-        _WPG = 3  # words per group — feels natural, not karaoke
-
-        # Build groups: join every 3 consecutive words, record start/end from timing
-        groups = []
-        for i in range(0, len(word_timing), _WPG):
-            chunk_wt = word_timing[i:i + _WPG]
-            text = ' '.join(
-                self._clean_sub_text(wt.get('word', '')) for wt in chunk_wt
-            ).strip()
-            if not text:
-                continue
-            t_start = chunk_wt[0]['start']
-            # End when next group begins (seamless handoff), or last word's end
-            if i + _WPG < len(word_timing):
-                t_end = word_timing[i + _WPG]['start']
-            else:
-                t_end = chunk_wt[-1]['end'] + 0.15
-            groups.append((text, t_start, min(t_end, clip_duration)))
-
-        base_kw      = self._base_drawtext_kwargs(s)
-        max_chars    = s.get("max_chars", 28)
-        hl_color     = s.get("highlight_color", "")
-        hl_opacity   = s.get("highlight_opacity", 0.9)
-        hl_fontcolor = s.get("highlight_fontcolor", "black")
-
-        for ci, (text, t0, t1) in enumerate(groups):
-            if t0 >= clip_duration:
-                break
-            sub_file = self._write_sub_file(text, clip_idx * 1000 + ci, max_chars=max_chars)
-            kw = {**base_kw,
-                  'textfile': sub_file,
-                  'enable':   f'between(t,{t0:.4f},{t1:.4f})'}
-            if hl_color:
-                kw['box']        = 1
-                kw['boxcolor']   = f"{hl_color}@{hl_opacity:.2f}"
-                kw['boxborderw'] = 10
-                kw['fontcolor']  = hl_fontcolor
-                kw['borderw']    = 0
-            stream = stream.filter('drawtext', **kw)
-
-        return stream
-
-    def _apply_proportional_subtitle(self, stream, clean: str, clip_idx: int,
-                                      clip_duration: float, s: dict,
-                                      audio_path: str = ""):
-        """Proportional fallback: 3 words per segment, timing by word count.
-
-        Uses word count (not char count) for more uniform pacing. Skips the
-        leading TTS silence (~0.15 s) so subtitles start when the voice starts.
+        scene_list: list of dicts, each with keys:
+            abs_start   – absolute start time of this clip in the final video (s)
+            clip_duration – duration of this clip (s)
+            text        – subtitle text
+            audio_path  – path to the .mp3 (used to find .words.json)
+            idx         – global index (for unique temp-file naming)
         """
-        words = clean.split()
-        if not words:
-            return stream
+        import json as _json
 
-        # ── build 3-word chunks ───────────────────────────────────────────────
-        chunks = []
-        for i in range(0, len(words), 3):
-            chunk = ' '.join(words[i:i + 3])
-            if chunk:
-                chunks.append(chunk)
-
-        n = len(chunks)
-
-        # ── timing: distribute speech window uniformly by chunk (word-count) ──
-        # Reserve ~0.15 s of leading silence and ~0.10 s of trailing silence
-        _LEAD  = 0.15   # TTS engines always have a small pre-speech gap
-        _TRAIL = 0.10
-        speech_dur = max(0.1, clip_duration - _LEAD - _TRAIL)
-        chunk_dur  = speech_dur / n
-
-        base_kw      = self._base_drawtext_kwargs(s)
-        max_chars    = s.get("max_chars", 28)
-        hl_color     = s.get("highlight_color", "")
+        s         = style
+        base_kw   = self._base_drawtext_kwargs(s)
+        max_chars = s.get("max_chars", 28)
+        hl_color  = s.get("highlight_color", "")
         hl_opacity   = s.get("highlight_opacity", 0.9)
         hl_fontcolor = s.get("highlight_fontcolor", "black")
 
-        t = _LEAD
-        for ci, chunk in enumerate(chunks):
-            t0 = t
-            # last chunk runs to end of clip; others hand off instantly
-            t1 = (t + chunk_dur) if ci < n - 1 else clip_duration
-            t += chunk_dur
-            sub_file = self._write_sub_file(chunk, clip_idx * 1000 + ci, max_chars=max_chars)
-            kw = {**base_kw,
-                  'textfile': sub_file,
-                  'enable':   f'between(t,{t0:.3f},{t1:.3f})'}
-            if hl_color:
-                kw['box']        = 1
-                kw['boxcolor']   = f"{hl_color}@{hl_opacity:.2f}"
-                kw['boxborderw'] = 10
-                kw['fontcolor']  = hl_fontcolor
-                kw['borderw']    = 0
-            stream = stream.filter('drawtext', **kw)
+        _WPG = 3   # words shown per subtitle group
+
+        for scene in scene_list:
+            abs_start     = scene["abs_start"]
+            clip_duration = scene["clip_duration"]
+            text          = scene["text"]
+            audio_path    = scene.get("audio_path", "")
+            idx           = scene["idx"]
+
+            clean = self._clean_sub_text(text)
+            if not clean:
+                continue
+
+            # ── Try exact word timing from .words.json ────────────────────────
+            word_timing = None
+            if audio_path:
+                timing_file = audio_path + ".words.json"
+                if os.path.exists(timing_file):
+                    try:
+                        with open(timing_file, "r", encoding="utf-8") as f:
+                            word_timing = _json.load(f)
+                    except Exception:
+                        word_timing = None
+
+            if word_timing:
+                # Build 3-word groups with exact timing, offset to absolute time
+                for gi in range(0, len(word_timing), _WPG):
+                    chunk_wt = word_timing[gi:gi + _WPG]
+                    chunk_text = " ".join(
+                        self._clean_sub_text(wt.get("word", "")) for wt in chunk_wt
+                    ).strip()
+                    if not chunk_text:
+                        continue
+                    # Absolute times in the final video
+                    t0 = abs_start + chunk_wt[0]["start"]
+                    if gi + _WPG < len(word_timing):
+                        t1 = abs_start + word_timing[gi + _WPG]["start"]
+                    else:
+                        t1 = abs_start + chunk_wt[-1]["end"] + 0.15
+                    t1 = min(t1, abs_start + clip_duration)
+
+                    sub_file = self._write_sub_file(chunk_text, idx * 1000 + gi,
+                                                    max_chars=max_chars)
+                    kw = {**base_kw,
+                          "textfile": sub_file,
+                          "enable":   f"between(t,{t0:.4f},{t1:.4f})"}
+                    if hl_color:
+                        kw["box"]        = 1
+                        kw["boxcolor"]   = f"{hl_color}@{hl_opacity:.2f}"
+                        kw["boxborderw"] = 10
+                        kw["fontcolor"]  = hl_fontcolor
+                        kw["borderw"]    = 0
+                    stream = stream.filter("drawtext", **kw)
+
+            else:
+                # ── Proportional fallback (no .words.json) ────────────────────
+                words = clean.split()
+                if not words:
+                    continue
+                chunks = [" ".join(words[i:i + _WPG]) for i in range(0, len(words), _WPG)]
+                chunks = [c for c in chunks if c]
+                n = len(chunks)
+
+                # Uniform distribution over the speech window (skip TTS leading silence)
+                _LEAD  = 0.15
+                _TRAIL = 0.10
+                speech_dur = max(0.1, clip_duration - _LEAD - _TRAIL)
+                chunk_dur  = speech_dur / n
+
+                t_rel = _LEAD
+                for ci, chunk in enumerate(chunks):
+                    t0 = abs_start + t_rel
+                    t1 = abs_start + (t_rel + chunk_dur if ci < n - 1 else clip_duration)
+                    t_rel += chunk_dur
+                    sub_file = self._write_sub_file(chunk, idx * 1000 + ci,
+                                                    max_chars=max_chars)
+                    kw = {**base_kw,
+                          "textfile": sub_file,
+                          "enable":   f"between(t,{t0:.3f},{t1:.3f})"}
+                    if hl_color:
+                        kw["box"]        = 1
+                        kw["boxcolor"]   = f"{hl_color}@{hl_opacity:.2f}"
+                        kw["boxborderw"] = 10
+                        kw["fontcolor"]  = hl_fontcolor
+                        kw["borderw"]    = 0
+                    stream = stream.filter("drawtext", **kw)
 
         return stream
 
@@ -461,7 +442,7 @@ class Composer:
         _style = {**self._DEFAULT_STYLE, **(subtitle_style or {})}
 
         # Collect raw scene texts + audio paths (indexed by original video position)
-        sub_texts      = {}
+        sub_texts       = {}
         sub_audio_paths = {}
         if use_subtitles and script_data:
             for i, scene in enumerate(script_data):
@@ -470,55 +451,41 @@ class Composer:
                     sub_audio_paths[i] = scene.get('audio_path', '')
 
         # Pre-filter: drop any clip whose duration cannot be probed or is too short for xfade
-        v_trans          = 0.5
-        valid_paths      = []
-        valid_texts      = {}   # new_idx → raw text
-        valid_audio_paths = {}  # new_idx → audio path (for word timing lookup)
+        v_trans           = 0.5
+        valid_paths       = []
+        valid_texts       = {}
+        valid_audio_paths = {}
+        valid_durs        = []   # actual duration of each valid clip (needed for abs offset calc)
         for orig_i, vp in enumerate(video_paths):
             d = self.get_duration(vp)
             if d <= v_trans:
                 print(f"   ⚠️ Skipping clip {orig_i} in stitch — duration {d:.2f}s too short.")
                 continue
-            valid_texts[len(valid_paths)]       = sub_texts.get(orig_i, '')
-            valid_audio_paths[len(valid_paths)] = sub_audio_paths.get(orig_i, '')
+            ni = len(valid_paths)
+            valid_texts[ni]       = sub_texts.get(orig_i, '')
+            valid_audio_paths[ni] = sub_audio_paths.get(orig_i, '')
+            valid_durs.append(d)
             valid_paths.append(vp)
 
         if not valid_paths:
             print("❌ No valid clips left after duration check.")
             return None
 
+        # ── Step 1: Build xfade chain WITHOUT subtitles ───────────────────────
         input0      = ffmpeg.input(valid_paths[0])
         v_stream    = input0.video
         a_stream    = input0.audio
-        current_dur = self.get_duration(valid_paths[0])
-
-        if use_subtitles and valid_texts.get(0):
-            v_stream = self._apply_timed_subtitle(v_stream, valid_texts[0],
-                                                  clip_idx=0,
-                                                  clip_duration=current_dur,
-                                                  style=_style,
-                                                  audio_path=valid_audio_paths.get(0, ''))
+        current_dur = valid_durs[0]
 
         for i in range(1, len(valid_paths)):
             next_clip = ffmpeg.input(valid_paths[i])
-            next_v    = next_clip.video
-            next_dur  = self.get_duration(valid_paths[i])
-
-            if use_subtitles and valid_texts.get(i):
-                next_v = self._apply_timed_subtitle(next_v, valid_texts[i],
-                                                    clip_idx=i,
-                                                    clip_duration=next_dur,
-                                                    style=_style,
-                                                    audio_path=valid_audio_paths.get(i, ''))
-
-            v_trans = 0.5   # video xfade duration
-            a_trans = 0.05  # audio crossfade — near-instant cut, no pop, no overlap
-            offset  = current_dur - v_trans
-            effect  = random.choice(self.transitions)
+            a_trans   = 0.05
+            offset    = current_dur - v_trans
+            effect    = random.choice(self.transitions)
             print(f"   ✨ Transition {i}: '{effect}' at {offset:.2f}s")
 
             v_stream = ffmpeg.filter(
-                [v_stream, next_v],
+                [v_stream, next_clip.video],
                 'xfade',
                 transition=effect,
                 duration=v_trans,
@@ -529,7 +496,29 @@ class Composer:
                 'acrossfade',
                 d=a_trans,
             )
-            current_dur = (current_dur + next_dur) - v_trans
+            current_dur = (current_dur + valid_durs[i]) - v_trans
+
+        # ── Step 2: Calculate absolute start time of each clip in the final video
+        # clip[0] starts at 0; each subsequent clip starts after the previous
+        # duration minus the xfade overlap (v_trans = 0.5s per transition).
+        abs_starts = [0.0]
+        for i in range(1, len(valid_paths)):
+            abs_starts.append(abs_starts[i - 1] + valid_durs[i - 1] - v_trans)
+
+        # ── Step 3: Burn subtitles onto the fully-concatenated v_stream ────────
+        if use_subtitles:
+            scene_list = []
+            for i in range(len(valid_paths)):
+                if valid_texts.get(i):
+                    scene_list.append({
+                        "idx":          i,
+                        "abs_start":    abs_starts[i],
+                        "clip_duration": valid_durs[i],
+                        "text":         valid_texts[i],
+                        "audio_path":   valid_audio_paths.get(i, ''),
+                    })
+            if scene_list:
+                v_stream = self._apply_subtitles_to_stream(v_stream, scene_list, _style)
 
         try:
             ffmpeg.output(
