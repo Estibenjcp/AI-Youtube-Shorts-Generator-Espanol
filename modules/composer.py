@@ -335,6 +335,54 @@ class Composer:
             t='fill',
         )
 
+    def _apply_hook_card(self, stream, hook_text: str, duration: float = 2.5) -> object:
+        """Overlay a bold hook title for the first `duration` seconds.
+
+        Uses two drawtext layers — a slightly larger one in a contrasting color as
+        a drop-shadow, then the main text on top — to give a punchy, TikTok-style
+        look without needing a separate image overlay.
+
+        Position: vertically centered at ~35 % from top (upper-center feels more
+        natural for hooks than dead-center because subtitles live at the bottom).
+        """
+        clean = self._clean_sub_text(hook_text)
+        if not clean:
+            return stream
+
+        sub_file = self._write_sub_file(clean, index=9999, max_chars=22)
+        enable_expr = f'between(t,0,{duration:.2f})'
+        font_path   = self._WINDOWS_FONT.replace('\\', '/') if os.path.exists(self._WINDOWS_FONT) else None
+
+        common = dict(
+            textfile=sub_file,
+            x='(w-text_w)/2',
+            y='h*0.30',
+            enable=enable_expr,
+        )
+        if font_path:
+            common['fontfile'] = font_path
+
+        # Shadow layer (slightly offset, dark)
+        stream = stream.drawtext(
+            **common,
+            fontsize=68,
+            fontcolor='black@0.7',
+            x='(w-text_w)/2+3',
+            y='h*0.30+3',
+        )
+        # Main text layer (white + border for maximum readability)
+        stream = stream.drawtext(
+            **common,
+            fontsize=68,
+            fontcolor='white',
+            borderw=4,
+            bordercolor='black',
+            box=1,
+            boxcolor='black@0.45',
+            boxborderw=14,
+        )
+        return stream
+
     # ── Scene rendering ───────────────────────────────────────────────────────
 
     def process_scene(self, scene, video_pair, is_avatar=False,
@@ -487,6 +535,8 @@ class Composer:
         subtitle_style: dict = None,
         progress_bar: bool = False,
         progress_bar_color: str = 'white',
+        hook_text: str = '',
+        hook_duration: float = 2.5,
     ):
         """Stitch rendered scenes with xfade transitions.
 
@@ -633,7 +683,12 @@ class Composer:
             if scene_list:
                 v_stream = self._apply_subtitles_to_stream(v_stream, scene_list, _style)
 
-        # ── Step 4: Progress bar (applied last so it's always on top) ─────────
+        # ── Step 4: Hook card (bold opener text, first N seconds) ────────────
+        if hook_text and hook_text.strip():
+            print(f"   🪝 Hook card: \"{hook_text[:50]}\"")
+            v_stream = self._apply_hook_card(v_stream, hook_text, duration=hook_duration)
+
+        # ── Step 5: Progress bar (applied last so it's always on top) ─────────
         if progress_bar:
             v_stream = self._apply_progress_bar(v_stream, current_dur,
                                                 color=progress_bar_color)

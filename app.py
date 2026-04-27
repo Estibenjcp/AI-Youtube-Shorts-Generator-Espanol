@@ -1065,6 +1065,9 @@ for key, default in [
     ("fx_color_grade",      True),
     ("fx_progress_bar",     False),
     ("fx_progress_bar_color", "#FFFFFF"),
+    ("fx_hook_card",        False),
+    ("fx_hook_text",        ""),
+    ("fx_hook_duration",    2.5),
     # ── Música de fondo ──
     ("use_music",        False),
     ("music_volume",     15),
@@ -1402,6 +1405,16 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         _pb_color     = params.get("fx_progress_bar_color", "#FFFFFF").lstrip("#")
         _pb_color_ffmpeg = f"0x{_pb_color}" if _pb_color else "white"
 
+        # ── Hook card: auto-generate from first scene if blank ────────────────
+        _hook_text = ""
+        if params.get("fx_hook_card", False):
+            _hook_text = (params.get("fx_hook_text") or "").strip()
+            if not _hook_text and script:
+                # Auto: first sentence of the first scene, max 55 chars
+                _first = script[0].get("text", "")
+                _hook_text = _first.split(".")[0].strip()[:55]
+        _hook_dur = float(params.get("fx_hook_duration", 2.5))
+
         final_scene_paths = composer.render_all_scenes(
             script, assets_map,
             ken_burns=_ken_burns,
@@ -1417,6 +1430,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             subtitle_style=params.get("subtitle_style", {}),
             progress_bar=_progress_bar,
             progress_bar_color=_pb_color_ffmpeg,
+            hook_text=_hook_text,
+            hook_duration=_hook_dur,
         )
 
         if params.get("use_music") and params.get("music_file_path") and final_video_path:
@@ -2243,6 +2258,39 @@ with st.expander(_fx_label, expanded=False):
                 "Color barra" if lang_option == "es" else "Bar color",
                 value=st.session_state.get("fx_progress_bar_color", "#FFFFFF"),
                 key="fx_progress_bar_color",
+            )
+
+    # ── Hook card row ──
+    st.divider()
+    _hook_col1, _hook_col2 = st.columns([1, 3])
+    with _hook_col1:
+        st.toggle(
+            "🪝 Hook card" if lang_option == "es" else "🪝 Hook card",
+            value=st.session_state.get("fx_hook_card", False),
+            key="fx_hook_card",
+            help=("Muestra un texto de enganche en grande durante los primeros "
+                  "segundos del video. Aumenta drásticamente la retención inicial."
+                  if lang_option == "es" else
+                  "Shows a large attention-grabbing text in the first seconds. "
+                  "Dramatically boosts initial viewer retention."),
+        )
+    with _hook_col2:
+        if st.session_state.get("fx_hook_card", False):
+            st.text_input(
+                "✏️ " + ("Texto del hook (máx. 60 chars)" if lang_option == "es" else "Hook text (max 60 chars)"),
+                value=st.session_state.get("fx_hook_text", ""),
+                key="fx_hook_text",
+                max_chars=60,
+                placeholder="¿Sabías que esto existía?" if lang_option == "es" else "Did you know this existed?",
+                help=("Déjalo vacío para generar automáticamente del primer guion."
+                      if lang_option == "es" else
+                      "Leave blank to auto-generate from the first script scene."),
+            )
+            st.slider(
+                "⏱️ " + ("Duración (s)" if lang_option == "es" else "Duration (s)"),
+                min_value=1.0, max_value=4.0, step=0.5,
+                value=st.session_state.get("fx_hook_duration", 2.5),
+                key="fx_hook_duration",
             )
 
 # ── Historial de temas usados ─────────────────────────────────────────────────
@@ -3387,6 +3435,9 @@ def _launch_pipeline():
         "fx_color_grade":       st.session_state.get("fx_color_grade", True),
         "fx_progress_bar":      st.session_state.get("fx_progress_bar", False),
         "fx_progress_bar_color":st.session_state.get("fx_progress_bar_color", "#FFFFFF"),
+        "fx_hook_card":         st.session_state.get("fx_hook_card", False),
+        "fx_hook_text":         st.session_state.get("fx_hook_text", ""),
+        "fx_hook_duration":     st.session_state.get("fx_hook_duration", 2.5),
         "video_mode":           mode,
         "novela_theme":         st.session_state.get("novela_theme_input", ""),
         "podcast_topic":        st.session_state.get("podcast_topic_input", ""),
@@ -3707,6 +3758,9 @@ elif _hook_step == "selecting":
                 "fx_color_grade":        st.session_state.get("fx_color_grade", True),
                 "fx_progress_bar":       st.session_state.get("fx_progress_bar", False),
                 "fx_progress_bar_color": st.session_state.get("fx_progress_bar_color", "#FFFFFF"),
+                "fx_hook_card":          st.session_state.get("fx_hook_card", False),
+                "fx_hook_text":          st.session_state.get("fx_hook_text", ""),
+                "fx_hook_duration":      st.session_state.get("fx_hook_duration", 2.5),
                 "video_mode":            mode,
                 "novela_theme":          st.session_state.get("novela_theme_input", ""),
                 "podcast_topic":         st.session_state.get("podcast_topic_input", ""),

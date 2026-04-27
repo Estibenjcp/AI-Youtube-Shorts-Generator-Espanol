@@ -48,6 +48,14 @@ SUBTITLE_STYLE = {
 # Background colors (one per scene) — any FFmpeg color string
 BG_COLORS = ["0x1a1a2e", "0x16213e"]
 
+# ── Hook card (set HOOK_TEXT="" to disable, or leave blank for auto from first scene) ──
+HOOK_TEXT     = ""      # e.g. "¿Sabías que esto existía?"
+HOOK_DURATION = 2.5     # seconds the hook card is visible
+
+# ── Progress bar ──
+PROGRESS_BAR       = False
+PROGRESS_BAR_COLOR = "white"
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 TEMP_DIR  = os.path.join("assets", "temp")
@@ -144,6 +152,11 @@ async def main():
             print(f"   ❌ Scene {scene['id']}: render failed")
 
     # ── 4. Stitch with subtitles ──────────────────────────────────────────────
+    # Auto hook: first sentence of first scene if HOOK_TEXT is blank
+    _hook = HOOK_TEXT.strip()
+    if not _hook and HOOK_DURATION > 0:
+        _hook = scenes[0]["text"].split(".")[0].strip()[:55]
+
     print("\n🔗 Stitching with subtitles...")
     out = composer.concatenate_with_transitions(
         rendered,
@@ -151,6 +164,10 @@ async def main():
         script_data=scenes,
         use_subtitles=True,
         subtitle_style=SUBTITLE_STYLE,
+        progress_bar=PROGRESS_BAR,
+        progress_bar_color=PROGRESS_BAR_COLOR,
+        hook_text=_hook,
+        hook_duration=HOOK_DURATION,
     )
 
     if out:
