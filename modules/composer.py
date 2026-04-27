@@ -458,9 +458,15 @@ class Composer:
                             v=1, a=0,
                         )
 
+            # Pad audio with 0.5 s of silence so the crossfade in
+            # concatenate_with_transitions (d=0.5 s) consumes only
+            # silence — never the actual speech.  The video stream
+            # is already built to total_duration + 0.5 s, so streams match.
+            padded_audio = input_audio.audio.filter('apad', pad_dur=0.5)
+
             ffmpeg.output(
                 video_stream,
-                input_audio,
+                padded_audio,
                 output_path,
                 vcodec='libx264',
                 acodec='aac',
@@ -468,7 +474,6 @@ class Composer:
                 preset='ultrafast',
                 crf=26,
                 threads=1,
-                shortest=None,
             ).run(overwrite_output=True, quiet=True)
 
             return output_path
@@ -658,8 +663,8 @@ class Composer:
                 [a_stream, next_clip.audio],
                 'acrossfade',
                 d=a_trans,
-                c1='exp',   # outgoing: drops to silence quickly
-                c2='exp',   # incoming: rises from silence quickly
+                c1='tri',   # outgoing fades through silence (not speech) → sounds natural
+                c2='tri',   # incoming speech fades in gently
             )
             current_dur = (current_dur + valid_durs[i]) - v_trans
 
