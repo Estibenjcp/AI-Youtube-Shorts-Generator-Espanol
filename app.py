@@ -2289,8 +2289,14 @@ with st.expander(_fx_label, expanded=False):
             st.slider(
                 "⏱️ " + ("Duración (s)" if lang_option == "es" else "Duration (s)"),
                 min_value=1.0, max_value=4.0, step=0.5,
-                value=st.session_state.get("fx_hook_duration", 2.5),
+                value=float(st.session_state.get("fx_hook_duration", 2.5)),
                 key="fx_hook_duration",
+            )
+        else:
+            st.caption(
+                "🪝 Activa el toggle para escribir el texto de enganche del video."
+                if lang_option == "es" else
+                "🪝 Enable the toggle to enter the opening hook text."
             )
 
 # ── Historial de temas usados ─────────────────────────────────────────────────
