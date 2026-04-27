@@ -2262,44 +2262,40 @@ with st.expander(_fx_label, expanded=False):
 
 
 # ── Hook card ────────────────────────────────────────────────────────────────
-_hk_label = "🪝 Hook card (texto de enganche)" if lang_option == "es" else "🪝 Hook card (opening text)"
-with st.expander(_hk_label, expanded=False):
-    _hk_col1, _hk_col2 = st.columns([1, 3])
-    with _hk_col1:
-        st.toggle(
-            "Activar" if lang_option == "es" else "Enable",
-            value=st.session_state.get("fx_hook_card", False),
-            key="fx_hook_card",
-            help=("Muestra un texto grande y llamativo durante los primeros segundos. "
-                  "Aumenta drásticamente la retención inicial."
-                  if lang_option == "es" else
-                  "Shows a large bold text in the first seconds. "
-                  "Dramatically boosts initial viewer retention."),
-        )
-        if st.session_state.get("fx_hook_card", False):
-            st.slider(
-                "⏱️ " + ("Duración (s)" if lang_option == "es" else "Duration (s)"),
-                min_value=1.0, max_value=4.0, step=0.5,
-                value=float(st.session_state.get("fx_hook_duration", 2.5)),
-                key="fx_hook_duration",
-            )
-    with _hk_col2:
-        st.text_input(
-            "✏️ " + ("Texto del hook" if lang_option == "es" else "Hook text"),
-            value=st.session_state.get("fx_hook_text", ""),
-            key="fx_hook_text",
-            max_chars=60,
-            placeholder="¿Sabías que esto existía?" if lang_option == "es" else "Did you know this existed?",
-            help=("Déjalo vacío para generar automáticamente del primer guion. "
-                  "Máx. 60 caracteres."
-                  if lang_option == "es" else
-                  "Leave blank to auto-generate from the first script scene. Max 60 chars."),
-            disabled=not st.session_state.get("fx_hook_card", False),
-        )
-        st.caption(
-            "💡 Déjalo vacío y se tomará la primera oración del guion automáticamente."
-            if lang_option == "es" else
-            "💡 Leave blank and the first sentence of the script will be used automatically."
+st.markdown("**Texto de enganche (Hook card)**" if lang_option == "es" else "**Opening hook card**")
+_hk_col1, _hk_col2, _hk_col3 = st.columns([1, 2, 1])
+with _hk_col1:
+    st.toggle(
+        "Activar hook" if lang_option == "es" else "Enable hook",
+        value=st.session_state.get("fx_hook_card", False),
+        key="fx_hook_card",
+        help=("Muestra un texto grande y llamativo durante los primeros segundos del video."
+              if lang_option == "es" else
+              "Shows a large bold text in the first seconds of the video."),
+    )
+with _hk_col2:
+    st.text_input(
+        "Texto del hook" if lang_option == "es" else "Hook text",
+        value=st.session_state.get("fx_hook_text", ""),
+        key="fx_hook_text",
+        max_chars=60,
+        placeholder="¿Sabías que esto existía?" if lang_option == "es" else "Did you know this existed?",
+        disabled=not st.session_state.get("fx_hook_card", False),
+        label_visibility="collapsed",
+    )
+    st.caption(
+        "Dejar vacío = se genera solo del primer guion"
+        if lang_option == "es" else
+        "Leave blank = auto-generated from first scene"
+    )
+with _hk_col3:
+    if st.session_state.get("fx_hook_card", False):
+        st.slider(
+            "Duración (s)" if lang_option == "es" else "Duration (s)",
+            min_value=1.0, max_value=4.0, step=0.5,
+            value=float(st.session_state.get("fx_hook_duration", 2.5)),
+            key="fx_hook_duration",
+            label_visibility="collapsed",
         )
 
 # ── Historial de temas usados ─────────────────────────────────────────────────
