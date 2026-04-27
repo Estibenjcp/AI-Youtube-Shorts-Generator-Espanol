@@ -69,17 +69,15 @@ class AudioEngine:
         """Sanitize text before sending to Edge TTS.
         - Removes newlines/tabs (confuse TTS, cause dropped words)
         - Replaces '...' with a comma+space so TTS pauses naturally
-          instead of potentially generating short/silent audio
+        - Replaces \u00f1/\u00d1 with n/N as fallback (some voices mispronounce \u00f1)
         - Collapses multiple spaces
         """
-        # Replace newlines / tabs with a space
         text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
-        # Replace ellipsis variants with a comma pause (TTS-friendly)
         text = text.replace('...', ',')
         text = text.replace('\u2026', ',')
-        # Collapse multiple whitespace into one
+        # \u00f1 fallback \u2014 LLM should avoid it but this catches any that slip through
+        text = text.replace('\u00f1', 'n').replace('\u00d1', 'N')
         text = re.sub(r'\s{2,}', ' ', text)
-        # Remove any double commas that might result
         text = re.sub(r',\s*,', ',', text)
         return text.strip()
 
@@ -363,6 +361,7 @@ class VoxCPMAudioEngine:
     def _clean_text(text: str) -> str:
         text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
         text = text.replace('...', ',').replace('\u2026', ',')
+        text = text.replace('\u00f1', 'n').replace('\u00d1', 'N')
         text = re.sub(r'\s{2,}', ' ', text)
         text = re.sub(r',\s*,', ',', text)
         return text.strip()
@@ -563,6 +562,7 @@ class GoogleTTSAudioEngine:
     def _clean_text(text: str) -> str:
         text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
         text = text.replace('...', ',').replace('\u2026', ',')
+        text = text.replace('\u00f1', 'n').replace('\u00d1', 'N')
         text = re.sub(r'\s{2,}', ' ', text)
         text = re.sub(r',\s*,', ',', text)
         return text.strip()

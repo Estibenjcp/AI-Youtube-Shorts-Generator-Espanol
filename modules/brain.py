@@ -278,7 +278,7 @@ REGLAS ABSOLUTAS:
 - Cada tema debe ser algo que realmente ocurrió, que realmente se dice, o que realmente existe como leyenda o teoría en la cultura popular.
 - Longitud: máximo 12 palabras por tema.
 - Estilo: titular directo, que genere curiosidad real.
-- Idioma: español neutro latino.
+- Idioma: español neutro latino. Evita palabras con la letra ñ — usa alternativas naturales (ej: "anio" en vez de "año", "senor" en vez de "señor", "Espana" en vez de "España").
 
 FUENTES VÁLIDAS de donde debes extraer (usa tu conocimiento entrenado):
 - Historia documentada mundial
@@ -1947,7 +1947,7 @@ REGLAS:
 - Descripción física de personajes OPTIMIZADA para prompts de video IA (en inglés, detallada).
 - Arco narrativo completo: setup → conflicto → clímax → resolución.
 - Tono que maximice retención: drama, emoción fuerte, suspenso natural.
-- Idioma de la narración: español latino neutro.
+- Idioma de la narración: español latino neutro. Evita palabras con ñ — usa alternativas naturales.
 - Las descripciones físicas de personajes DEBEN estar en INGLÉS (para los prompts de video IA).
 
 FORMATO DE SALIDA (JSON estricto, sin markdown):
@@ -2070,7 +2070,7 @@ ARCO NARRATIVO:
 TAREA: Escribe exactamente {num_scenes} escenas para YouTube Shorts.
 
 REGLAS DE NARRACIÓN:
-- Idioma: español latino neutro, 3ra persona.
+- Idioma: español latino neutro, 3ra persona. Evita palabras con ñ — usa alternativas naturales.
 - Cada "text" es la NARRACIÓN en voz en off (lo que dice el narrador). Máximo 15 palabras.
 - Sin diálogos en el "text" — solo narración descriptiva y dramática.
 - Cada escena: una sola idea poderosa. Sin relleno.
