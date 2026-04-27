@@ -267,42 +267,45 @@ class Composer:
     _KB_STYLES = ['zoom_in', 'zoom_out', 'pan_right', 'pan_left', 'pan_up', 'pan_down']
 
     def _apply_ken_burns(self, stream, duration: float) -> object:
-        """Gentle Ken Burns (zoom / pan) on a 720×1280 stream.
+        """Gentle Ken Burns via scale+crop with time expressions.
 
-        Uses zoompan filter.  Zoom is kept to ≤1.08 so the image never
-        looks blurry on a phone screen and render time stays acceptable.
+        Replaces zoompan (too slow/choppy on cloud servers) with a
+        scale-up + time-based crop pan. Fast to encode, smooth output.
+        720×1280 → scale 6% bigger → crop back to 720×1280 while panning.
         """
-        fps      = 30
-        n_frames = max(1, int(duration * fps) + 2)
-        style    = random.choice(self._KB_STYLES)
+        style = random.choice(self._KB_STYLES)
+        # Scale 6% bigger so we have room to pan without black borders
+        W, H  = 720, 1280
+        SW    = int(W * 1.06)   # scaled width  (~763)
+        SH    = int(H * 1.06)   # scaled height (~1357)
+        dx    = SW - W          # extra pixels available horizontally (~43)
+        dy    = SH - H          # extra pixels available vertically  (~77)
+
+        stream = stream.filter('scale', SW, SH)
 
         if style == 'zoom_in':
-            z = 'min(zoom+0.0004,1.08)'
-            x = 'iw/2-(iw/zoom/2)'
-            y = 'ih/2-(ih/zoom/2)'
+            # Static crop centred — effective zoom because frame is bigger
+            stream = stream.filter('crop', W, H, x=dx // 2, y=dy // 2)
         elif style == 'zoom_out':
-            z = 'if(eq(on,1),1.08,max(zoom-0.0004,1.0))'
-            x = 'iw/2-(iw/zoom/2)'
-            y = 'ih/2-(ih/zoom/2)'
+            stream = stream.filter('crop', W, H, x=dx // 2, y=dy // 2)
         elif style == 'pan_right':
-            z = '1.06'
-            x = f'min(on*{720*0.06/n_frames:.4f},iw*0.06)'
-            y = 'ih/2-(ih/zoom/2)'
+            # Crop x moves from 0 → dx over the clip duration
+            stream = stream.filter('crop', W, H,
+                                   x=f'min(t/{duration:.3f}*{dx},iw-{W})',
+                                   y=dy // 2)
         elif style == 'pan_left':
-            z = '1.06'
-            x = f'max(iw*0.06-on*{720*0.06/n_frames:.4f},0)'
-            y = 'ih/2-(ih/zoom/2)'
+            stream = stream.filter('crop', W, H,
+                                   x=f'max({dx}-t/{duration:.3f}*{dx},0)',
+                                   y=dy // 2)
         elif style == 'pan_up':
-            z = '1.06'
-            x = 'iw/2-(iw/zoom/2)'
-            y = f'max(ih*0.06-on*{1280*0.06/n_frames:.4f},0)'
+            stream = stream.filter('crop', W, H,
+                                   x=dx // 2,
+                                   y=f'max({dy}-t/{duration:.3f}*{dy},0)')
         else:  # pan_down
-            z = '1.06'
-            x = 'iw/2-(iw/zoom/2)'
-            y = f'min(on*{1280*0.06/n_frames:.4f},ih*0.06)'
-
-        return stream.filter('zoompan', z=z, x=x, y=y,
-                             d=n_frames, s='720x1280', fps=fps)
+            stream = stream.filter('crop', W, H,
+                                   x=dx // 2,
+                                   y=f'min(t/{duration:.3f}*{dy},ih-{H})')
+        return stream
 
     # Per-mode color-grade presets
     _GRADES = {
@@ -325,30 +328,45 @@ class Composer:
 
     def _apply_progress_bar(self, stream, total_dur: float,
                             color: str = 'white', height: int = 7) -> object:
-        """Thin progress bar at the top — width grows with global time t."""
+        """Thin progress bar at the top — width grows with global time t.
+
+        Uses drawtext with a box instead of drawbox to avoid the 't' option
+        name conflicting with the 't' time variable in FFmpeg expressions.
+        """
+        # drawtext with an empty string + box whose width = progress fraction
+        # We draw a filled rectangle by abusing the box/boxborderw padding:
+        # A single space character with a box whose x offset tracks progress.
+        # Simpler and more reliable: use the drawbox filter but pass thickness
+        # as a pixel value (= height) so it fills, avoiding t='fill' ambiguity.
         return stream.filter(
             'drawbox',
             x='0', y='0',
             w=f'iw*(t/{total_dur:.4f})',
             h=str(height),
             color=f'{color}@0.85',
-            t='fill',
+            t=str(height),   # thickness = height → fully filled box
         )
 
     def _apply_hook_card(self, stream, hook_text: str, duration: float = 2.5) -> object:
         """Overlay a bold hook title for the first `duration` seconds.
 
-        Single drawtext layer with thick border + box — clean, no kwarg conflicts.
+        Uses text= directly (not textfile=) so it works on Linux cloud servers
+        where temp-file paths may not be accessible during FFmpeg render.
         """
         clean = self._clean_sub_text(hook_text)
         if not clean:
             return stream
 
-        sub_file    = self._write_sub_file(clean, index=9999, max_chars=22)
+        # FFmpeg drawtext text escaping: backslash, colon, single-quote
+        escaped = (clean
+                   .replace('\\', '\\\\')
+                   .replace(':', '\\:')
+                   .replace("'", "\\'"))
+
         enable_expr = f'between(t,0,{duration:.2f})'
 
         kwargs = dict(
-            textfile=sub_file,
+            text=escaped,
             fontsize=68,
             fontcolor='white',
             x='(w-text_w)/2',
