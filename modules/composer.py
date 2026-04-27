@@ -261,9 +261,84 @@ class Composer:
 
         return stream
 
+    # ── Visual effects helpers ────────────────────────────────────────────────
+
+    # Ken Burns direction pool — randomly picked per clip
+    _KB_STYLES = ['zoom_in', 'zoom_out', 'pan_right', 'pan_left', 'pan_up', 'pan_down']
+
+    def _apply_ken_burns(self, stream, duration: float) -> object:
+        """Gentle Ken Burns (zoom / pan) on a 720×1280 stream.
+
+        Uses zoompan filter.  Zoom is kept to ≤1.08 so the image never
+        looks blurry on a phone screen and render time stays acceptable.
+        """
+        fps      = 30
+        n_frames = max(1, int(duration * fps) + 2)
+        style    = random.choice(self._KB_STYLES)
+
+        if style == 'zoom_in':
+            z = 'min(zoom+0.0004,1.08)'
+            x = 'iw/2-(iw/zoom/2)'
+            y = 'ih/2-(ih/zoom/2)'
+        elif style == 'zoom_out':
+            z = 'if(eq(on,1),1.08,max(zoom-0.0004,1.0))'
+            x = 'iw/2-(iw/zoom/2)'
+            y = 'ih/2-(ih/zoom/2)'
+        elif style == 'pan_right':
+            z = '1.06'
+            x = f'min(on*{720*0.06/n_frames:.4f},iw*0.06)'
+            y = 'ih/2-(ih/zoom/2)'
+        elif style == 'pan_left':
+            z = '1.06'
+            x = f'max(iw*0.06-on*{720*0.06/n_frames:.4f},0)'
+            y = 'ih/2-(ih/zoom/2)'
+        elif style == 'pan_up':
+            z = '1.06'
+            x = 'iw/2-(iw/zoom/2)'
+            y = f'max(ih*0.06-on*{1280*0.06/n_frames:.4f},0)'
+        else:  # pan_down
+            z = '1.06'
+            x = 'iw/2-(iw/zoom/2)'
+            y = f'min(on*{1280*0.06/n_frames:.4f},ih*0.06)'
+
+        return stream.filter('zoompan', z=z, x=x, y=y,
+                             d=n_frames, s='720x1280', fps=fps)
+
+    # Per-mode color-grade presets
+    _GRADES = {
+        'viral':      {'saturation': 1.35, 'contrast': 1.12, 'brightness': 0.02,  'gamma': 1.0},
+        'biblia':     {'saturation': 0.85, 'contrast': 1.05, 'brightness': 0.015, 'gamma': 1.05},
+        'testimonio': {'saturation': 0.92, 'contrast': 1.05, 'brightness': 0.02,  'gamma': 1.0},
+        'misterio':   {'saturation': 0.60, 'contrast': 1.20, 'brightness': -0.03, 'gamma': 0.95},
+        'libro':      {'saturation': 1.10, 'contrast': 1.08, 'brightness': 0.01,  'gamma': 1.0},
+        'auto':       {'saturation': 1.15, 'contrast': 1.08, 'brightness': 0.01,  'gamma': 1.0},
+    }
+
+    def _apply_color_grade(self, stream, mode: str = 'auto') -> object:
+        """Apply color-grading preset via FFmpeg eq filter."""
+        g = self._GRADES.get(mode, self._GRADES['auto'])
+        return stream.filter('eq',
+                             saturation=g['saturation'],
+                             contrast=g['contrast'],
+                             brightness=g['brightness'],
+                             gamma=g['gamma'])
+
+    def _apply_progress_bar(self, stream, total_dur: float,
+                            color: str = 'white', height: int = 7) -> object:
+        """Thin progress bar at the top — width grows with global time t."""
+        return stream.filter(
+            'drawbox',
+            x='0', y='0',
+            w=f'iw*(t/{total_dur:.4f})',
+            h=str(height),
+            color=f'{color}@0.85',
+            t='fill',
+        )
+
     # ── Scene rendering ───────────────────────────────────────────────────────
 
-    def process_scene(self, scene, video_pair, is_avatar=False):
+    def process_scene(self, scene, video_pair, is_avatar=False,
+                      ken_burns: bool = False, color_grade: str = None):
         """
         Combines Audio with Visuals.
         - Avatar: Loop single video + crop logo.
@@ -273,6 +348,24 @@ class Composer:
         audio_path    = scene['audio_path']
         total_duration = scene['duration']
         output_path   = os.path.join(self.temp_dir, f"scene_{scene_id}.mp4")
+
+        # Helper: scale + crop a single clip to 720×1280
+        def _prep(path, dur, dark=False):
+            s = (
+                ffmpeg.input(path, stream_loop=-1)
+                .trim(duration=dur)
+                .setpts('PTS-STARTPTS')
+                .filter('scale', 720, 1280, force_original_aspect_ratio='increase')
+                .filter('crop', 720, 1280)
+                .filter('fps', fps=30, round='up')
+            )
+            if dark:
+                s = s.filter('eq', brightness=-0.06, contrast=1.1, saturation=0.75)
+            if color_grade and not is_avatar:
+                s = self._apply_color_grade(s, color_grade)
+            if ken_burns and not is_avatar:
+                s = self._apply_ken_burns(s, dur)
+            return s
 
         try:
             input_audio = ffmpeg.input(audio_path)
@@ -295,60 +388,27 @@ class Composer:
                     dur_a = total_duration / 3
                     dur_b = total_duration / 3
                     dur_c = total_duration - dur_a - dur_b + 0.5
-
-                    def _dark_stream(path, dur):
-                        return (
-                            ffmpeg.input(path, stream_loop=-1)
-                            .trim(duration=dur)
-                            .setpts('PTS-STARTPTS')
-                            .filter('scale', 720, 1280, force_original_aspect_ratio='increase')
-                            .filter('crop', 720, 1280)
-                            .filter('fps', fps=30, round='up')
-                            .filter('eq', brightness=-0.06, contrast=1.1, saturation=0.75)
-                        )
-
-                    stream_a = _dark_stream(path_a, dur_a)
-                    stream_b = _dark_stream(path_b, dur_b)
-                    stream_c = _dark_stream(path_c, dur_c)
-                    video_stream = ffmpeg.concat(stream_a, stream_b, stream_c, v=1, a=0)
+                    video_stream = ffmpeg.concat(
+                        _prep(path_a, dur_a, dark=True),
+                        _prep(path_b, dur_b, dark=True),
+                        _prep(path_c, dur_c, dark=True),
+                        v=1, a=0,
+                    )
 
                 else:
                     path_a = video_pair[0]
                     path_b = video_pair[1] if len(video_pair) > 1 else None
 
                     if path_b is None:
-                        # Single AI-generated clip — loop it for the full scene duration
                         print(f"   ⚙️ Processing Scene {scene_id}: AI Single Clip Mode")
-                        video_stream = (
-                            ffmpeg.input(path_a, stream_loop=-1)
-                            .trim(duration=total_duration + 0.5)
-                            .setpts('PTS-STARTPTS')
-                            .filter('scale', 720, 1280, force_original_aspect_ratio='increase')
-                            .filter('crop', 720, 1280)
-                            .filter('fps', fps=30, round='up')
-                        )
+                        video_stream = _prep(path_a, total_duration + 0.5)
                     else:
                         print(f"   ⚙️ Processing Scene {scene_id}: A/B Split Mode")
-                        duration_a = total_duration / 2
-                        duration_b = (total_duration / 2) + 0.5
-
-                        stream_a = (
-                            ffmpeg.input(path_a, stream_loop=-1)
-                            .trim(duration=duration_a)
-                            .setpts('PTS-STARTPTS')
-                            .filter('scale', 720, 1280)
-                            .filter('crop', 720, 1280)
-                            .filter('fps', fps=30, round='up')
+                        video_stream = ffmpeg.concat(
+                            _prep(path_a, total_duration / 2),
+                            _prep(path_b, total_duration / 2 + 0.5),
+                            v=1, a=0,
                         )
-                        stream_b = (
-                            ffmpeg.input(path_b, stream_loop=-1)
-                            .trim(duration=duration_b)
-                            .setpts('PTS-STARTPTS')
-                            .filter('scale', 720, 1280)
-                            .filter('crop', 720, 1280)
-                            .filter('fps', fps=30, round='up')
-                        )
-                        video_stream = ffmpeg.concat(stream_a, stream_b, v=1, a=0)
 
             ffmpeg.output(
                 video_stream,
@@ -369,7 +429,8 @@ class Composer:
             print(f"❌ Render Fail Scene {scene_id}: {e.stderr.decode('utf8') if e.stderr else str(e)}")
             return None
 
-    def render_all_scenes(self, script_data, video_pairs):
+    def render_all_scenes(self, script_data, video_pairs,
+                          ken_burns: bool = False, color_grade: str = None):
         rendered_paths = []
 
         # Pick avatar scenes only if enabled and avatar file exists
@@ -381,13 +442,10 @@ class Composer:
             print(f"🎲 Avatar set for Scenes: {[i+1 for i in avatar_indices]}")
 
         for i, scene in enumerate(script_data):
-            # Guard: skip scene if audio file is missing
             audio_path = scene.get('audio_path', '')
             if not audio_path or not os.path.exists(audio_path):
                 print(f"   ⚠️ Skipping Scene {scene['id']} — audio file not found.")
                 continue
-
-            # Guard: skip scene if duration is zero (failed audio generation)
             if scene.get('duration', 0) <= 0:
                 print(f"   ⚠️ Skipping Scene {scene['id']} — duration is zero or invalid.")
                 continue
@@ -399,7 +457,6 @@ class Composer:
                 current_pair = (self.avatar_path, None)
                 is_avatar    = True
             elif current_pair is None:
-                # ── Fallback: borrow video from the nearest scene that succeeded ──
                 fallback_pair = None
                 for offset in range(1, len(video_pairs)):
                     for candidate in [i - offset, i + offset]:
@@ -414,7 +471,8 @@ class Composer:
                     continue
                 current_pair = fallback_pair
 
-            path = self.process_scene(scene, current_pair, is_avatar)
+            path = self.process_scene(scene, current_pair, is_avatar,
+                                      ken_burns=ken_burns, color_grade=color_grade)
             if path:
                 rendered_paths.append(path)
 
@@ -427,11 +485,14 @@ class Composer:
         script_data=None,
         use_subtitles: bool = False,
         subtitle_style: dict = None,
+        progress_bar: bool = False,
+        progress_bar_color: str = 'white',
     ):
-        """
-        Stitches rendered scenes with xfade transitions.
-        Optionally burns subtitles from script_data onto each scene.
-        subtitle_style: dict with keys fontsize, fontcolor, y, borderw, bordercolor, box, boxcolor, max_chars.
+        """Stitch rendered scenes with xfade transitions.
+
+        Optional effects applied to the final concatenated stream:
+          • Subtitles (word-by-word, exact or proportional timing)
+          • Progress bar (thin bar at top that fills over total duration)
         """
         print("🎬 Stitching final video...")
         output_path = os.path.join(self.final_dir, output_filename)
@@ -571,6 +632,11 @@ class Composer:
                     })
             if scene_list:
                 v_stream = self._apply_subtitles_to_stream(v_stream, scene_list, _style)
+
+        # ── Step 4: Progress bar (applied last so it's always on top) ─────────
+        if progress_bar:
+            v_stream = self._apply_progress_bar(v_stream, current_dur,
+                                                color=progress_bar_color)
 
         try:
             ffmpeg.output(

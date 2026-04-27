@@ -1060,6 +1060,11 @@ for key, default in [
     # ── Duración y estructura ──
     ("target_total_secs",   60),
     ("global_num_scenes",    9),
+    # ── Efectos visuales ──
+    ("fx_ken_burns",        False),
+    ("fx_color_grade",      True),
+    ("fx_progress_bar",     False),
+    ("fx_progress_bar_color", "#FFFFFF"),
     # ── Música de fondo ──
     ("use_music",        False),
     ("music_volume",     15),
@@ -1389,7 +1394,19 @@ def run_pipeline(log_q: queue.Queue, params: dict):
 
         log_q.put("STAGE:Composer")
         composer = Composer(use_avatar=params.get("use_avatar", False))
-        final_scene_paths = composer.render_all_scenes(script, assets_map)
+
+        # ── Visual effects from params ────────────────────────────────────────
+        _ken_burns    = params.get("fx_ken_burns", False)
+        _color_grade  = params.get("video_mode", "auto") if params.get("fx_color_grade", True) else None
+        _progress_bar = params.get("fx_progress_bar", False)
+        _pb_color     = params.get("fx_progress_bar_color", "#FFFFFF").lstrip("#")
+        _pb_color_ffmpeg = f"0x{_pb_color}" if _pb_color else "white"
+
+        final_scene_paths = composer.render_all_scenes(
+            script, assets_map,
+            ken_burns=_ken_burns,
+            color_grade=_color_grade,
+        )
         if not final_scene_paths:
             log_q.put("ERROR:No scenes were rendered.")
             return
@@ -1398,6 +1415,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             final_scene_paths, script_data=script,
             use_subtitles=params.get("use_subtitles", False),
             subtitle_style=params.get("subtitle_style", {}),
+            progress_bar=_progress_bar,
+            progress_bar_color=_pb_color_ffmpeg,
         )
 
         if params.get("use_music") and params.get("music_file_path") and final_video_path:
@@ -2184,6 +2203,47 @@ with st.expander(_dur_label, expanded=False):
         f"≈ {_wps} words per scene · "
         f"≈ {round(target_total_secs / 60, 1)} min total"
     )
+
+# ── Efectos visuales ─────────────────────────────────────────────────────────
+_fx_label = "🎬 Efectos visuales" if lang_option == "es" else "🎬 Visual effects"
+with st.expander(_fx_label, expanded=False):
+    col_fx1, col_fx2 = st.columns(2)
+    with col_fx1:
+        st.toggle(
+            "🎥 Ken Burns (zoom/pan)" if lang_option == "es" else "🎥 Ken Burns (zoom/pan)",
+            value=st.session_state.get("fx_ken_burns", False),
+            key="fx_ken_burns",
+            help=("Aplica un zoom o paneo suave a cada clip de stock. "
+                  "Hace el video más dinámico. Aumenta el tiempo de render."
+                  if lang_option == "es" else
+                  "Applies a slow zoom or pan to each stock clip. "
+                  "Makes the video feel more alive. Increases render time."),
+        )
+        st.toggle(
+            "🎨 Color grading automático" if lang_option == "es" else "🎨 Auto color grading",
+            value=st.session_state.get("fx_color_grade", True),
+            key="fx_color_grade",
+            help=("Ajusta saturación, contraste y brillo según el modo del video: "
+                  "bíblico=cálido, viral=vibrante, misterio=oscuro y frío."
+                  if lang_option == "es" else
+                  "Adjusts saturation, contrast and brightness based on the video mode."),
+        )
+    with col_fx2:
+        st.toggle(
+            "📊 Barra de progreso" if lang_option == "es" else "📊 Progress bar",
+            value=st.session_state.get("fx_progress_bar", False),
+            key="fx_progress_bar",
+            help=("Muestra una barra delgada en la parte superior que avanza "
+                  "mientras el video progresa. Aumenta retención."
+                  if lang_option == "es" else
+                  "Shows a thin bar at the top that fills as the video plays. Boosts retention."),
+        )
+        if st.session_state.get("fx_progress_bar", False):
+            st.color_picker(
+                "Color barra" if lang_option == "es" else "Bar color",
+                value=st.session_state.get("fx_progress_bar_color", "#FFFFFF"),
+                key="fx_progress_bar_color",
+            )
 
 # ── Historial de temas usados ─────────────────────────────────────────────────
 _hist_stats  = _topic_history.get_stats()
@@ -3322,6 +3382,12 @@ def _launch_pipeline():
         "ai_video_num_scenes":  st.session_state.get("ai_video_num_scenes", 6),
         "ai_video_clip_duration": st.session_state.get("ai_video_clip_duration", 5),
         "target_total_secs":    st.session_state.get("target_total_secs", 60),
+        # ── Efectos visuales ──
+        "fx_ken_burns":         st.session_state.get("fx_ken_burns", False),
+        "fx_color_grade":       st.session_state.get("fx_color_grade", True),
+        "fx_progress_bar":      st.session_state.get("fx_progress_bar", False),
+        "fx_progress_bar_color":st.session_state.get("fx_progress_bar_color", "#FFFFFF"),
+        "video_mode":           mode,
         "novela_theme":         st.session_state.get("novela_theme_input", ""),
         "podcast_topic":        st.session_state.get("podcast_topic_input", ""),
         "host_name":            st.session_state.get("podcast_host_name", "Host"),
@@ -3636,6 +3702,12 @@ elif _hook_step == "selecting":
                 "ai_video_num_scenes":   st.session_state.get("ai_video_num_scenes", 6),
                 "ai_video_clip_duration":st.session_state.get("ai_video_clip_duration", 5),
                 "target_total_secs":     st.session_state.get("target_total_secs", 60),
+                # ── Efectos visuales ──
+                "fx_ken_burns":          st.session_state.get("fx_ken_burns", False),
+                "fx_color_grade":        st.session_state.get("fx_color_grade", True),
+                "fx_progress_bar":       st.session_state.get("fx_progress_bar", False),
+                "fx_progress_bar_color": st.session_state.get("fx_progress_bar_color", "#FFFFFF"),
+                "video_mode":            mode,
                 "novela_theme":          st.session_state.get("novela_theme_input", ""),
                 "podcast_topic":         st.session_state.get("podcast_topic_input", ""),
                 "host_name":             st.session_state.get("podcast_host_name", "Host"),
