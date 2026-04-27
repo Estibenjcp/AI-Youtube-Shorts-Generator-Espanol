@@ -1946,7 +1946,7 @@ REGLAS:
 - Escenario concreto y específico (no vago).
 - Descripción física de personajes OPTIMIZADA para prompts de video IA (en inglés, detallada).
 - Arco narrativo completo: setup → conflicto → clímax → resolución.
-- Tono que maximice retención: drama, giro inesperado, emoción fuerte.
+- Tono que maximice retención: drama, emoción fuerte, suspenso natural.
 - Idioma de la narración: español latino neutro.
 - Las descripciones físicas de personajes DEBEN estar en INGLÉS (para los prompts de video IA).
 
@@ -1986,7 +1986,7 @@ RULES:
 - Concrete and specific setting (not vague).
 - Character physical descriptions OPTIMIZED for AI video prompts (in English, detailed).
 - Complete narrative arc: setup → conflict → climax → resolution.
-- Tone that maximizes retention: drama, unexpected twist, strong emotion.
+- Tone that maximizes retention: drama, natural suspense, strong emotion.
 - Narration language: English.
 - Character physical descriptions MUST be in ENGLISH (for AI video prompts).
 
@@ -2074,7 +2074,7 @@ REGLAS DE NARRACIÓN:
 - Cada "text" es la NARRACIÓN en voz en off (lo que dice el narrador). Máximo 15 palabras.
 - Sin diálogos en el "text" — solo narración descriptiva y dramática.
 - Cada escena: una sola idea poderosa. Sin relleno.
-- Flujo: Escena 1 (gancho explosivo) → Escenas 2-3 (setup y personajes) → Escenas 4-6 (conflicto escalando) → Escena 7 (clímax) → Escena 8 (resolución o giro final).
+- Flujo: Escena 1 (gancho explosivo) → Escenas 2-3 (setup y personajes) → Escenas 4-6 (conflicto escalando) → Escena 7 (clímax) → Escena 8 (resolución o desenlace impactante).
 
 REGLAS DE VIDEO (MUY IMPORTANTE para IA):
 - "visual_1": término de búsqueda EN INGLÉS (Pexels fallback), 3-4 palabras.
@@ -2089,7 +2089,7 @@ ESTRUCTURA OBLIGATORIA:
 - Escena 1 — GANCHO: La imagen o situación más impactante de la historia. Hook visual puro.
 - Escenas 2-3 — INTRODUCCIÓN: Presenta el escenario y los personajes clave.
 - Escenas 4-6 — DESARROLLO Y CONFLICTO: La situación escala, tensión crece.
-- Escena 7 — CLÍMAX: El momento de máxima tensión o el giro.
+- Escena 7 — CLÍMAX: El momento de máxima tensión.
 - Escena 8 — RESOLUCIÓN / GANCHO FINAL: Cierre impactante o pregunta que enganche.
 
 FORMATO DE SALIDA (JSON estricto, sin markdown, exactamente {num_scenes} elementos):
@@ -2127,7 +2127,7 @@ NARRATION RULES:
 - Each "text" is the VOICE-OVER NARRATION (what the narrator says). Maximum 15 words.
 - No dialogue in "text" — only descriptive and dramatic narration.
 - Each scene: one powerful idea. No filler.
-- Flow: Scene 1 (explosive hook) → Scenes 2-3 (setup and characters) → Scenes 4-6 (escalating conflict) → Scene 7 (climax) → Scene 8 (resolution or final twist).
+- Flow: Scene 1 (explosive hook) → Scenes 2-3 (setup and characters) → Scenes 4-6 (escalating conflict) → Scene 7 (climax) → Scene 8 (resolution or powerful ending).
 
 VIDEO RULES (VERY IMPORTANT for AI):
 - "visual_1": English search term (Pexels fallback), 3-4 words.
@@ -2142,7 +2142,7 @@ MANDATORY STRUCTURE:
 - Scene 1 — HOOK: The most impactful image or situation of the story. Pure visual hook.
 - Scenes 2-3 — INTRODUCTION: Introduce the setting and key characters.
 - Scenes 4-6 — DEVELOPMENT & CONFLICT: The situation escalates, tension grows.
-- Scene 7 — CLIMAX: The moment of maximum tension or the twist.
+- Scene 7 — CLIMAX: The moment of maximum tension.
 - Scene 8 — RESOLUTION / FINAL HOOK: Impactful close or engaging question.
 
 OUTPUT FORMAT (strict JSON, no markdown, exactly {num_scenes} elements):
