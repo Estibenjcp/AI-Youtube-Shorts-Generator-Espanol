@@ -515,11 +515,16 @@ class Composer:
             return None
 
         # ── Step 1: Build xfade chain WITHOUT subtitles ───────────────────────
-        # v_trans: video xfade overlap (0.5s — visual blend looks good)
-        # a_trans: audio crossfade overlap (0.05s — near-instant cut, no voice overlap)
-        # These intentionally differ. The subtitle abs_starts below uses a_trans
-        # so that drawtext fires at the correct AUDIO playback time.
-        a_trans     = 0.05
+        # v_trans == a_trans == 0.5 s — MUST be equal so video and audio streams
+        # have the same total duration in the output.  If they differ the shorter
+        # stream ends first and the video freezes while audio keeps playing
+        # (or vice-versa) for N_transitions × |v_trans-a_trans| seconds.
+        #
+        # Using c1='exp' c2='exp' on acrossfade: exponential curves fade each
+        # voice out/in very quickly, so the 0.5 s window doesn't sound like two
+        # people talking at once — the outgoing voice drops to near-silence within
+        # the first ~0.1 s, then the incoming voice rises to full volume.
+        a_trans     = v_trans   # keep equal → no freeze at end
         input0      = ffmpeg.input(valid_paths[0])
         v_stream    = input0.video
         a_stream    = input0.audio
@@ -542,17 +547,15 @@ class Composer:
                 [a_stream, next_clip.audio],
                 'acrossfade',
                 d=a_trans,
+                c1='exp',   # outgoing: drops to silence quickly
+                c2='exp',   # incoming: rises from silence quickly
             )
             current_dur = (current_dur + valid_durs[i]) - v_trans
 
-        # ── Step 2: Calculate absolute start time of each clip in the final video
-        # Subtitles must follow the AUDIO timeline (not the video xfade timeline).
-        # clip[i] audio starts at: sum(dur[0..i-1]) - i * a_trans
-        # Using a_trans (0.05s) here — NOT v_trans (0.5s) — is what keeps
-        # subtitles in sync with the voice for all clips, not just the first one.
+        # ── Step 2: Absolute start time of each clip (same offset for audio & video)
         abs_starts = [0.0]
         for i in range(1, len(valid_paths)):
-            abs_starts.append(abs_starts[i - 1] + valid_durs[i - 1] - a_trans)
+            abs_starts.append(abs_starts[i - 1] + valid_durs[i - 1] - v_trans)
 
         # ── Step 3: Burn subtitles onto the fully-concatenated v_stream ────────
         if use_subtitles:
