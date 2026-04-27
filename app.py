@@ -1405,14 +1405,23 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         _pb_color     = params.get("fx_progress_bar_color", "#FFFFFF").lstrip("#")
         _pb_color_ffmpeg = f"0x{_pb_color}" if _pb_color else "white"
 
-        # ── Hook card: auto-generate from first scene if blank ────────────────
+        # ── Hook card: LLM-generated if enabled and text is blank ────────────
         _hook_text = ""
         if params.get("fx_hook_card", False):
             _hook_text = (params.get("fx_hook_text") or "").strip()
             if not _hook_text and script:
-                # Auto: first sentence of the first scene, max 55 chars
-                _first = script[0].get("text", "")
-                _hook_text = _first.split(".")[0].strip()[:55]
+                log_q.put("🪝 Generando texto de enganche con IA...")
+                try:
+                    _hook_text = brain.generate_hook_text(
+                        topic=topic,
+                        script=script,
+                        lang=pipeline_lang,
+                        mode=pipeline_mode,
+                    )
+                    log_q.put(f"🪝 Hook: \"{_hook_text}\"")
+                except Exception as _he:
+                    print(f"⚠️ Hook generation error: {_he}")
+                    _hook_text = script[0].get("text", "").split(".")[0].strip()[:50]
         _hook_dur = float(params.get("fx_hook_duration", 2.5))
 
         final_scene_paths = composer.render_all_scenes(

@@ -1859,6 +1859,81 @@ Generate platform-optimized copy for YouTube Shorts, TikTok, and Facebook Reels.
             }
 
     # ------------------------------------------------------------------
+    # HOOK CARD
+    # ------------------------------------------------------------------
+
+    def generate_hook_text(self, topic: str, script: list, lang: str = "es", mode: str = "auto") -> str:
+        """Generate a short, punchy hook card text (max ~50 chars) for the video opener.
+
+        The hook must create instant curiosity / FOMO so the viewer doesn't swipe away.
+        Returns a plain string — no quotes, no punctuation at the end.
+        Falls back to first sentence of first scene on any error.
+        """
+        first_line = script[0].get("text", "") if script else ""
+        fallback   = first_line.split(".")[0].strip()[:50]
+
+        if lang == "es":
+            prompt = f"""Eres experto en crear ganchos virales para YouTube Shorts y TikTok en español latino.
+
+TEMA DEL VIDEO: "{topic}"
+PRIMERA LÍNEA DEL GUION: "{first_line[:120]}"
+MODO: {mode}
+
+TAREA: Escribe UN SOLO texto de enganche (hook card) que aparecerá en grande al inicio del video.
+
+REGLAS ESTRICTAS:
+- Máximo 45 caracteres (se mostrará en pantalla en letra grande)
+- Debe generar curiosidad o miedo a perderse algo (FOMO)
+- Sin signos de interrogación al final (usa puntos suspensivos si es pregunta)
+- Sin comillas, sin emojis
+- Solo el texto, nada más
+- Ejemplos del tono correcto:
+  "Lo que nadie se atrevió a decir"
+  "Esto cambió todo para siempre"
+  "El secreto que ocultaron por años"
+  "Lo descubrieron y lo silenciaron"
+  "Nunca te contaron esto"
+
+RESPONDE SOLO CON EL TEXTO DEL HOOK, SIN EXPLICACIONES:"""
+        else:
+            prompt = f"""You are an expert at creating viral hooks for YouTube Shorts and TikTok.
+
+VIDEO TOPIC: "{topic}"
+FIRST SCRIPT LINE: "{first_line[:120]}"
+MODE: {mode}
+
+TASK: Write ONE hook card text that will appear large at the start of the video.
+
+STRICT RULES:
+- Maximum 45 characters (it will be displayed in large text on screen)
+- Must create curiosity or FOMO
+- No question marks at the end (use ellipsis if it's a question)
+- No quotes, no emojis
+- Only the text, nothing else
+- Examples of the right tone:
+  "What they never told you"
+  "This changed everything forever"
+  "The secret hidden for years"
+  "They found out and silenced it"
+
+RESPOND WITH ONLY THE HOOK TEXT, NO EXPLANATIONS:"""
+
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=30,
+                temperature=0.9,
+            )
+            raw = resp.choices[0].message.content.strip()
+            # Strip surrounding quotes if the LLM added them
+            raw = raw.strip('"\'')
+            return raw[:50] if raw else fallback
+        except Exception as e:
+            print(f"⚠️ Hook card generation failed: {e}")
+            return fallback
+
+    # ------------------------------------------------------------------
     # MININOVELA METHODS
     # ------------------------------------------------------------------
 
