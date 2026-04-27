@@ -635,7 +635,7 @@ REGLAS OBLIGATORIAS:
   Escena {num_scenes - 1}: TWIST FINAL - Revelacion impactante, ironia o "lo que paso despues".
   Escena {num_scenes}: CTA - "Comenta QUE MAS si queres la parte 2. Sigueme para mas historia oscura."
 - Lenguaje dramatico, conversacional y adictivo. Usa MAYUSCULAS para enfasis.
-- PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales).
+- PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales), la letra ñ (usa alternativas: "anio" por "año", "senor" por "señor").
 - USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
 - En espanol neutro latino. Nunca digas "hoy te voy a contar" ni "vamos a hablar de".
 
@@ -750,7 +750,7 @@ Estructura exacta (~{num_scenes * 5} segundos / EXACTAMENTE {num_scenes} escenas
 Reglas de estilo:
 - Lenguaje conversacional, misterioso y dramatico.
 - Frases como: "me conto que...", "revelo que...", "nadie se atreve a decir...", "lo mas aterrador fue...".
-- PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales).
+- PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales), la letra ñ (usa alternativas: "anio" por "año", "senor" por "señor").
 - USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
 - En espanol neutro latino.
 
@@ -861,7 +861,7 @@ REGLAS CRITICAS PARA SONAR HUMANO:
 - Habla en 2da persona: "tu", "te", "tu vida".
 - Tono: como si le hablaras a un amigo inteligente, no como un libro de texto.
 - Varía el ritmo: alterna frases muy cortas con frases medianas.
-- PROHIBIDO: emojis, palabras rebuscadas, frases subordinadas largas, lenguaje de vendedor.
+- PROHIBIDO: emojis, palabras rebuscadas, frases subordinadas largas, lenguaje de vendedor, la letra ñ.
 - PROHIBIDO: caracteres especiales Unicode. Solo letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion.
 
 Libro: {book}
@@ -958,7 +958,7 @@ REGLAS CRITICAS:
 - Usa comas donde harias una pausa al hablar.
 - Habla en 2da persona: "tu", "te", "tu vida".
 - Tono: espiritual, esperanzador, como un pastor que le habla a un amigo.
-- PROHIBIDO: emojis, palabras rebuscadas, lenguaje religioso forzado o fanático.
+- PROHIBIDO: emojis, palabras rebuscadas, lenguaje religioso forzado o fanático, la letra ñ.
 - PROHIBIDO: caracteres especiales Unicode. Solo letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion.
 - NO inventes versiculos. Usa solo el versiculo fuente indicado.
 {f'HOOK PRE-SELECCIONADO (OBLIGATORIO usar este texto EXACTO en Escena 1): "{chosen_hook}"' if chosen_hook else ""}
@@ -1055,7 +1055,7 @@ REGLAS ABSOLUTAS:
 - Si el salario está en la oferta, DEBES mencionarlo — es el gancho mas poderoso.
 - Tono: directo, urgente, habla en 2da persona ("tu", "tu carrera", "si buscas").
 - Cada escena: MAXIMO 10 PALABRAS. Frases cortas, poderosas, sin relleno.
-- PROHIBIDO: emojis, caracteres especiales Unicode, palabras en ingles (excepto nombre de empresa).
+- PROHIBIDO: emojis, caracteres especiales Unicode, palabras en ingles (excepto nombre de empresa), la letra ñ.
 - TODO el mood debe ser "energetic" — rapido, dinamico, sin pausa.
 
 ESTRUCTURA (6 escenas exactas — ~5 seg cada una):
@@ -1159,7 +1159,7 @@ TAREA:
    - Humor: ligero, ganchos, ritmo rapido
 5. Genera entre 7 y 10 escenas cortas y dinamicas.
 6. La primera escena SIEMPRE debe ser el GANCHO mas poderoso del texto.
-7. PROHIBIDO: emojis, caracteres Unicode especiales, inventar informacion.
+7. PROHIBIDO: emojis, caracteres Unicode especiales, inventar informacion, la letra ñ.
 8. Maximo 20 palabras por escena.
 
 FORMATO JSON (sin markdown):
@@ -1242,8 +1242,8 @@ Crear un guion donde cada oración tenga un "Cambio Visual" para mantener la ret
 Necesitamos DOS videos de stock diferentes por cada escena.
 
 ### 1. REQUISITOS DEL GUION (La narración):
-- **Idioma:** ESPAÑOL LATINO neutro. Sin regionalismos. Sin palabras en inglés.
-- **Emojis:** PROHIBIDO usar emojis. Solo texto puro narrado.
+- **Idioma:** ESPAÑOL LATINO neutro. Sin regionalismos. Sin palabras en inglés. Evita palabras con la letra ñ — usa alternativas naturales (ej: "anio" por "año", "senor" por "señor", "Espana" por "España").
+- **Emojis:** PROHIBIDO usar emojis. Solo texto puro narrado. PROHIBIDO usar la letra ñ — usa alternativas (ej: "anio" por "año", "senor" por "señor").
 - **Perspectiva:** Estrictamente **3ª Persona** ("Los científicos descubrieron...", "El océano esconde...").
 - **Tono:** Cautivador, rápido, lógico. Sin relleno. Cada oración debe generar curiosidad.
 - **Estructura:** Exactamente {num_scenes} escenas en total.
@@ -1345,7 +1345,7 @@ REGLAS:
 - Lenguaje conversacional, como si hablaran de verdad, no como narración
 - Frases cortas y directas — máximo {max_words_per_scene} palabras por turno
 - Datos reales y verificables
-- PROHIBIDO: emojis, caracteres Unicode especiales
+- PROHIBIDO: emojis, caracteres Unicode especiales, la letra ñ
 - Solo letras, números, comas, puntos, signos de exclamación e interrogación
 
 FORMATO JSON estricto, sin markdown:

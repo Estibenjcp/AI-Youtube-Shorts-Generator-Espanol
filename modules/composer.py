@@ -326,26 +326,41 @@ class Composer:
                              brightness=g['brightness'],
                              gamma=g['gamma'])
 
-    def _apply_progress_bar(self, stream, total_dur: float,
-                            color: str = 'white', height: int = 7) -> object:
-        """Thin progress bar at the top — width grows with global time t.
+    def _postprocess_progress_bar(self, video_path: str, total_dur: float,
+                                  color: str = 'white', height: int = 7) -> str:
+        """Burn a progress bar onto the final video via a separate FFmpeg pass.
 
-        Uses drawtext with a box instead of drawbox to avoid the 't' option
-        name conflicting with the 't' time variable in FFmpeg expressions.
+        Runs as a subprocess instead of through the ffmpeg-python filter chain
+        to avoid the naming conflict between the drawbox 't' thickness option
+        and the 't' time variable used in the width expression.
         """
-        # drawtext with an empty string + box whose width = progress fraction
-        # We draw a filled rectangle by abusing the box/boxborderw padding:
-        # A single space character with a box whose x offset tracks progress.
-        # Simpler and more reliable: use the drawbox filter but pass thickness
-        # as a pixel value (= height) so it fills, avoiding t='fill' ambiguity.
-        return stream.filter(
-            'drawbox',
-            x='0', y='0',
-            w=f'iw*(t/{total_dur:.4f})',
-            h=str(height),
-            color=f'{color}@0.85',
-            t=str(height),   # thickness = height → fully filled box
+        import subprocess
+        tmp = video_path + '.pb.mp4'
+        # Use min(t/dur,1) so the bar never overflows past 100%
+        vf = (
+            f"drawbox=x=0:y=0"
+            f":w='iw*min(t/{total_dur:.4f}\\,1)'"
+            f":h={height}"
+            f":color={color}@0.85"
+            f":t={height}"
         )
+        cmd = [
+            'ffmpeg', '-y', '-i', video_path,
+            '-vf', vf,
+            '-c:a', 'copy',
+            '-preset', 'ultrafast',
+            '-crf', '26',
+            tmp,
+        ]
+        r = subprocess.run(cmd, capture_output=True)
+        if r.returncode == 0 and os.path.exists(tmp) and os.path.getsize(tmp) > 1024:
+            os.replace(tmp, video_path)
+            print("📊 Progress bar burned in.")
+        else:
+            print(f"⚠️ Progress bar failed: {r.stderr.decode(errors='ignore')[-300:]}")
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        return video_path
 
     def _apply_hook_card(self, stream, hook_text: str, duration: float = 2.5) -> object:
         """Overlay a bold hook title for the first `duration` seconds.
@@ -693,11 +708,6 @@ class Composer:
             print(f"   🪝 Hook card: \"{hook_text[:50]}\"")
             v_stream = self._apply_hook_card(v_stream, hook_text, duration=hook_duration)
 
-        # ── Step 5: Progress bar (applied last so it's always on top) ─────────
-        if progress_bar:
-            v_stream = self._apply_progress_bar(v_stream, current_dur,
-                                                color=progress_bar_color)
-
         try:
             ffmpeg.output(
                 v_stream,
@@ -714,6 +724,14 @@ class Composer:
 
             print(f"✅ FINAL VIDEO SAVED: {output_path}")
             self._strip_metadata(output_path)
+
+            # ── Step 5: Progress bar — separate FFmpeg pass after main encode ──
+            # Done post-encode to avoid the drawbox 't' option conflicting with
+            # the 't' time variable inside the width expression.
+            if progress_bar:
+                self._postprocess_progress_bar(output_path, current_dur,
+                                               color=progress_bar_color)
+
             return output_path
 
         except ffmpeg.Error as e:
