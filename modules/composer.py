@@ -338,50 +338,32 @@ class Composer:
     def _apply_hook_card(self, stream, hook_text: str, duration: float = 2.5) -> object:
         """Overlay a bold hook title for the first `duration` seconds.
 
-        Uses two drawtext layers — a slightly larger one in a contrasting color as
-        a drop-shadow, then the main text on top — to give a punchy, TikTok-style
-        look without needing a separate image overlay.
-
-        Position: vertically centered at ~35 % from top (upper-center feels more
-        natural for hooks than dead-center because subtitles live at the bottom).
+        Single drawtext layer with thick border + box — clean, no kwarg conflicts.
         """
         clean = self._clean_sub_text(hook_text)
         if not clean:
             return stream
 
-        sub_file = self._write_sub_file(clean, index=9999, max_chars=22)
+        sub_file    = self._write_sub_file(clean, index=9999, max_chars=22)
         enable_expr = f'between(t,0,{duration:.2f})'
-        font_path   = self._WINDOWS_FONT.replace('\\', '/') if os.path.exists(self._WINDOWS_FONT) else None
 
-        base = dict(
+        kwargs = dict(
             textfile=sub_file,
-            enable=enable_expr,
-        )
-        if font_path:
-            base['fontfile'] = font_path
-
-        # Shadow layer (offset +3px, dark) — x/y passed separately to avoid kwarg conflict
-        stream = stream.drawtext(
-            **base,
-            fontsize=68,
-            fontcolor='black@0.7',
-            x='(w-text_w)/2+3',
-            y='h*0.30+3',
-        )
-        # Main text layer (white + border for maximum readability)
-        stream = stream.drawtext(
-            **base,
             fontsize=68,
             fontcolor='white',
             x='(w-text_w)/2',
             y='h*0.30',
-            borderw=4,
+            borderw=5,
             bordercolor='black',
             box=1,
-            boxcolor='black@0.45',
-            boxborderw=14,
+            boxcolor='black@0.50',
+            boxborderw=16,
+            enable=enable_expr,
         )
-        return stream
+        if os.path.exists(self._WINDOWS_FONT):
+            kwargs['fontfile'] = self._WINDOWS_FONT.replace('\\', '/')
+
+        return stream.drawtext(**kwargs)
 
     # ── Scene rendering ───────────────────────────────────────────────────────
 
