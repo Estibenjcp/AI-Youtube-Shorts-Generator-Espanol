@@ -353,18 +353,16 @@ class Composer:
         enable_expr = f'between(t,0,{duration:.2f})'
         font_path   = self._WINDOWS_FONT.replace('\\', '/') if os.path.exists(self._WINDOWS_FONT) else None
 
-        common = dict(
+        base = dict(
             textfile=sub_file,
-            x='(w-text_w)/2',
-            y='h*0.30',
             enable=enable_expr,
         )
         if font_path:
-            common['fontfile'] = font_path
+            base['fontfile'] = font_path
 
-        # Shadow layer (slightly offset, dark)
+        # Shadow layer (offset +3px, dark) — x/y passed separately to avoid kwarg conflict
         stream = stream.drawtext(
-            **common,
+            **base,
             fontsize=68,
             fontcolor='black@0.7',
             x='(w-text_w)/2+3',
@@ -372,9 +370,11 @@ class Composer:
         )
         # Main text layer (white + border for maximum readability)
         stream = stream.drawtext(
-            **common,
+            **base,
             fontsize=68,
             fontcolor='white',
+            x='(w-text_w)/2',
+            y='h*0.30',
             borderw=4,
             bordercolor='black',
             box=1,

@@ -1919,15 +1919,9 @@ STRICT RULES:
 RESPOND WITH ONLY THE HOOK TEXT, NO EXPLANATIONS:"""
 
         try:
-            resp = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=30,
-                temperature=0.9,
-            )
-            raw = resp.choices[0].message.content.strip()
+            raw = self._generate(prompt).strip()
             # Strip surrounding quotes if the LLM added them
-            raw = raw.strip('"\'')
+            raw = raw.strip('"\'').strip()
             return raw[:50] if raw else fallback
         except Exception as e:
             print(f"⚠️ Hook card generation failed: {e}")
