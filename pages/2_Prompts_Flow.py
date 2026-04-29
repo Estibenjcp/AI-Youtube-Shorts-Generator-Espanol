@@ -237,6 +237,7 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
 
 <div class="actions">
   <button id="randomize-all" data-i18n="randomizeAll">🎲 Aleatorizar todo</button>
+  <button id="recommend-combo" class="btn-ai" onclick="recommendCombo()" disabled style="display:none;background:#7c3aed;border-color:#7c3aed;">🎯 Recomendar combo viral</button>
   <button id="generate" class="primary" data-i18n="generateBtn">⚡ Generar prompts Flow</button>
   <button id="generate-ai" class="btn-ai" onclick="generateWithAI()" disabled>🤖 Generar con IA</button>
 </div>
@@ -284,13 +285,13 @@ const MODES={
 
 const MODE_SELECTS={
 'ficticio-viral':{
-  'host-type':{es:[['random','🎲 Aleatorio'],['latino-clasico','Clásico (35-45)'],['urbano-joven','Urbano joven (25-30)'],['intelectual','Intelectual (40-55)'],['rockero','Rockero (40-50)'],['periodista','Periodista (45-55)'],['conspirativo','Conspirativo (50-60)']],en:[['random','🎲 Random'],['latino-clasico','Classic (35-45)'],['urbano-joven','Young urban (25-30)'],['intelectual','Intellectual (40-55)'],['rockero','Rocker (40-50)'],['periodista','Journalist (45-55)'],['conspirativo','Conspiracy (50-60)']]},
+  'host-type':{es:[['random','🎲 Aleatorio (IA elige)'],['clasico','Clásico carismático (35-45)'],['joven-energico','Joven enérgico (22-30)'],['intelectual','Intelectual / académico'],['periodista-investigador','Periodista investigador'],['conspirativo','Conspirativo / analista'],['espiritual','Espiritual / esotérico'],['comico-oscuro','Cómico con humor negro']],en:[['random','🎲 Random (AI chooses)'],['clasico','Classic charismatic (35-45)'],['joven-energico','Young & energetic (22-30)'],['intelectual','Intellectual / academic'],['periodista-investigador','Investigative journalist'],['conspirativo','Conspiracy analyst'],['espiritual','Spiritual / esoteric'],['comico-oscuro','Dark humor comedian']]},
   'host-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
-  'host-accent':{es:[['random','🎲 Aleatorio'],['dominicano','Dominicano'],['mexicano','Mexicano'],['colombiano','Colombiano'],['argentino','Argentino'],['cubano','Cubano'],['venezolano','Venezolano'],['neutral-en','Inglés neutro']],en:[['random','🎲 Random'],['dominicano','Dominican'],['mexicano','Mexican'],['colombiano','Colombian'],['argentino','Argentinian'],['cubano','Cuban'],['venezolano','Venezuelan'],['neutral-en','Neutral English']]},
-  'guest-type':{es:[['random','🎲 Aleatorio'],['enfermera','Enfermera con secreto'],['cicatrices','Persona con cicatrices'],['rockero-gotico','Rockero gótico'],['anciano','Anciano misterioso'],['ex-militar','Ex militar'],['bruja','Bruja moderna'],['superviviente','Sobreviviente de secta'],['conspirador','Conspirador'],['medium','Médium / vidente'],['joven-raro','Joven inquietante'],['paramedico','Paramédico traumatizado'],['hacker','Hacker anónimo']],en:[['random','🎲 Random'],['enfermera','Nurse with secret'],['cicatrices','Person with scars'],['rockero-gotico','Gothic rocker'],['anciano','Mysterious elder'],['ex-militar','Ex-military'],['bruja','Modern witch'],['superviviente','Cult survivor'],['conspirador','Conspiracy theorist'],['medium','Medium / psychic'],['joven-raro','Unsettling youth'],['paramedico','Traumatized paramedic'],['hacker','Anonymous hacker']]},
+  'host-region':{es:[['random','🎲 Aleatorio'],['latam-neutro','Latinoamérica (neutro)'],['mexico-centroam','México / Centroamérica'],['caribe','Caribe (RD, Cuba, PR)'],['sudamerica','Sudamérica (Col, Ven, Arg)'],['espana','España / Europa'],['ingles-neutro','Inglés neutro'],['bilingue','Bilingüe (mezcla)']],en:[['random','🎲 Random'],['latam-neutro','Latin America (neutral)'],['mexico-centroam','Mexico / Central America'],['caribe','Caribbean (DR, Cuba, PR)'],['sudamerica','South America (Col, Ven, Arg)'],['espana','Spain / Europe'],['ingles-neutro','Neutral English'],['bilingue','Bilingual (mixed)']]},
+  'guest-type':{es:[['random','🎲 Aleatorio (IA elige)'],['sobreviviente','Sobreviviente / testigo directo'],['profesional-secreto','Profesional con secreto oscuro'],['artista-perturbado','Artista / creativo perturbado'],['ex-agente','Ex agente / infiltrado'],['victima-sistema','Víctima del sistema'],['figura-esoterica','Figura esotérica / espiritual'],['joven-trauma','Joven con trauma profundo'],['anciano-revelacion','Anciano con revelación'],['foraneo-misterioso','Foráneo / extranjero misterioso']],en:[['random','🎲 Random (AI chooses)'],['sobreviviente','Survivor / direct witness'],['profesional-secreto','Professional with dark secret'],['artista-perturbado','Disturbed artist / creative'],['ex-agente','Ex-agent / informant'],['victima-sistema','System victim'],['figura-esoterica','Esoteric / spiritual figure'],['joven-trauma','Youth with deep trauma'],['anciano-revelacion','Elder with revelation'],['foraneo-misterioso','Foreign / mysterious outsider']]},
   'guest-gender':{es:[['random','🎲 Aleatorio'],['female','Femenino'],['male','Masculino']],en:[['random','🎲 Random'],['female','Female'],['male','Male']]},
-  'guest-country':{es:[['random','🎲 Aleatorio'],['México','México'],['Colombia','Colombia'],['República Dominicana','Rep. Dominicana'],['Argentina','Argentina'],['Cuba','Cuba'],['Venezuela','Venezuela'],['Puerto Rico','Puerto Rico'],['Chile','Chile']],en:[['random','🎲 Random'],['México','Mexico'],['Colombia','Colombia'],['República Dominicana','Dominican Republic'],['Argentina','Argentina'],['Cuba','Cuba'],['Venezuela','Venezuela'],['Puerto Rico','Puerto Rico'],['Chile','Chile']]},
-  'guest-age':{es:[['random','🎲 Aleatorio'],['20-28','Joven (20-28)'],['30-40','Adulto (30-40)'],['40-55','Maduro (40-55)'],['55-75','Mayor (55-75)']],en:[['random','🎲 Random'],['20-28','Young (20-28)'],['30-40','Adult (30-40)'],['40-55','Mature (40-55)'],['55-75','Senior (55-75)']]},
+  'guest-region':{es:[['random','🎲 Aleatorio'],['latam-general','Latinoamérica (general)'],['mexico-centroam','México / Centroamérica'],['caribe','Caribe'],['sudamerica','Sudamérica'],['eeuu-hispano','EE.UU. / comunidad hispana'],['espana-europa','España / Europa'],['internacional','Internacional / sin especificar']],en:[['random','🎲 Random'],['latam-general','Latin America (general)'],['mexico-centroam','Mexico / Central America'],['caribe','Caribbean'],['sudamerica','South America'],['eeuu-hispano','US / Hispanic community'],['espana-europa','Spain / Europe'],['internacional','International / unspecified']]},
+  'guest-age':{es:[['random','🎲 Aleatorio'],['18-25','Muy joven (18-25)'],['25-35','Joven adulto (25-35)'],['35-50','Adulto (35-50)'],['50-70','Mayor (50-70)'],['no-especificar','Sin especificar']],en:[['random','🎲 Random'],['18-25','Very young (18-25)'],['25-35','Young adult (25-35)'],['35-50','Adult (35-50)'],['50-70','Senior (50-70)'],['no-especificar','Unspecified']]},
   'style':{es:[['random','🎲 Aleatorio'],['conspirativo','Conspirativo / misterio'],['criminal','Testimonio oscuro / criminal'],['humor-negro','Humor negro'],['absurdo','Entrevista absurda'],['paranormal','Paranormal']],en:[['random','🎲 Random'],['conspirativo','Conspiracy / mystery'],['criminal','Dark / criminal testimony'],['humor-negro','Dark humor'],['absurdo','Absurd interview'],['paranormal','Paranormal']]},
   'tone':{es:[['random','🎲 Aleatorio'],['tenso','Tenso / intenso'],['frio','Frío / desapegado'],['erratico','Errático / inestable'],['ironico','Irónico / amargo']],en:[['random','🎲 Random'],['tenso','Tense / intense'],['frio','Cold / detached'],['erratico','Erratic / unstable'],['ironico','Ironic / bitter']]}
 },
@@ -342,8 +343,8 @@ const MODE_SELECTS={
 
 const MODE_BLOCKS={
 'ficticio-viral':[
-  {id:'host-block',title:{es:'Host del podcast',en:'Podcast host'},fields:[{id:'host-type',label:{es:'Tipo',en:'Type'}},{id:'host-gender',label:{es:'Género',en:'Gender'}},{id:'host-accent',label:{es:'Acento',en:'Accent'}}]},
-  {id:'guest-block',title:{es:'Invitado',en:'Guest'},fields:[{id:'guest-type',label:{es:'Arquetipo',en:'Archetype'}},{id:'guest-gender',label:{es:'Género',en:'Gender'}},{id:'guest-country',label:{es:'País',en:'Country'}},{id:'guest-age',label:{es:'Edad',en:'Age'}}]}
+  {id:'host-block',title:{es:'Host del podcast',en:'Podcast host'},fields:[{id:'host-type',label:{es:'Perfil',en:'Profile'}},{id:'host-gender',label:{es:'Género',en:'Gender'}},{id:'host-region',label:{es:'Región / acento',en:'Region / accent'}}]},
+  {id:'guest-block',title:{es:'Invitado',en:'Guest'},fields:[{id:'guest-type',label:{es:'Arquetipo',en:'Archetype'}},{id:'guest-gender',label:{es:'Género',en:'Gender'}},{id:'guest-region',label:{es:'Región de origen',en:'Region of origin'}},{id:'guest-age',label:{es:'Rango de edad',en:'Age range'}}]}
 ],
 'misterio-biblico':[
   {id:'narrator-block',title:{es:'Narrador / Erudito',en:'Narrator / Scholar'},fields:[{id:'narrator-type',label:{es:'Tipo',en:'Type'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}},{id:'narrator-lang',label:{es:'Idioma audio',en:'Audio language'}}]},
@@ -475,14 +476,17 @@ function toggleApi(){
 function updateBadge(){
   const badge=document.getElementById('api-badge');
   const btn=document.getElementById('generate-ai');
+  const rcBtn=document.getElementById('recommend-combo');
   if(_orKey){
-    badge.textContent='✅ '+_orModel.split('/').pop();
+    badge.textContent='✅ '+getActiveModel().split('/').pop();
     badge.className='api-badge badge-ok';
     if(btn)btn.disabled=false;
+    if(rcBtn)rcBtn.disabled=false;
   } else {
     badge.textContent='sin configurar — clic para abrir';
     badge.className='api-badge badge-off';
     if(btn)btn.disabled=true;
+    if(rcBtn)rcBtn.disabled=true;
   }
 }
 
@@ -706,8 +710,46 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const k=el.getAttribute('data-i18n-placeholder');if(T[lang][k])el.placeholder=T[lang][k];});
 }
 
-function fullRender(){renderModes();renderBlocks();renderSelects();renderHighlightSubs();updateDurInfo();applyI18n();updateTags();}
+function fullRender(){renderModes();renderBlocks();renderSelects();renderHighlightSubs();updateDurInfo();applyI18n();updateTags();updateRecommendBtn();}
+function updateRecommendBtn(){
+  const btn=document.getElementById('recommend-combo');
+  if(btn) btn.style.display=(mode==='ficticio-viral')?'inline-flex':'none';
+}
 function setMode(m){mode=m;document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
+
+async function recommendCombo(){
+  if(!_orKey){alert('Configura tu API key primero.');return;}
+  const topic=(document.getElementById('topic').value||'').trim()||pick(RAND_TOPICS['ficticio-viral'][lang]||[]);
+  const btn=document.getElementById('recommend-combo');
+  const area=document.getElementById('ai-output-area');
+  btn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Analizando...':'Analyzing...');
+  btn.disabled=true;
+  area.innerHTML='';
+  const sys=lang==='es'
+    ?'Eres un experto en viralidad de YouTube Shorts en español. Analizas el tema y recomiendas la mejor configuración de host+invitado para maximizar el enganche emocional y la viralidad. Responde SOLO con JSON.'
+    :'You are an expert in YouTube Shorts virality. You analyze the topic and recommend the best host+guest configuration to maximize emotional hook and virality. Reply ONLY with JSON.';
+  const usr=lang==='es'
+    ?`Tema del podcast: "${topic}"\n\nDevuelve SOLO este JSON con los valores más virales:\n{"host-type":"","host-gender":"","host-region":"","guest-type":"","guest-gender":"","guest-region":"","guest-age":"","style":"","tone":"","razon":""}\n\nValores válidos:\nhost-type: clasico|joven-energico|intelectual|periodista-investigador|conspirativo|espiritual|comico-oscuro\nhost-gender: male|female\nhost-region: latam-neutro|mexico-centroam|caribe|sudamerica|espana|ingles-neutro|bilingue\nguest-type: sobreviviente|profesional-secreto|artista-perturbado|ex-agente|victima-sistema|figura-esoterica|joven-trauma|anciano-revelacion|foraneo-misterioso\nguest-gender: male|female\nguest-region: latam-general|mexico-centroam|caribe|sudamerica|eeuu-hispano|espana-europa|internacional\nguest-age: 18-25|25-35|35-50|50-70\nstyle: conspirativo|criminal|humor-negro|absurdo|paranormal\ntone: tenso|frio|erratico|ironico\nrazon: máximo 20 palabras explicando por qué esta combinación es viral`
+    :`Podcast topic: "${topic}"\n\nReturn ONLY this JSON with the most viral values:\n{"host-type":"","host-gender":"","host-region":"","guest-type":"","guest-gender":"","guest-region":"","guest-age":"","style":"","tone":"","reason":""}\n\nValid values:\nhost-type: clasico|joven-energico|intelectual|periodista-investigador|conspirativo|espiritual|comico-oscuro\nhost-gender: male|female\nhost-region: latam-neutro|mexico-centroam|caribe|sudamerica|espana|ingles-neutro|bilingue\nguest-type: sobreviviente|profesional-secreto|artista-perturbado|ex-agente|victima-sistema|figura-esoterica|joven-trauma|anciano-revelacion|foraneo-misterioso\nguest-gender: male|female\nguest-region: latam-general|mexico-centroam|caribe|sudamerica|eeuu-hispano|espana-europa|internacional\nguest-age: 18-25|25-35|35-50|50-70\nstyle: conspirativo|criminal|humor-negro|absurdo|paranormal\ntone: tenso|frio|erratico|ironico\nreason: max 20 words explaining why this combination is viral`;
+  try{
+    const raw=await _callOR(sys,usr,400);
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('JSON inválido');
+    const rec=JSON.parse(m[0]);
+    ['host-type','host-gender','host-region','guest-type','guest-gender','guest-region','guest-age','style','tone'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&rec[id]){const match=[...el.options].some(o=>o.value===rec[id]);if(match)el.value=rec[id];}
+    });
+    const razon=rec.razon||rec.reason||'';
+    area.innerHTML=`<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:10px 14px;font-size:12px;color:#4c1d95;margin-bottom:8px;">🎯 <strong>${lang==='es'?'Combo viral recomendado':'Viral combo recommended'}:</strong> ${razon}</div>`;
+    updateTags();
+  }catch(e){
+    area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:10px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
+  }finally{
+    btn.innerHTML='🎯 '+(lang==='es'?'Recomendar combo viral':'Recommend viral combo');
+    btn.disabled=false;
+  }
+}
 function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));fullRender();}
 
 function generate(){
