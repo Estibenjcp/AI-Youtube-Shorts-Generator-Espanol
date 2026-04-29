@@ -10,8 +10,14 @@ st.set_page_config(
 
 with st.sidebar:
     st.markdown("### 🎬 AutoShorts AI")
-    if st.button("← Volver al Generador", use_container_width=True):
-        st.switch_page("app.py")
+    st.markdown(
+        '<a href="/" target="_self" style="'
+        'display:block;padding:8px 12px;background:#6366f1;color:#fff!important;'
+        'border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem;'
+        'text-align:center;margin-bottom:8px;">'
+        "← Volver al Generador</a>",
+        unsafe_allow_html=True,
+    )
 
 # Ocultar header nativo de Streamlit en esta página
 st.markdown("""

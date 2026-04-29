@@ -1588,8 +1588,14 @@ T = UI[lang_option]
 with st.sidebar:
     st.markdown("# ⚙️ AutoShorts AI")
     st.caption("Configuración de API" if lang_option == "es" else "API Settings")
-    if st.button("✨ Prompts Flow / Veo 3", use_container_width=True, key="nav_prompts_flow"):
-        st.switch_page("pages/2_Prompts_Flow.py")
+    st.markdown(
+        '<a href="/Prompts_Flow" target="_self" style="'
+        'display:block;padding:8px 12px;background:#6366f1;color:#fff!important;'
+        'border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem;'
+        'text-align:center;margin-bottom:8px;">'
+        "✨ Prompts Flow / Veo 3</a>",
+        unsafe_allow_html=True,
+    )
     st.divider()
 
     cfg = load_config()
