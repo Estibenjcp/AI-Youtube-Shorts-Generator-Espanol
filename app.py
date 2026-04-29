@@ -1600,27 +1600,19 @@ T = UI[lang_option]
 
 with st.sidebar:
     st.markdown("# ⚙️ AutoShorts AI")
-    st.markdown("""
-<style>
-div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
-    flex-direction: column !important;
-    gap: 4px !important;
-}
-div[data-testid="stSidebar"] div[data-testid="stRadio"] label {
-    width: 100% !important;
-}
-</style>
-""", unsafe_allow_html=True)
-    _seccion = st.radio(
-        "Sección",
-        options=["🎬 Generador de Shorts", "✨ Prompts Flow / Veo 3"],
-        index=0,
-        label_visibility="collapsed",
-    )
+    if "app_seccion" not in st.session_state:
+        st.session_state["app_seccion"] = "generador"
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🎬 Generador", use_container_width=True, key="nav_gen"):
+            st.session_state["app_seccion"] = "generador"
+    with col2:
+        if st.button("✨ Prompts", use_container_width=True, key="nav_pf"):
+            st.session_state["app_seccion"] = "prompts_flow"
     st.divider()
 
 # ── Si el usuario seleccionó Prompts Flow, mostrarlo y parar aquí ────────────
-if _seccion == "✨ Prompts Flow / Veo 3":
+if st.session_state.get("app_seccion") == "prompts_flow":
     import streamlit.components.v1 as _components
     import pathlib as _pl
     _pf_file = _pl.Path(__file__).parent / "pages" / "2_Prompts_Flow.py"
