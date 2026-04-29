@@ -1588,10 +1588,8 @@ T = UI[lang_option]
 with st.sidebar:
     st.markdown("# ⚙️ AutoShorts AI")
     st.caption("Configuración de API" if lang_option == "es" else "API Settings")
-    try:
-        st.page_link("pages/2_Prompts_Flow.py", label="✨ Prompts Flow / Veo 3")
-    except Exception:
-        pass
+    if st.button("✨ Prompts Flow / Veo 3", use_container_width=True, key="nav_prompts_flow"):
+        st.switch_page("pages/2_Prompts_Flow.py")
     st.divider()
 
     cfg = load_config()

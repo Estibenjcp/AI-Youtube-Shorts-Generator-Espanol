@@ -8,6 +8,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+with st.sidebar:
+    st.markdown("### 🎬 AutoShorts AI")
+    if st.button("← Volver al Generador", use_container_width=True):
+        st.switch_page("app.py")
+
 # Ocultar header nativo de Streamlit en esta página
 st.markdown("""
 <style>
