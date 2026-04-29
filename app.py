@@ -85,6 +85,19 @@ st.markdown("""
 /* Ocultar deploy/share button pero NO el toggle del sidebar */
 [data-testid="stAppDeployButton"] { display: none !important; }
 
+/* ── FORZAR VISIBLE el nav automático de páginas ── */
+[data-testid="stSidebarNav"],
+[data-testid="stSidebarNavItems"],
+[data-testid="stSidebarNavLink"],
+section[data-testid="stSidebarNav"] {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+}
+
 /* ── BASE ── */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -1588,14 +1601,6 @@ T = UI[lang_option]
 with st.sidebar:
     st.markdown("# ⚙️ AutoShorts AI")
     st.caption("Configuración de API" if lang_option == "es" else "API Settings")
-    st.markdown(
-        '<a href="/Prompts_Flow" target="_self" style="'
-        'display:block;padding:8px 12px;background:#6366f1;color:#fff!important;'
-        'border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem;'
-        'text-align:center;margin-bottom:8px;">'
-        "✨ Prompts Flow / Veo 3</a>",
-        unsafe_allow_html=True,
-    )
     st.divider()
 
     cfg = load_config()
