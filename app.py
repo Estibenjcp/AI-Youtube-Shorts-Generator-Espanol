@@ -1600,8 +1600,31 @@ T = UI[lang_option]
 
 with st.sidebar:
     st.markdown("# ⚙️ AutoShorts AI")
-    st.caption("Configuración de API" if lang_option == "es" else "API Settings")
+    _seccion = st.radio(
+        "Sección",
+        options=["🎬 Generador de Shorts", "✨ Prompts Flow / Veo 3"],
+        index=0,
+        label_visibility="collapsed",
+    )
     st.divider()
+
+# ── Si el usuario seleccionó Prompts Flow, mostrarlo y parar aquí ────────────
+if _seccion == "✨ Prompts Flow / Veo 3":
+    import streamlit.components.v1 as _components
+    import pathlib as _pl
+    _pf_file = _pl.Path(__file__).parent / "pages" / "2_Prompts_Flow.py"
+    # Extraer el bloque HTML del archivo
+    _pf_src = _pf_file.read_text(encoding="utf-8")
+    _html_start = _pf_src.find('HTML = r"""') + len('HTML = r"""')
+    _html_end   = _pf_src.rfind('"""')
+    _html_block = _pf_src[_html_start:_html_end]
+    st.markdown("## ✨ Prompts Flow / Veo 3")
+    _components.html(_html_block, height=2400, scrolling=True)
+    st.stop()
+
+# ── A partir de aquí: lógica normal del Generador ───────────────────────────
+with st.sidebar:
+    st.caption("Configuración de API" if lang_option == "es" else "API Settings")
 
     cfg = load_config()
 
