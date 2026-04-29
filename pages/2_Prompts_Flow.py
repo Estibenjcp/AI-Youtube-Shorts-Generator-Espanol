@@ -798,15 +798,92 @@ async function recommendCombo(){
 }
 function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));fullRender();}
 
-function generate(){
-  document.getElementById('output-area').style.display='block';
-  document.getElementById('config-out').textContent=
-    `MODO: ${MODES[mode].title[lang]} | FORMATO: ${format} | ${dur} min\nMODELO IA: ${_orModel}\nTEMA: ${gv('topic')||'(aleatorio)'} | ESTILO: ${gv('style')} | TONO: ${gv('tone')}`;
-  document.getElementById('output-blocks').innerHTML=
-    `<div style="background:#f0ede2;border-radius:8px;padding:14px;font-size:12px;color:#555;">
-      ℹ️ Para los prompts completos de Google Flow/Veo 3 (imagen del host, clips de video, metadata) abre el archivo HTML original.<br><br>
-      Para generar el <strong>guión real con IA</strong>, usa el botón <strong>🤖 Generar con IA</strong> de arriba.
+async function generate(){
+  if(!_orKey){
+    alert(lang==='es'?'Configura tu API key primero para generar los prompts.':'Configure your API key first.');
+    return;
+  }
+  const btn=document.getElementById('generate');
+  const area=document.getElementById('output-area');
+  const blocksEl=document.getElementById('output-blocks');
+  btn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Generando...':'Generating...');
+  btn.disabled=true;
+  area.style.display='block';
+  blocksEl.innerHTML=`<div style="text-align:center;padding:20px;color:#888;font-size:12px;">${lang==='es'?'Generando prompts para Google Flow / Veo 3...':'Generating Google Flow / Veo 3 prompts...'}</div>`;
+
+  const topic=(gv('topic')||'').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
+  const {clips,sec}=DUR_CLIPS[dur];
+  const styleV=gv('style')||'random';
+  const toneV=gv('tone')||'random';
+  const numClips=Math.min(clips,8);
+
+  // Descripción de personajes / narrador según el modo
+  let charDesc='';
+  if(mode==='ficticio-viral'){
+    charDesc=`Host: ${gv('host-type')} (${gv('host-gender')}, región: ${gv('host-region')}) | Invitado: ${gv('guest-type')} (${gv('guest-gender')}, región: ${gv('guest-region')}, edad: ${gv('guest-age')})`;
+  } else {
+    const nt=gv('narrator-type')||gv('narrator-type')||'';
+    const ng=gv('narrator-gender')||'';
+    if(nt||ng) charDesc=`Narrador: ${nt} (${ng})`;
+  }
+
+  const sys=lang==='es'
+    ?'Eres un director de fotografía y prompt engineer experto en Google Flow / Veo 3 y YouTube Shorts. Generas prompts cinematográficos detallados en inglés para Veo 3 + texto de voz en español. Responde SOLO con JSON array.'
+    :'You are a cinematographer and prompt engineer expert in Google Flow / Veo 3 and YouTube Shorts. You generate detailed cinematic prompts in English for Veo 3 + voice text. Reply ONLY with JSON array.';
+
+  const usr=lang==='es'
+    ?`Modo podcast: ${mode} | Tema: "${topic}"\nEstilo: ${styleV} | Tono: ${toneV} | Set: ${setStyle}\n${charDesc}\nFormato: ${format} | ${dur} min | ${numClips} clips de ${sec}s\n\nGenera exactamente ${numClips} objetos con prompt visual para Veo 3 (en inglés, 40-55 palabras, cinematográfico) + texto de voz en español (máx 18 palabras).\n\nJSON:\n[{"clip":1,"prompt":"cinematic visual description in English for Veo 3","voz":"texto narrado en español"}]`
+    :`Podcast mode: ${mode} | Topic: "${topic}"\nStyle: ${styleV} | Tone: ${toneV} | Set: ${setStyle}\n${charDesc}\nFormat: ${format} | ${dur} min | ${numClips} clips of ${sec}s\n\nGenerate exactly ${numClips} objects with visual prompt for Veo 3 (in English, 40-55 words, cinematic) + voice text (max 18 words).\n\nJSON:\n[{"clip":1,"prompt":"cinematic visual description in English for Veo 3","voice":"narrated voice text"}]`;
+
+  try{
+    const raw=await _callOR(sys,usr,2500);
+    const m=raw.match(/\[[\s\S]*\]/);
+    if(!m) throw new Error(lang==='es'?'No se generó JSON válido':'No valid JSON generated');
+    const data=JSON.parse(m[0]);
+
+    document.getElementById('config-out').textContent=
+      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${format.toUpperCase()} | ${dur} min · ${numClips} clips de ${sec}s\nMODELO: ${getActiveModel()}\nTEMA: ${topic} | ESTILO: ${styleV} | TONO: ${toneV}`;
+
+    window._allPrompts=[];
+    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <strong style="font-size:12px;color:#185fa5;">📹 ${data.length} prompts · Google Flow / Veo 3</strong>
+      <button onclick="copyAllPrompts()" style="height:26px;padding:0 10px;font-size:11px;">📋 ${lang==='es'?'Copiar todos':'Copy all'}</button>
     </div>`;
+
+    data.forEach((c,i)=>{
+      const promptTxt=c.prompt||'';
+      const vozTxt=c.voz||c.voice||'';
+      window._allPrompts.push(`[CLIP ${i+1}/${data.length}]\nPROMPT: ${promptTxt}\n${vozTxt?'VOZ: '+vozTxt:''}`);
+      html+=`<div class="clip-card">
+        <div class="clip-header">📹 CLIP ${i+1} / ${data.length} &nbsp;·&nbsp; ${sec}s</div>
+        <div class="clip-section">
+          <strong style="font-size:10px;color:#185fa5;">PROMPT GOOGLE FLOW / VEO 3 (English)</strong>
+          <div class="clip-voice">${promptTxt}</div>
+          <button class="clip-copy" onclick="copyTxt(${JSON.stringify(promptTxt)})">📋 Copiar prompt</button>
+        </div>
+        ${vozTxt?`<div class="clip-section" style="margin-top:6px;">
+          <strong style="font-size:10px;color:#666;">VOZ / NARRACIÓN</strong>
+          <div class="clip-voice">${vozTxt}</div>
+          <button class="clip-copy" onclick="copyTxt(${JSON.stringify(vozTxt)})">📋 Copiar voz</button>
+        </div>`:''}
+      </div>`;
+    });
+    blocksEl.innerHTML=html;
+  }catch(e){
+    blocksEl.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
+  }finally{
+    btn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
+    btn.disabled=false;
+  }
+}
+
+function copyTxt(text){
+  navigator.clipboard.writeText(text).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
+}
+
+function copyAllPrompts(){
+  const text=(window._allPrompts||[]).join('\n\n---\n\n');
+  navigator.clipboard.writeText(text).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
 }
 
 document.querySelectorAll('.lang-btn').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
