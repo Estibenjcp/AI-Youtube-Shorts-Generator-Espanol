@@ -1600,6 +1600,17 @@ T = UI[lang_option]
 
 with st.sidebar:
     st.markdown("# ⚙️ AutoShorts AI")
+    st.markdown("""
+<style>
+div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label {
+    width: 100% !important;
+}
+</style>
+""", unsafe_allow_html=True)
     _seccion = st.radio(
         "Sección",
         options=["🎬 Generador de Shorts", "✨ Prompts Flow / Veo 3"],
