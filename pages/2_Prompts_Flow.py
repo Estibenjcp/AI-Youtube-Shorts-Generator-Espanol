@@ -275,7 +275,11 @@ const DUR_CLIPS={1:{clips:8,sec:8},2:{clips:15,sec:8},3:{clips:22,sec:8},5:{clip
 const MODES={
   'ficticio-viral':{icon:'🎙️',title:{es:'Podcast ficticio viral',en:'Fake viral podcast'},desc:{es:'Testimonios oscuros, conspirativo, humor negro',en:'Dark testimonies, conspiracy, dark humor'}},
   'misterio-biblico':{icon:'📜',title:{es:'Misterio bíblico / apócrifo',en:'Biblical / apocryphal mystery'},desc:{es:'Pergaminos, ángeles caídos, profecías ocultas',en:'Scrolls, fallen angels, hidden prophecies'}},
-  'libro-rapido':{icon:'📚',title:{es:'Podcast de libro (rápido)',en:'Quick book podcast'},desc:{es:'Un narrador, un libro, 5 segmentos virales',en:'One narrator, one book, 5 viral segments'}}
+  'libro-rapido':{icon:'📚',title:{es:'Podcast de libro (rápido)',en:'Quick book podcast'},desc:{es:'Un narrador, un libro, 5 segmentos virales',en:'One narrator, one book, 5 viral segments'}},
+  'documental-narrado':{icon:'🎬',title:{es:'Documental narrado',en:'Narrated documentary'},desc:{es:'Voz en off tipo NatGeo — historia oscura, catástrofes, secretos',en:'NatGeo-style voice-over — dark history, disasters, secrets'}},
+  'testimonio-real':{icon:'😱',title:{es:'Testimonio real',en:'Real testimony'},desc:{es:'Primera persona, confesión dramatizada, tono perturbador',en:'First person, dramatized confession, disturbing tone'}},
+  'reflexion-biblica':{icon:'🙏',title:{es:'Reflexión bíblica',en:'Biblical reflection'},desc:{es:'Devocional corto, voz calmada, versículo y reflexión',en:'Short devotional, calm voice, verse and reflection'}},
+  'ciencia-misterio':{icon:'🌌',title:{es:'Ciencia y misterio',en:'Science & mystery'},desc:{es:'Narrador científico, datos impactantes, preguntas abiertas',en:'Scientific narrator, shocking facts, open questions'}}
 };
 
 const MODE_SELECTS={
@@ -305,6 +309,34 @@ const MODE_SELECTS={
   'book-genre':{es:[['random','🎲 Aleatorio'],['autoayuda','Autoayuda / desarrollo personal'],['negocios','Negocios / emprendimiento'],['psicologia','Psicología / comportamiento'],['filosofia','Filosofía / estoicismo'],['ciencia','Ciencia popular'],['historia','Historia / biografía'],['productividad','Productividad / hábitos']],en:[['random','🎲 Random'],['autoayuda','Self-help / personal growth'],['negocios','Business / entrepreneurship'],['psicologia','Psychology / behavior'],['filosofia','Philosophy / stoicism'],['ciencia','Popular science'],['historia','History / biography'],['productividad','Productivity / habits']]},
   'style':{es:[['random','🎲 Aleatorio'],['inspirador','Inspirador / motivacional'],['revelador','Revelador / sorprendente'],['practico','Práctico / accionable'],['filosofico','Filosófico / reflexivo']],en:[['random','🎲 Random'],['inspirador','Inspiring / motivational'],['revelador','Revealing / surprising'],['practico','Practical / actionable'],['filosofico','Philosophical / reflective']]},
   'tone':{es:[['random','🎲 Aleatorio'],['amigo-inteligente','Como hablarle a un amigo inteligente'],['profesor-cool','Profesor cool que simplifica'],['conversacional','Conversacional y directo'],['intenso','Intenso y urgente']],en:[['random','🎲 Random'],['amigo-inteligente','Like talking to a smart friend'],['profesor-cool','Cool teacher who simplifies'],['conversacional','Conversational and direct'],['intenso','Intense and urgent']]}
+},
+'documental-narrado':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['periodista','Periodista investigador'],['historiador','Historiador académico'],['sobreviviente','Sobreviviente testigo'],['militar-retirado','Ex militar retirado'],['cientifico','Científico forense']],en:[['random','🎲 Random'],['periodista','Investigative journalist'],['historiador','Academic historian'],['sobreviviente','Surviving witness'],['militar-retirado','Retired ex-military'],['cientifico','Forensic scientist']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['historia-oscura','Historia oscura y olvidada'],['catastrofes','Catástrofes y desastres'],['guerras-secretas','Secretos de guerras'],['experimentos','Experimentos gubernamentales'],['civilizaciones','Civilizaciones perdidas'],['nucleares','Hechos nucleares impactantes'],['mortandades','Mortandades históricas']],en:[['random','🎲 Random'],['historia-oscura','Dark forgotten history'],['catastrofes','Catastrophes and disasters'],['guerras-secretas','War secrets'],['experimentos','Government experiments'],['civilizaciones','Lost civilizations'],['nucleares','Shocking nuclear facts'],['mortandades','Historic mass deaths']]},
+  'style':{es:[['random','🎲 Aleatorio'],['revelador','Revelador / impactante'],['ominoso','Ominoso / tenso'],['epico','Épico / grandioso'],['frio','Frío / periodístico']],en:[['random','🎲 Random'],['revelador','Revealing / shocking'],['ominoso','Ominous / tense'],['epico','Epic / grandiose'],['frio','Cold / journalistic']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['grave','Grave / solemne'],['urgente','Urgente / alarmante'],['nostalgico','Nostálgico / reflexivo'],['suspenso','Suspenso creciente']],en:[['random','🎲 Random'],['grave','Grave / solemn'],['urgente','Urgent / alarming'],['nostalgico','Nostalgic / reflective'],['suspenso','Rising suspense']]}
+},
+'testimonio-real':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['anonimo','Voz anónima protegida'],['superviviente','Superviviente de trauma'],['ex-agente','Ex agente o infiltrado'],['victima','Víctima directa'],['testigo','Testigo ocular']],en:[['random','🎲 Random'],['anonimo','Protected anonymous voice'],['superviviente','Trauma survivor'],['ex-agente','Ex-agent or informant'],['victima','Direct victim'],['testigo','Eyewitness']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['misterioso','Testimonio misterioso'],['paranormal','Experiencia paranormal'],['criminal','Testimonio criminal / oscuro'],['conspiracion','Conspiración revelada'],['secta','Escape de secta o culto'],['sobrenatural','Evento sobrenatural']],en:[['random','🎲 Random'],['misterioso','Mysterious testimony'],['paranormal','Paranormal experience'],['criminal','Dark / criminal testimony'],['conspiracion','Revealed conspiracy'],['secta','Cult or sect escape'],['sobrenatural','Supernatural event']]},
+  'style':{es:[['random','🎲 Aleatorio'],['confesional','Confesional / íntimo'],['perturbador','Perturbador / oscuro'],['emocional','Emocional / cargado'],['fragmentado','Fragmentado / disociado']],en:[['random','🎲 Random'],['confesional','Confessional / intimate'],['perturbador','Disturbing / dark'],['emocional','Emotional / heavy'],['fragmentado','Fragmented / dissociated']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['tembloroso','Tembloroso / asustado'],['frio','Frío / distante'],['desesperado','Desesperado / urgente'],['cauteloso','Cauteloso / susurrado']],en:[['random','🎲 Random'],['tembloroso','Trembling / scared'],['frio','Cold / distant'],['desesperado','Desperate / urgent'],['cauteloso','Cautious / whispered']]}
+},
+'reflexion-biblica':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['pastor','Pastor cercano'],['narrador-sereno','Narrador sereno'],['predicador','Predicador inspirador'],['anciano-sabio','Anciano sabio'],['voz-suave','Voz suave femenina']],en:[['random','🎲 Random'],['pastor','Warm pastor'],['narrador-sereno','Serene narrator'],['predicador','Inspiring preacher'],['anciano-sabio','Wise elder'],['voz-suave','Soft female voice']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['fe-esperanza','Fe y esperanza'],['palabras-aliento','Palabras de aliento'],['promesas-dios','Promesas de Dios'],['fortaleza','Fortaleza y perseverancia'],['amor-compasion','Amor y compasión'],['sanacion','Sanación y restauración'],['proposito','Propósito y llamado']],en:[['random','🎲 Random'],['fe-esperanza','Faith and hope'],['palabras-aliento','Words of encouragement'],['promesas-dios','God\'s promises'],['fortaleza','Strength and perseverance'],['amor-compasion','Love and compassion'],['sanacion','Healing and restoration'],['proposito','Purpose and calling']]},
+  'style':{es:[['random','🎲 Aleatorio'],['devocional','Devocional / íntimo'],['inspirador','Inspirador / motivacional'],['reflexivo','Reflexivo / contemplativo'],['esperanzador','Esperanzador / luminoso']],en:[['random','🎲 Random'],['devocional','Devotional / intimate'],['inspirador','Inspiring / motivational'],['reflexivo','Reflective / contemplative'],['esperanzador','Hopeful / luminous']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['sereno','Sereno / calmado'],['amoroso','Amoroso / cálido'],['solemne','Solemne / reverente'],['alentador','Alentador / energizante']],en:[['random','🎲 Random'],['sereno','Serene / calm'],['amoroso','Loving / warm'],['solemne','Solemn / reverent'],['alentador','Encouraging / energizing']]}
+},
+'ciencia-misterio':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['divulgador','Divulgador científico'],['astronomo','Astrónomo apasionado'],['biologo','Biólogo marino'],['fisico','Físico cuántico'],['explorador','Explorador de lo desconocido']],en:[['random','🎲 Random'],['divulgador','Science communicator'],['astronomo','Passionate astronomer'],['biologo','Marine biologist'],['fisico','Quantum physicist'],['explorador','Explorer of the unknown']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['universo','Misterios del universo y astronomía'],['oceano','Secretos del océano profundo'],['fisica-cuantica','Física cuántica y realidad'],['evolucion','Evolución y animales extraordinarios'],['fenomenos','Fenómenos naturales extremos'],['cerebro','Psicología y el cerebro humano'],['tiempo','Tiempo, física y realidad']],en:[['random','🎲 Random'],['universo','Universe mysteries and astronomy'],['oceano','Deep ocean secrets'],['fisica-cuantica','Quantum physics and reality'],['evolucion','Evolution and extraordinary animals'],['fenomenos','Extreme natural phenomena'],['cerebro','Psychology and the human brain'],['tiempo','Time, physics and reality']]},
+  'style':{es:[['random','🎲 Aleatorio'],['revelador','Revelador / asombroso'],['educativo','Educativo / divulgativo'],['reflexivo','Reflexivo / filosófico'],['impactante','Impactante / viral']],en:[['random','🎲 Random'],['revelador','Revealing / amazing'],['educativo','Educational'],['reflexivo','Reflective / philosophical'],['impactante','Shocking / viral']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['fascinado','Fascinado / maravillado'],['analitico','Analítico / preciso'],['filosofico','Filosófico / profundo'],['dramatico','Dramático / cinematográfico']],en:[['random','🎲 Random'],['fascinado','Fascinated / amazed'],['analitico','Analytical / precise'],['filosofico','Philosophical / deep'],['dramatico','Dramatic / cinematic']]}
 }
 };
 
@@ -320,6 +352,22 @@ const MODE_BLOCKS={
 'libro-rapido':[
   {id:'book-narrator-block',title:{es:'Narrador',en:'Narrator'},fields:[{id:'narrator-type',label:{es:'Tipo de narrador',en:'Narrator type'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
   {id:'book-block',title:{es:'El libro',en:'The book'},fields:[{id:'book-genre',label:{es:'Género del libro',en:'Book genre'}}]}
+],
+'documental-narrado':[
+  {id:'doc-narrator-block',title:{es:'Narrador',en:'Narrator'},fields:[{id:'narrator-type',label:{es:'Tipo',en:'Type'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'doc-theme-block',title:{es:'Temática y estilo',en:'Theme & style'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'testimonio-real':[
+  {id:'test-narrator-block',title:{es:'Narrador / Testigo',en:'Narrator / Witness'},fields:[{id:'narrator-type',label:{es:'Tipo de voz',en:'Voice type'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'test-theme-block',title:{es:'Tipo de testimonio',en:'Testimony type'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'reflexion-biblica':[
+  {id:'ref-narrator-block',title:{es:'Narrador',en:'Narrator'},fields:[{id:'narrator-type',label:{es:'Tipo de voz',en:'Voice type'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'ref-theme-block',title:{es:'Temática',en:'Theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'ciencia-misterio':[
+  {id:'sci-narrator-block',title:{es:'Narrador científico',en:'Scientific narrator'},fields:[{id:'narrator-type',label:{es:'Tipo',en:'Type'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'sci-theme-block',title:{es:'Temática científica',en:'Science theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
 ]
 };
 
@@ -331,6 +379,22 @@ const RAND_TOPICS={
   'misterio-biblico':{
     es:['El Libro de Enoc y los 200 Vigilantes que descendieron al Monte Hermón','Los gigantes nefilim según los manuscritos del Mar Muerto','Salomón y los 72 demonios sellados en una vasija de bronce','El Evangelio de Tomás: 114 enseñanzas secretas de Jesús'],
     en:['The Book of Enoch and the 200 Watchers who descended to Mount Hermon','The Nephilim giants per the Dead Sea Scrolls','Solomon and the 72 demons sealed in a bronze vessel','The Gospel of Thomas: 114 secret teachings of Jesus']
+  },
+  'documental-narrado':{
+    es:['El experimento MKUltra y las mentes que la CIA destruyó en secreto','La catástrofe nuclear de Kyshtym de 1957 que el mundo casi nunca supo','Los 300,000 soldados japoneses que nadie se atrevió a rendirse','La masacre de Katyn y 80 años de silencio soviético'],
+    en:['MKUltra and the minds the CIA secretly destroyed','The 1957 Kyshtym nuclear disaster the world almost never knew about','The 300,000 Japanese soldiers nobody dared to surrender','The Katyn massacre and 80 years of Soviet silence']
+  },
+  'testimonio-real':{
+    es:['La noche que vi algo en el bosque que nadie me creyó','Trabajé 3 años para una organización que no debía conocer','Sobreviví algo que no debería haber sobrevivido y nadie sabe por qué','Me pasó algo en ese hospital que no puedo explicar con lógica'],
+    en:['The night I saw something in the woods nobody believed me','I worked 3 years for an organization I was never supposed to know about','I survived something I shouldn\'t have and nobody knows why','Something happened to me in that hospital I can\'t explain with logic']
+  },
+  'reflexion-biblica':{
+    es:['Cuando Dios permite el dolor, no es señal de abandono sino de confianza','La promesa de Isaías 41:10 para los que sienten que ya no pueden más','Cuando todo colapsa a tu alrededor, hay una paz que no entiende la mente','Lo que Jesús dijo sobre el miedo que la mayoría nunca escucha'],
+    en:['When God allows pain, it\'s not abandonment but trust','The promise of Isaiah 41:10 for those who feel they can\'t go on','When everything collapses around you, there\'s a peace the mind can\'t grasp','What Jesus said about fear that most people never hear']
+  },
+  'ciencia-misterio':{
+    es:['El 95% del universo es materia oscura y energía oscura que no podemos ver ni tocar','En el océano profundo hay criaturas que producen su propia luz sin ninguna fuente externa','El efecto túnel cuántico hace que los átomos atraviesen paredes sólidas todos los días','El cerebro humano tarda 80 milisegundos en procesar la realidad — vivimos en el pasado'],
+    en:['95% of the universe is dark matter and energy we can\'t see or touch','In the deep ocean there are creatures that produce their own light with no external source','Quantum tunneling makes atoms pass through solid walls every day','The human brain takes 80ms to process reality — we live in the past']
   }
 };
 
@@ -492,6 +556,34 @@ async function generateWithAI(){
     usr=lang==='es'
       ?`Libro: "${topic}"\n\nGenera exactamente 5 segmentos:\n1. GANCHO (18 palabras máx): verdad incómoda del libro\n2. EL LIBRO (20 palabras máx): presenta título y autor\n3. IDEA+GIRO (25 palabras máx): premisa + idea contraintuitiva\n4. EN TU VIDA (25 palabras máx): aplicación práctica mañana\n5. CIERRE+CTA (20 palabras máx): frase memorable + invita a leer\n\nJSON:\n["gancho","libro","ideas","vida","cierre"]`
       :`Book: "${topic}"\n\nGenerate exactly 5 segments:\n1. HOOK (max 18 words): uncomfortable truth from book\n2. THE BOOK (max 20 words): introduce title and author\n3. IDEA+TWIST (max 25 words): premise + counterintuitive idea\n4. IN YOUR LIFE (max 25 words): practical application tomorrow\n5. CLOSE+CTA (max 20 words): memorable line + invite to read\n\nJSON:\n["hook","book","ideas","life","close"]`;
+  } else if(mode==='documental-narrado'){
+    sys=lang==='es'
+      ?'Eres el narrador de un documental histórico impactante, estilo National Geographic / BBC. Voz grave, hechos reales, escalas la tensión. Responde SOLO con JSON array de strings.'
+      :'You are the narrator of a shocking historical documentary, National Geographic / BBC style. Deep voice, real facts, escalating tension. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de narración documental (máx 28 palabras cada una). Inicia con un dato impactante, escala la tensión, termina con una revelación.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 documentary narration lines (max 28 words each). Start with a shocking fact, escalate tension, end with a revelation.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='testimonio-real'){
+    sys=lang==='es'
+      ?'Eres el escritor de testimonios dramáticos en primera persona para YouTube Shorts. Voz temblorosa, confesional, íntima. Responde SOLO con JSON array de strings.'
+      :'You write dramatic first-person testimonies for YouTube Shorts. Trembling, confessional, intimate voice. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Tipo: ${gv('narrator-type')||'random'} | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de testimonio en primera persona (máx 22 palabras cada una). Usa "yo", "me", "mi". Inicia in media res, genera intriga, revela algo perturbador al final.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Type: ${gv('narrator-type')||'random'} | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 first-person testimony lines (max 22 words each). Use "I", "me", "my". Start in media res, build intrigue, reveal something disturbing at the end.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='reflexion-biblica'){
+    sys=lang==='es'
+      ?'Eres un pastor o narrador bíblico que crea devocionales cortos y profundos para YouTube Shorts. Responde SOLO con JSON de exactamente 5 strings.'
+      :'You are a pastor or biblical narrator creating short, deep devotionals for YouTube Shorts. Reply ONLY with a JSON of exactly 5 strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Categoría: ${gv('category')||'fe-esperanza'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera exactamente 5 segmentos:\n1. GANCHO (15 palabras máx): pregunta o verdad que golpea el alma\n2. VERSO (20 palabras máx): cita bíblica relevante con referencia\n3. CONTEXTO (25 palabras máx): qué significa ese verso hoy\n4. APLICACION (25 palabras máx): cómo aplicarlo en tu vida esta semana\n5. CIERRE+ORACIóN (22 palabras máx): oración breve o frase de fe\n\nJSON:\n["gancho","verso","contexto","aplicacion","cierre"]`
+      :`Topic: "${topic}" | Category: ${gv('category')||'faith-hope'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate exactly 5 segments:\n1. HOOK (max 15 words): question or soul-piercing truth\n2. VERSE (max 20 words): relevant Bible quote with reference\n3. CONTEXT (max 25 words): what that verse means today\n4. APPLICATION (max 25 words): how to apply it this week\n5. CLOSE+PRAYER (max 22 words): brief prayer or faith statement\n\nJSON:\n["hook","verse","context","application","close"]`;
+  } else if(mode==='ciencia-misterio'){
+    sys=lang==='es'
+      ?'Eres un divulgador científico viral que explica misterios del universo de forma asombrosa. Responde SOLO con JSON array de strings.'
+      :'You are a viral science communicator explaining universe mysteries in an amazing way. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de divulgación científica (máx 26 palabras cada una). Usa datos reales, analogías visuales, termina con una pregunta que expande la mente.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 science communication lines (max 26 words each). Use real facts, visual analogies, end with a mind-expanding question.\n\nJSON:\n["line1","line2",...]`;
   }
 
   try{
@@ -530,6 +622,15 @@ function renderAI(data,topic){
     const labels=lang==='es'
       ?['🎣 Gancho','📖 El Libro','💡 Ideas + Giro','🔥 En tu vida','🚀 Cierre + CTA']
       :['🎣 Hook','📖 The Book','💡 Ideas + Twist','🔥 In your life','🚀 Close + CTA'];
+    data.forEach((s,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">${labels[i]||'Seg '+(i+1)}</div>${s}</div>`;});
+    area._copy=labels.map((l,i)=>`${l}:\n${data[i]||''}`).join('\n\n');
+  } else if(mode==='documental-narrado'||mode==='testimonio-real'||mode==='ciencia-misterio'){
+    data.forEach((l,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">Clip ${i+1}</div>${l}</div>`;});
+    area._copy=data.map((l,i)=>`[${i+1}] ${l}`).join('\n\n');
+  } else if(mode==='reflexion-biblica'){
+    const labels=lang==='es'
+      ?['🎣 Gancho','📖 Verso bíblico','💡 Contexto','🔥 Aplicación','🙏 Cierre / Oración']
+      :['🎣 Hook','📖 Bible verse','💡 Context','🔥 Application','🙏 Close / Prayer'];
     data.forEach((s,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">${labels[i]||'Seg '+(i+1)}</div>${s}</div>`;});
     area._copy=labels.map((l,i)=>`${l}:\n${data[i]||''}`).join('\n\n');
   }
