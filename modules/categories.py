@@ -149,3 +149,34 @@ BIBLE_CATEGORIES_EN = [
     "Healing and Restoration",
     "Purpose and Calling",
 ]
+
+# Categorías exclusivas del modo "Misterio Bíblico"
+MISTERIO_BIBLICO_CATEGORIES = [
+    "Profecias Oscuras y Revelaciones",
+    "Angeles Caidos y Nefilim",
+    "Secretos del Libro de Enoc",
+    "Misterios del Apocalipsis",
+    "Lugares Biblicos Desaparecidos",
+    "Personajes Biblicos Misteriosos",
+    "Castigos y Juicios Divinos",
+    "Simbolos y Numeros Biblicos",
+    "Libros Apocrifos Prohibidos",
+    "Artefactos Sagrados Perdidos",
+    "Guerras Angelicales y Demonios",
+    "Las Primeras Civilizaciones Biblicas",
+]
+
+MISTERIO_BIBLICO_CATEGORIES_EN = [
+    "Dark Prophecies and Revelations",
+    "Fallen Angels and Nephilim",
+    "Secrets of the Book of Enoch",
+    "Apocalypse Mysteries",
+    "Disappeared Biblical Places",
+    "Mysterious Biblical Figures",
+    "Divine Punishments and Judgments",
+    "Biblical Symbols and Numbers",
+    "Forbidden Apocryphal Books",
+    "Lost Sacred Artifacts",
+    "Angelic Wars and Demons",
+    "The First Biblical Civilizations",
+]

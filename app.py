@@ -21,6 +21,7 @@ from modules.categories import (
     TESTIMONIO_CATEGORIES, TESTIMONIO_CATEGORIES_EN,
     BOOK_CATEGORIES, BOOK_CATEGORIES_EN,
     BIBLE_CATEGORIES, BIBLE_CATEGORIES_EN,
+    MISTERIO_BIBLICO_CATEGORIES, MISTERIO_BIBLICO_CATEGORIES_EN,
 )
 from dotenv import set_key, load_dotenv
 
@@ -30,6 +31,7 @@ st.set_page_config(
     page_title="AutoShorts AI",
     page_icon="🎬",
     layout="centered",
+    initial_sidebar_state="expanded",
 )
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
@@ -75,10 +77,13 @@ st.markdown("""
 }
 
 /* ── OCULTAR UI NATIVA DE STREAMLIT ── */
-#MainMenu, footer, header,
+#MainMenu, footer,
 [data-testid="stDecoration"],
 [data-testid="stStatusWidget"],
+[data-testid="stToolbar"],
 .viewerBadge_container__1QSob { display: none !important; }
+/* Ocultar deploy/share button pero NO el toggle del sidebar */
+[data-testid="stAppDeployButton"] { display: none !important; }
 
 /* ── BASE ── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -107,17 +112,29 @@ h1, h2, h3, h4, .hero-title {
     margin: 0 auto !important;
 }
 
-/* ── SIDEBAR ── */
+/* ── SIDEBAR — forzar visible en Streamlit 1.44+ ── */
 [data-testid="stSidebar"] {
     background: var(--surface) !important;
     border-right: 1px solid var(--border) !important;
     box-shadow: var(--shadow-sm) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    min-width: 280px !important;
+    width: 280px !important;
 }
 [data-testid="stSidebar"] > div:first-child {
     padding: 1.25rem 0.875rem 3rem !important;
     min-height: 100vh;
+}
+/* Mostrar botón de colapso/expand del sidebar */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"] {
+    display: flex !important;
+    visibility: visible !important;
 }
 /* Título del sidebar */
 [data-testid="stSidebar"] h1 {
@@ -904,6 +921,10 @@ UI = {
         "testimonio_cat":    "Categoría del testimonio",
         "testimonio_topic":  "Tema (opcional — déjalo vacío para que la IA elija)",
         "testimonio_topic_ph": "ej. La secta que operaba en las catacumbas de Roma...",
+        "misterio_biblico_info":     "📖 Secretos oscuros y misterios poco conocidos de la Biblia — tono cinematográfico y revelador. 3 clips por escena.",
+        "misterio_biblico_cat":      "Categoría del misterio",
+        "misterio_biblico_topic":    "Tema (opcional — déjalo vacío para que la IA elija)",
+        "misterio_biblico_topic_ph": "ej. Los Nefilim del Génesis y su verdadera naturaleza...",
         "libro_info":        "📚 Resumen de 60 seg que enseña, aplica y motiva a leer el libro. Tono inspirador y educativo.",
         "libro_cat":         "Género del libro",
         "libro_topic":       "Título del libro (opcional — déjalo vacío para que la IA elija)",
@@ -993,6 +1014,10 @@ UI = {
         "testimonio_cat":    "Testimony category",
         "testimonio_topic":  "Topic (optional — leave blank for AI to choose)",
         "testimonio_topic_ph": "e.g. The cult operating in the catacombs of Rome...",
+        "misterio_biblico_info":     "📖 Dark secrets and little-known biblical mysteries — cinematic and revealing tone. 3 clips per scene.",
+        "misterio_biblico_cat":      "Mystery category",
+        "misterio_biblico_topic":    "Topic (optional — leave blank for AI to choose)",
+        "misterio_biblico_topic_ph": "e.g. The Nephilim in Genesis and their true nature...",
         "libro_info":        "📚 60-sec summary that teaches, applies and motivates reading. Inspiring and educational tone.",
         "libro_cat":         "Book genre",
         "libro_topic":       "Book title (optional — leave blank for AI to choose)",
@@ -1188,6 +1213,21 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             script = brain.generate_testimonio_script(topic, category, lang=pipeline_lang,
                                                       chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
                                                       max_words_per_scene=_max_wpsc)
+
+        elif pipeline_mode == "misterio_biblico":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="misterio_biblico")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="misterio_biblico")
+            script = brain.generate_misterio_biblico_script(topic, category, lang=pipeline_lang,
+                                                             chosen_hook=chosen_hook, num_scenes=_ai_num_scenes,
+                                                             max_words_per_scene=_max_wpsc)
 
         elif pipeline_mode == "libro":
             topic       = params.get("topic", "").strip()
@@ -2901,29 +2941,31 @@ with st.expander(_mus_label, expanded=False):
 
 _mode_buttons = (
     [
-        ("auto",       "⚡ Auto"),
-        ("category",   "🗂️ Categorías"),
-        ("viral",      "🔥 Viral"),
-        ("testimonio", "👁️ Misterio"),
-        ("libro",      "📚 Libro"),
-        ("biblia",     "✝️ Biblia"),
-        ("empleo",     "💼 Empleo"),
-        ("guion",      "✍️ Guión"),
-        ("novela",     "🎬 Mininovela"),
-        ("podcast",    "🎙️ Podcast"),
+        ("auto",             "⚡ Auto"),
+        ("category",         "🗂️ Categorías"),
+        ("viral",            "🔥 Viral"),
+        ("testimonio",       "👁️ Misterio"),
+        ("misterio_biblico", "📖 Mist. Bíblico"),
+        ("libro",            "📚 Libro"),
+        ("biblia",           "✝️ Biblia"),
+        ("empleo",           "💼 Empleo"),
+        ("guion",            "✍️ Guión"),
+        ("novela",           "🎬 Mininovela"),
+        ("podcast",          "🎙️ Podcast"),
     ]
     if lang_option == "es"
     else [
-        ("auto",       "⚡ Auto"),
-        ("category",   "🗂️ Category"),
-        ("viral",      "🔥 Viral"),
-        ("testimonio", "👁️ Mystery"),
-        ("libro",      "📚 Book"),
-        ("biblia",     "✝️ Bible"),
-        ("empleo",     "💼 Job Ad"),
-        ("guion",      "✍️ Script"),
-        ("novela",     "🎬 Miniseries"),
-        ("podcast",    "🎙️ Podcast"),
+        ("auto",             "⚡ Auto"),
+        ("category",         "🗂️ Category"),
+        ("viral",            "🔥 Viral"),
+        ("testimonio",       "👁️ Mystery"),
+        ("misterio_biblico", "📖 Bible Mystery"),
+        ("libro",            "📚 Book"),
+        ("biblia",           "✝️ Bible"),
+        ("empleo",           "💼 Job Ad"),
+        ("guion",            "✍️ Script"),
+        ("novela",           "🎬 Miniseries"),
+        ("podcast",          "🎙️ Podcast"),
     ]
 )
 
@@ -3128,6 +3170,35 @@ elif mode == "testimonio":
 
     final_topic    = test_topic_input.strip()
     final_category = test_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO MISTERIO BÍBLICO
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "misterio_biblico":
+
+    st.markdown(f"<div class='auto-info'>{T['misterio_biblico_info']}</div>", unsafe_allow_html=True)
+
+    st.markdown(f"<div class='step-header'>🎯 {T['misterio_biblico_cat']}</div>", unsafe_allow_html=True)
+    _mb_cats = MISTERIO_BIBLICO_CATEGORIES if lang_option == "es" else MISTERIO_BIBLICO_CATEGORIES_EN
+    mb_category = st.selectbox(
+        "mbcat", options=[""] + _mb_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="mb_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {T['misterio_biblico_topic']}</div>", unsafe_allow_html=True)
+    mb_topic_input = st.text_input(
+        "mbtopic",
+        key="mb_topic_input",
+        placeholder=T["misterio_biblico_topic_ph"],
+        label_visibility="collapsed",
+    )
+
+    final_topic    = mb_topic_input.strip()
+    final_category = mb_category
     num_scenes     = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -3384,7 +3455,7 @@ elif mode == "podcast":
 
 # ── Generar / Hook flow ───────────────────────────────────────────────────────
 # Modos donde el hook se inyecta en la Escena 1 del guion
-_HOOK_MODES = {"auto", "category", "viral", "testimonio", "libro", "biblia"}
+_HOOK_MODES = {"auto", "category", "viral", "testimonio", "misterio_biblico", "libro", "biblia"}
 # "empleo" y "guion" no usan hooks — el texto ya viene definido por el usuario
 
 st.markdown("---")

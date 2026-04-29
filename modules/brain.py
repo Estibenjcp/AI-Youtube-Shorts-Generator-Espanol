@@ -63,7 +63,9 @@ class ContentBrain:
         _excl_block_es = _excl_block_en = ""  # no token cost — dedup done locally after generation
 
         import random as _random
-        from modules.categories import VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES, BOOK_CATEGORIES, BOOK_CATEGORIES_EN
+        from modules.categories import (VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES,
+                                          BOOK_CATEGORIES, BOOK_CATEGORIES_EN,
+                                          MISTERIO_BIBLICO_CATEGORIES, MISTERIO_BIBLICO_CATEGORIES_EN)
 
         # Pick category from the right pool depending on mode
         if category_hint.strip():
@@ -72,6 +74,9 @@ class ContentBrain:
             category = _random.choice(VIRAL_CATEGORIES)
         elif mode == "testimonio":
             category = _random.choice(TESTIMONIO_CATEGORIES)
+        elif mode == "misterio_biblico":
+            cats = MISTERIO_BIBLICO_CATEGORIES if lang == "es" else MISTERIO_BIBLICO_CATEGORIES_EN
+            category = _random.choice(cats)
         elif mode == "libro":
             category = _random.choice(BOOK_CATEGORIES if lang == "es" else BOOK_CATEGORIES_EN)
         else:
@@ -134,6 +139,28 @@ class ContentBrain:
                 f"in the category: {category}. "
                 f"Must be based on real facts: a cult that actually existed, a documented ritual, "
                 f"a real criminal case, a phenomenon recorded by authorities or investigators. "
+                f"Seed: {seed}. "
+                f"{_real_warning_en}"
+                f"{_excl_block_en}"
+                f"Return ONLY the topic name, nothing else."
+            )
+        elif mode == "misterio_biblico":
+            prompt = (
+                f"Dame 1 tema de misterio, secreto oscuro o hecho poco conocido de la Biblia "
+                f"en la categoria: {category}. "
+                f"Debe estar documentado en textos sagrados, manuscritos historicos, arqueologia biblica o investigacion academica. "
+                f"Ejemplos: angeles caidos del Libro de Enoc, los Nefilim del Genesis, la desaparicion del Arca de la Alianza, "
+                f"la destruccion de Sodoma y Gomorra, el simbolismo del 666, profecias del Apocalipsis sin explicar. "
+                f"Semilla: {seed}. "
+                f"{_real_warning_es}"
+                f"{_excl_block_es}"
+                f"Responde UNICAMENTE con el nombre del tema, nada mas. En espanol."
+            ) if lang == "es" else (
+                f"Give me 1 mystery, dark secret, or little-known biblical fact "
+                f"in the category: {category}. "
+                f"Must be documented in sacred texts, historical manuscripts, biblical archaeology, or academic research. "
+                f"Examples: fallen angels from the Book of Enoch, the Nephilim in Genesis, the disappearance of the Ark of the Covenant, "
+                f"destruction of Sodom and Gomorrah, symbolism of 666, unexplained Apocalypse prophecies. "
                 f"Seed: {seed}. "
                 f"{_real_warning_en}"
                 f"{_excl_block_en}"
@@ -833,6 +860,128 @@ JSON RULES:
                     "visual_2": _random.choice(ATMOSPHERIC_FALLBACKS),
                     "visual_3": _random.choice(ATMOSPHERIC_FALLBACKS),
                     "mood": "horror"
+                }
+                for i, s in enumerate(sentences)
+            ]
+
+    def generate_misterio_biblico_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9, max_words_per_scene: int = 999) -> list:
+        """Guion de misterio biblico — secretos oscuros y poco conocidos de la Biblia, estilo documental cinematografico.
+        Single-call: produce JSON scenes directly — no second AI call, no text modification."""
+        import re as _re
+        import random as _random
+        print(f"📖 Generando misterio biblico: {topic}...")
+
+        BIBLICAL_FALLBACKS = [
+            "ancient stone tablets scrolls", "dark cathedral candles ancient",
+            "mysterious light temple ruins", "old manuscript parchment dark",
+            "desert ancient ruins night", "stormy sky lightning cross",
+            "ancient bible open dark", "mysterious fog ancient city",
+        ]
+
+        if lang == "es":
+            prompt = f"""Eres un narrador experto en revelar los secretos, misterios y hechos oscuros que esconde la Biblia, estilo documental cinematografico y canal de YouTube viral.
+
+Tu objetivo: exponer este misterio biblico de forma que el espectador sienta que acaba de descubrir algo que nunca le ensenaron.
+
+Estructura exacta (~{num_scenes * 5} segundos / EXACTAMENTE {num_scenes} escenas / MAXIMO {max_words_per_scene} palabras por escena):
+  Escena 1 - HOOK OSCURO (maximo 12 palabras, el espectador decide en 1.7 seg):
+    OBLIGATORIO — uno de estos tipos:
+    TIPO A: "La Biblia oculto esto durante miles de anos. Muy pocos lo saben."
+    TIPO B: "Lo que nadie te conto sobre [ELEMENTO ESPECIFICO DEL TEMA]."
+    TIPO C: "Nadie habla del pasaje mas perturbador de toda la Biblia."
+    TIPO D: "¿Que harias si descubrieras que [HECHO BIBLICO OSCURO Y CONCRETO]?"
+  Escenas 2-{max(3, num_scenes - 3)} - REVELACION BIBLICA: El misterio, su contexto en las Escrituras y los detalles que la mayoria desconoce.
+  Escena {num_scenes - 1} - REVELACION FINAL: El hecho mas impactante y perturbador del tema.
+  Escena {num_scenes} - CIERRE + CTA: Una reflexion que impacte + "¿Lo sabias? Comenta SI o NO y sigueme para mas misterios biblicos".
+
+Reglas de estilo:
+- Lenguaje misterioso, dramatico y revelador.
+- Frases como: "la Biblia revela que...", "este versiculo dice literalmente...", "los historiadores descubrieron que...", "lo que pocos saben es que...".
+- Tono: oscuro y fascinante, como si estuvieras desvelando un secreto milenario.
+- PROHIBIDO: emojis, caracteres especiales Unicode (guiones largos, comillas rizadas, puntos suspensivos especiales), la letra n con tilde (usa alternativas: "anio" por "ano", "senor" por "senor").
+- USA SOLO: letras, numeros, comas, puntos, signos de exclamacion, signos de interrogacion y apostrofes simples.
+- En espanol neutro latino.
+
+Tema: {topic}
+Categoria: {category}{f'{chr(10)}HOOK PRE-SELECCIONADO (OBLIGATORIO usar este texto EXACTO en Escena 1): "{chosen_hook}"' if chosen_hook else ""}
+
+FORMATO DE SALIDA: JSON estricto, sin markdown, sin texto fuera del JSON:
+[
+  {{"id":1,"text":"texto de la escena","visual_1":"ancient scrolls dark","visual_2":"mysterious temple ruins","visual_3":"stormy sky lightning","mood":"mysterious"}},
+  {{"id":2,"text":"texto de la escena","visual_1":"old bible candlelight","visual_2":"desert ruins ancient","visual_3":"dark cathedral light","mood":"mysterious"}}
+]
+
+REGLAS DEL JSON:
+- EXACTAMENTE {num_scenes} entradas — no mas, no menos.
+- "text": el texto narrado de esa escena. Sin emojis. Sin caracteres especiales.
+- "visual_1", "visual_2", "visual_3": terminos en INGLES para Pexels (2-4 palabras). Deben ser oscuros y biblicos: ancient scrolls, stone tablets, temple ruins, desert night, dark cathedral, mysterious light, old parchment, religious symbols, stormy sky.
+- "mood": siempre "mysterious"."""
+        else:
+            prompt = f"""You are a narrator expert at revealing the secrets, mysteries, and dark facts hidden in the Bible, cinematic documentary style and viral YouTube channel.
+
+Your goal: expose this biblical mystery so the viewer feels they just discovered something they were never taught.
+
+Exact structure (~{num_scenes * 5} seconds / EXACTLY {num_scenes} scenes / MAX {max_words_per_scene} words per scene):
+  Scene 1 - DARK HOOK (max 12 words, viewer decides in 1.7 sec):
+    MANDATORY — one of these types:
+    TYPE A: "The Bible hid this for thousands of years. Very few know."
+    TYPE B: "What nobody told you about [SPECIFIC ELEMENT OF THE TOPIC]."
+    TYPE C: "Nobody talks about the most disturbing passage in the entire Bible."
+    TYPE D: "What would you do if you discovered that [DARK BIBLICAL CONCRETE FACT]?"
+  Scenes 2-{max(3, num_scenes - 3)} - BIBLICAL REVELATION: The mystery, its context in Scripture, and the details most people don't know.
+  Scene {num_scenes - 1} - FINAL REVELATION: The most impactful and disturbing fact of the topic.
+  Scene {num_scenes} - CLOSE + CTA: An impactful reflection + "Did you know this? Comment YES or NO and follow for more biblical mysteries".
+
+Style rules:
+- Mysterious, dramatic and revealing language.
+- LANGUAGE: ENGLISH ONLY.
+- Phrases like: "the Bible reveals that...", "this verse literally says...", "historians discovered that...", "what few people know is...".
+- Tone: dark and fascinating, as if unveiling a millennial secret.
+- FORBIDDEN: emojis, special Unicode characters (em-dashes, curly quotes, special ellipsis).
+- USE ONLY: letters, numbers, commas, periods, exclamation marks, question marks, plain apostrophes.
+
+Topic: {topic}
+Category: {category}
+
+OUTPUT FORMAT: Strict JSON, no markdown, no text outside the JSON:
+[
+  {{"id":1,"text":"scene text here","visual_1":"ancient scrolls dark","visual_2":"mysterious temple ruins","visual_3":"stormy sky lightning","mood":"mysterious"}},
+  {{"id":2,"text":"scene text here","visual_1":"old bible candlelight","visual_2":"desert ruins ancient","visual_3":"dark cathedral light","mood":"mysterious"}}
+]
+
+JSON RULES:
+- EXACTLY {num_scenes} entries — no more, no fewer.
+- "text": narrated text for that scene. No emojis. No special characters.
+- "visual_1", "visual_2", "visual_3": English Pexels search terms (2-4 words). Must be dark and biblical: ancient scrolls, stone tablets, temple ruins, desert night, dark cathedral, mysterious light, old parchment, religious symbols, stormy sky.
+- "mood": always "mysterious"."""
+
+        raw   = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
+                s.setdefault('mood', 'mysterious')
+                if not s.get('visual_3'):
+                    s['visual_3'] = _random.choice(BIBLICAL_FALLBACKS)
+            if len(scenes) > num_scenes:
+                print(f"⚠️ AI returned {len(scenes)} misterio_biblico scenes, trimming to {num_scenes}.")
+                scenes = scenes[:num_scenes]
+            elif len(scenes) < num_scenes:
+                print(f"⚠️ AI returned only {len(scenes)} misterio_biblico scenes (requested {num_scenes}).")
+            print(f"✅ {len(scenes)} misterio biblico scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
+            return [
+                {
+                    "id": i+1, "text": self._sanitize(s),
+                    "visual_1": _random.choice(BIBLICAL_FALLBACKS),
+                    "visual_2": _random.choice(BIBLICAL_FALLBACKS),
+                    "visual_3": _random.choice(BIBLICAL_FALLBACKS),
+                    "mood": "mysterious"
                 }
                 for i, s in enumerate(sentences)
             ]
