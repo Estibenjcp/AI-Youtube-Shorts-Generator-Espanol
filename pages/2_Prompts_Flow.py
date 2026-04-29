@@ -5,8 +5,14 @@ st.set_page_config(
     page_title="Prompts Flow / Veo 3",
     page_icon="🎬",
     layout="centered",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
+
+# Sidebar con navegación
+with st.sidebar:
+    st.markdown("### 🎬 AutoShorts AI")
+    st.page_link("app.py", label="🎬 Generador de Shorts")
+    st.page_link("pages/2_Prompts_Flow.py", label="✨ Prompts Flow / Veo 3")
 
 # Ocultar header nativo de Streamlit en esta página
 st.markdown("""

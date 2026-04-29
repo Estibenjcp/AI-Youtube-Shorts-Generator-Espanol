@@ -1588,6 +1588,9 @@ T = UI[lang_option]
 with st.sidebar:
     st.markdown("# ⚙️ AutoShorts AI")
     st.caption("Configuración de API" if lang_option == "es" else "API Settings")
+    # Navegación a páginas adicionales
+    st.page_link("app.py", label="🎬 Generador de Shorts", icon=None)
+    st.page_link("pages/2_Prompts_Flow.py", label="✨ Prompts Flow / Veo 3", icon=None)
     st.divider()
 
     cfg = load_config()
