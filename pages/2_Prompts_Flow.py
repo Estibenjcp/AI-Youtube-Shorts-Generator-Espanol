@@ -135,25 +135,37 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
     </div>
     <div class="api-field" style="flex:2;">
       <label>Modelo</label>
-      <select id="or-model">
-        <optgroup label="Anthropic">
+      <select id="or-model" onchange="onModelChange()">
+        <optgroup label="✦ Mejores para guiones (2026)">
+          <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet 🏆 mejor escritura</option>
+          <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet ✨ creativo</option>
+          <option value="openai/gpt-4.1">GPT-4.1 💎 nuevo 2025</option>
+          <option value="google/gemini-2.5-pro-preview-03-25">Gemini 2.5 Pro 🔥 largo contexto</option>
+        </optgroup>
+        <optgroup label="⚡ Rápido / Económico">
           <option value="anthropic/claude-3.5-haiku">Claude 3.5 Haiku ⚡ rápido</option>
-          <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet ✨ mejor calidad</option>
+          <option value="openai/gpt-4.1-mini">GPT-4.1 Mini ⚡ económico</option>
+          <option value="google/gemini-2.5-flash-preview">Gemini 2.5 Flash ⚡</option>
+          <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash ⚡</option>
         </optgroup>
-        <optgroup label="OpenAI">
-          <option value="openai/gpt-4o-mini">GPT-4o Mini 💰 económico</option>
-          <option value="openai/gpt-4o">GPT-4o</option>
+        <optgroup label="🆓 Gratis">
+          <option value="meta-llama/llama-4-scout:free">Llama 4 Scout 🆓</option>
+          <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash 🆓</option>
+          <option value="mistralai/mistral-7b-instruct:free">Mistral 7B 🆓</option>
         </optgroup>
-        <optgroup label="Google">
-          <option value="google/gemini-flash-1.5">Gemini Flash 1.5 ⚡</option>
-          <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash (gratis)</option>
+        <optgroup label="🧠 Reasoning">
+          <option value="openai/o4-mini">OpenAI o4-mini 🧠</option>
+          <option value="openai/o3-mini">OpenAI o3-mini 🧠</option>
         </optgroup>
-        <optgroup label="Meta / Otros">
-          <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B</option>
-          <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (gratis)</option>
-          <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (gratis)</option>
+        <optgroup label="🦙 Meta Llama">
+          <option value="meta-llama/llama-4-maverick">Llama 4 Maverick</option>
         </optgroup>
+        <option value="__custom__">✏️ Escribir modelo manualmente...</option>
       </select>
+    </div>
+    <div class="api-field" id="custom-model-field" style="flex:2;display:none;">
+      <label>Modelo personalizado (slug exacto de OpenRouter)</label>
+      <input type="text" id="or-model-custom" placeholder="ej. anthropic/claude-opus-4">
     </div>
     <div style="display:flex;gap:8px;padding-bottom:1px;">
       <button onclick="saveApi()" style="height:32px;padding:0 14px;font-size:12px;">💾 Guardar</button>
@@ -353,15 +365,41 @@ function res(id,opts){const v=gv(id);return v==='random'?pick(opts):v;}
 
 // ── API OpenRouter ─────────────────────────────────────────────────────────────
 let _orKey  = localStorage.getItem('or_key')   || '';
-let _orModel= localStorage.getItem('or_model') || 'anthropic/claude-3.5-haiku';
+let _orModel= localStorage.getItem('or_model') || 'anthropic/claude-3.7-sonnet';
 
 (function initApi(){
   const ki=document.getElementById('or-key');
   const mi=document.getElementById('or-model');
   if(ki&&_orKey) ki.value=_orKey;
-  if(mi&&[...mi.options].some(o=>o.value===_orModel)) mi.value=_orModel;
+  if(mi){
+    const savedModel=_orModel;
+    const match=[...mi.options].some(o=>o.value===savedModel);
+    if(match){ mi.value=savedModel; }
+    else if(savedModel&&savedModel!=='__custom__'){
+      // modelo guardado no está en la lista → mostrar campo custom
+      mi.value='__custom__';
+      const cf=document.getElementById('custom-model-field');
+      const cm=document.getElementById('or-model-custom');
+      if(cf) cf.style.display='block';
+      if(cm) cm.value=savedModel;
+    }
+  }
   updateBadge();
 })();
+
+function onModelChange(){
+  const sel=document.getElementById('or-model');
+  const cf=document.getElementById('custom-model-field');
+  if(cf) cf.style.display=(sel.value==='__custom__')?'block':'none';
+}
+
+function getActiveModel(){
+  const sel=document.getElementById('or-model');
+  if(sel&&sel.value==='__custom__'){
+    return (document.getElementById('or-model-custom').value||'').trim()||_orModel;
+  }
+  return sel?sel.value:_orModel;
+}
 
 function toggleApi(){
   const body=document.getElementById('api-body');
@@ -386,7 +424,7 @@ function updateBadge(){
 
 function saveApi(){
   _orKey  =(document.getElementById('or-key').value||'').trim();
-  _orModel=document.getElementById('or-model').value;
+  _orModel=getActiveModel();
   localStorage.setItem('or_key',  _orKey);
   localStorage.setItem('or_model',_orModel);
   updateBadge();
@@ -411,7 +449,7 @@ async function _callOR(sys,user,maxTok=1000){
   const r=await fetch('https://openrouter.ai/api/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':'Bearer '+_orKey,'Content-Type':'application/json','HTTP-Referer':'https://generador-prompts.local','X-Title':'Generador Multi-Modo'},
-    body:JSON.stringify({model:_orModel,messages:[{role:'system',content:sys},{role:'user',content:user}],max_tokens:maxTok,temperature:0.88})
+    body:JSON.stringify({model:getActiveModel(),messages:[{role:'system',content:sys},{role:'user',content:user}],max_tokens:maxTok,temperature:0.88})
   });
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+r.status);}
   const d=await r.json();

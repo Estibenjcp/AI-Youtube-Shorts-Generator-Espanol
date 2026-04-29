@@ -1615,12 +1615,22 @@ with st.sidebar:
 if st.session_state.get("app_seccion") == "prompts_flow":
     import streamlit.components.v1 as _components
     import pathlib as _pl
+    import json as _json
     _pf_file = _pl.Path(__file__).parent / "pages" / "2_Prompts_Flow.py"
-    # Extraer el bloque HTML del archivo
-    _pf_src = _pf_file.read_text(encoding="utf-8")
+    _pf_src  = _pf_file.read_text(encoding="utf-8")
     _html_start = _pf_src.find('HTML = r"""') + len('HTML = r"""')
     _html_end   = _pf_src.rfind('"""')
     _html_block = _pf_src[_html_start:_html_end]
+    # Inyectar la API key de OpenRouter del generador principal
+    _cfg_pf = load_config()
+    _injected_key = ""
+    if _cfg_pf.get("AI_PROVIDER") == "openrouter":
+        _injected_key = _cfg_pf.get("AI_API_KEY", "")
+    if _injected_key:
+        _html_block = _html_block.replace(
+            "let _orKey  = localStorage.getItem('or_key')   || '';",
+            f"let _orKey  = localStorage.getItem('or_key') || {_json.dumps(_injected_key)};",
+        )
     st.markdown("## ✨ Prompts Flow / Veo 3")
     _components.html(_html_block, height=2400, scrolling=True)
     st.stop()
