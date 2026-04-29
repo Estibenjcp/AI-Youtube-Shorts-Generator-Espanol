@@ -73,8 +73,8 @@ select,input{width:100%;height:34px;padding:0 10px;border:0.5px solid rgba(0,0,0
 select:focus,input:focus{outline:2px solid #185fa5;outline-offset:-1px;}
 .row{display:flex;gap:8px;align-items:center;}
 .row>input{flex:1;}
-.actions{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap;}
-.actions button{flex:1;min-width:140px;}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0;}
+.actions button{width:100%;height:40px;padding:0 8px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 button{height:36px;padding:0 14px;border:0.5px solid rgba(0,0,0,0.25);background:#fff;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
 button:hover{background:#f5f4ed;}
 button:active{transform:scale(0.98);}
@@ -236,10 +236,10 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
 </div>
 
 <div class="actions">
-  <button id="randomize-all" data-i18n="randomizeAll">🎲 Aleatorizar todo</button>
-  <button id="recommend-combo" class="btn-ai" onclick="recommendCombo()" disabled style="display:none;background:#7c3aed;border-color:#7c3aed;">🎯 Recomendar combo viral</button>
-  <button id="generate" class="primary" data-i18n="generateBtn">⚡ Generar prompts Flow</button>
-  <button id="generate-ai" class="btn-ai" onclick="generateWithAI()" disabled>🤖 Generar con IA</button>
+  <button id="btn-clear" onclick="clearFields()" style="background:#fff;border-color:rgba(0,0,0,0.2);">🗑️ Limpiar campos</button>
+  <button id="recommend-combo" onclick="recommendCombo()" disabled style="background:#7c3aed;border-color:#7c3aed;color:#fff;">🎯 Recomendar combo</button>
+  <button id="generate-ai" onclick="generateWithAI()" disabled style="background:#185fa5;border-color:#185fa5;color:#fff;">👁️ Vista previa</button>
+  <button id="generate" class="primary" onclick="generate()">⚡ Generar prompts</button>
 </div>
 
 <div id="ai-output-area"></div>
@@ -712,41 +712,87 @@ function applyI18n(){
 
 function fullRender(){renderModes();renderBlocks();renderSelects();renderHighlightSubs();updateDurInfo();applyI18n();updateTags();updateRecommendBtn();}
 function updateRecommendBtn(){
+  // El botón siempre está visible; solo cambia su label según el modo
   const btn=document.getElementById('recommend-combo');
-  if(btn) btn.style.display=(mode==='ficticio-viral')?'inline-flex':'none';
+  if(!btn) return;
+  const labels={es:'🎯 Recomendar combo',en:'🎯 Recommend combo'};
+  btn.textContent=labels[lang]||labels.es;
+}
+
+function clearFields(){
+  document.getElementById('topic').value='';
+  if(MODE_BLOCKS[mode]) MODE_BLOCKS[mode].forEach(b=>b.fields.forEach(f=>{const el=document.getElementById(f.id);if(el)el.value='random';}));
+  document.getElementById('output-area').style.display='none';
+  document.getElementById('ai-output-area').innerHTML='';
+  updateTags();
 }
 function setMode(m){mode=m;document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
 
 async function recommendCombo(){
   if(!_orKey){alert('Configura tu API key primero.');return;}
-  const topic=(document.getElementById('topic').value||'').trim()||pick(RAND_TOPICS['ficticio-viral'][lang]||[]);
+  const currentTopic=(document.getElementById('topic').value||'').trim();
   const btn=document.getElementById('recommend-combo');
   const area=document.getElementById('ai-output-area');
   btn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Analizando...':'Analyzing...');
   btn.disabled=true;
   area.innerHTML='';
+
+  // Campos disponibles por modo para incluir en el prompt
+  const modeFields={
+    'ficticio-viral':['host-type','host-gender','host-region','guest-type','guest-gender','guest-region','guest-age','style','tone'],
+    'documental-narrado':['narrator-type','narrator-gender','category','style','tone'],
+    'testimonio-real':['narrator-type','narrator-gender','category','style','tone'],
+    'reflexion-biblica':['narrator-type','narrator-gender','category','style','tone'],
+    'ciencia-misterio':['narrator-type','narrator-gender','category','style','tone'],
+    'misterio-biblico':['narrator-type','narrator-gender','narrator-lang','scene-type','subtopic','style','tone'],
+    'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
+  };
+  const fields=modeFields[mode]||['style','tone'];
+
+  // Construir lista de valores válidos para el modo actual
+  const ms=MODE_SELECTS[mode]||{};
+  const validVals=fields.map(id=>{
+    const opts=(ms[id]||{es:[],en:[]})[lang]||[];
+    const vals=opts.filter(([v])=>v!=='random').map(([v])=>v).join('|');
+    return `${id}: ${vals}`;
+  }).join('\n');
+
   const sys=lang==='es'
-    ?'Eres un experto en viralidad de YouTube Shorts en español. Analizas el tema y recomiendas la mejor configuración de host+invitado para maximizar el enganche emocional y la viralidad. Responde SOLO con JSON.'
-    :'You are an expert in YouTube Shorts virality. You analyze the topic and recommend the best host+guest configuration to maximize emotional hook and virality. Reply ONLY with JSON.';
+    ?'Eres experto en viralidad de YouTube Shorts. Dado el modo de podcast y un tema, sugieres la mejor configuración Y un tema viral específico si no se proporcionó. Responde SOLO con JSON.'
+    :'You are a YouTube Shorts virality expert. Given the podcast mode and a topic, you suggest the best configuration AND a viral specific topic if not provided. Reply ONLY with JSON.';
+
+  const topicInstruction=currentTopic
+    ?`Tema actual: "${currentTopic}" (úsalo tal cual o mejóralo ligeramente)`
+    :`No hay tema — sugiere un tema viral específico para el modo "${mode}" (campo "tema", máx 15 palabras)`;
+
   const usr=lang==='es'
-    ?`Tema del podcast: "${topic}"\n\nDevuelve SOLO este JSON con los valores más virales:\n{"host-type":"","host-gender":"","host-region":"","guest-type":"","guest-gender":"","guest-region":"","guest-age":"","style":"","tone":"","razon":""}\n\nValores válidos:\nhost-type: clasico|joven-energico|intelectual|periodista-investigador|conspirativo|espiritual|comico-oscuro\nhost-gender: male|female\nhost-region: latam-neutro|mexico-centroam|caribe|sudamerica|espana|ingles-neutro|bilingue\nguest-type: sobreviviente|profesional-secreto|artista-perturbado|ex-agente|victima-sistema|figura-esoterica|joven-trauma|anciano-revelacion|foraneo-misterioso\nguest-gender: male|female\nguest-region: latam-general|mexico-centroam|caribe|sudamerica|eeuu-hispano|espana-europa|internacional\nguest-age: 18-25|25-35|35-50|50-70\nstyle: conspirativo|criminal|humor-negro|absurdo|paranormal\ntone: tenso|frio|erratico|ironico\nrazon: máximo 20 palabras explicando por qué esta combinación es viral`
-    :`Podcast topic: "${topic}"\n\nReturn ONLY this JSON with the most viral values:\n{"host-type":"","host-gender":"","host-region":"","guest-type":"","guest-gender":"","guest-region":"","guest-age":"","style":"","tone":"","reason":""}\n\nValid values:\nhost-type: clasico|joven-energico|intelectual|periodista-investigador|conspirativo|espiritual|comico-oscuro\nhost-gender: male|female\nhost-region: latam-neutro|mexico-centroam|caribe|sudamerica|espana|ingles-neutro|bilingue\nguest-type: sobreviviente|profesional-secreto|artista-perturbado|ex-agente|victima-sistema|figura-esoterica|joven-trauma|anciano-revelacion|foraneo-misterioso\nguest-gender: male|female\nguest-region: latam-general|mexico-centroam|caribe|sudamerica|eeuu-hispano|espana-europa|internacional\nguest-age: 18-25|25-35|35-50|50-70\nstyle: conspirativo|criminal|humor-negro|absurdo|paranormal\ntone: tenso|frio|erratico|ironico\nreason: max 20 words explaining why this combination is viral`;
+    ?`Modo: ${mode}\n${topicInstruction}\n\nDevuelve SOLO este JSON:\n{"tema":"","razon":"","${fields.join('":"","')}":""}\n\nValores válidos por campo:\n${validVals}\ntema: tema concreto y viral (máx 15 palabras)\nrazon: por qué esta combinación es viral (máx 18 palabras)`
+    :`Mode: ${mode}\n${topicInstruction.replace('Tema actual','Current topic').replace('No hay tema','No topic')}\n\nReturn ONLY this JSON:\n{"tema":"","reason":"","${fields.join('":"","')}":""}\n\nValid values per field:\n${validVals}\ntema: specific viral topic (max 15 words)\nreason: why this combination is viral (max 18 words)`;
+
   try{
-    const raw=await _callOR(sys,usr,400);
+    const raw=await _callOR(sys,usr,500);
     const m=raw.match(/\{[\s\S]*\}/);
     if(!m) throw new Error('JSON inválido');
     const rec=JSON.parse(m[0]);
-    ['host-type','host-gender','host-region','guest-type','guest-gender','guest-region','guest-age','style','tone'].forEach(id=>{
+
+    // Llenar el tema si vino o se sugirió
+    const topicEl=document.getElementById('topic');
+    if(topicEl&&rec.tema&&!currentTopic) topicEl.value=rec.tema;
+
+    // Llenar los selects del modo
+    fields.forEach(id=>{
       const el=document.getElementById(id);
       if(el&&rec[id]){const match=[...el.options].some(o=>o.value===rec[id]);if(match)el.value=rec[id];}
     });
+
     const razon=rec.razon||rec.reason||'';
-    area.innerHTML=`<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:10px 14px;font-size:12px;color:#4c1d95;margin-bottom:8px;">🎯 <strong>${lang==='es'?'Combo viral recomendado':'Viral combo recommended'}:</strong> ${razon}</div>`;
+    const temaMsg=(!currentTopic&&rec.tema)?`<br><span style="color:#7c3aed;">📌 Tema sugerido: <strong>${rec.tema}</strong></span>`:'';
+    area.innerHTML=`<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:10px 14px;font-size:12px;color:#4c1d95;margin-bottom:8px;">🎯 <strong>${lang==='es'?'Combo recomendado':'Recommended combo'}:</strong> ${razon}${temaMsg}</div>`;
     updateTags();
   }catch(e){
     area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:10px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
   }finally{
-    btn.innerHTML='🎯 '+(lang==='es'?'Recomendar combo viral':'Recommend viral combo');
+    btn.innerHTML='🎯 '+(lang==='es'?'Recomendar combo':'Recommend combo');
     btn.disabled=false;
   }
 }
@@ -768,8 +814,6 @@ document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()
 document.querySelectorAll('.fpill[data-format]').forEach(b=>b.addEventListener('click',()=>{format=b.dataset.format;document.querySelectorAll('.fpill[data-format]').forEach(p=>p.classList.remove('active'));b.classList.add('active');renderHighlightSubs();}));
 document.querySelectorAll('.dpill').forEach(b=>b.addEventListener('click',()=>{dur=parseInt(b.dataset.dur);document.querySelectorAll('.dpill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateDurInfo();}));
 document.getElementById('roll-topic').addEventListener('click',()=>{document.getElementById('topic').value=mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]);});
-document.getElementById('randomize-all').addEventListener('click',()=>{MODE_BLOCKS[mode].forEach(b=>b.fields.forEach(f=>{const el=document.getElementById(f.id);if(el)el.value='random';}));updateTags();});
-document.getElementById('generate').addEventListener('click',generate);
 document.addEventListener('change',e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')updateTags();});
 
 fullRender();
