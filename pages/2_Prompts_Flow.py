@@ -806,31 +806,35 @@ function renderAI(data,topic){
     <button onclick="copyAI()" style="height:26px;padding:0 10px;font-size:11px;">📋 Copiar todo</button>
   </div><div style="font-size:11px;color:#666;margin-bottom:10px;">Tema: <strong>${topic}</strong></div>`;
 
-  if(mode==='ficticio-viral'){
+  // Modos con formato host/guest (podcast de 2 personas)
+  const PODCAST_PREVIEW_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
+  if(PODCAST_PREVIEW_MODES.includes(mode)){
+    const hostLabel=mode==='true-crime'?(lang==='es'?'INVESTIGADOR':'INVESTIGATOR'):mode==='psicologia-oscura'?(lang==='es'?'EXPERTO':'EXPERT'):mode==='conspiracion-moderna'?(lang==='es'?'PERIODISTA':'JOURNALIST'):'HOST';
+    const guestLabel=mode==='true-crime'?(lang==='es'?'TESTIGO':'WITNESS'):mode==='psicologia-oscura'?(lang==='es'?'SOBREVIVIENTE':'SURVIVOR'):mode==='conspiracion-moderna'?(lang==='es'?'INFORMANTE':'WHISTLEBLOWER'):(lang==='es'?'INVITADO':'GUEST');
     data.forEach((p,i)=>{
-      html+=`<div class="ai-seg"><div class="ai-seg-label">Intercambio ${i+1}</div>
-        <div style="margin-bottom:5px;"><span style="font-size:10px;font-weight:600;color:#666;">HOST</span><br>${p.host||''}</div>
-        <div><span style="font-size:10px;font-weight:600;color:#666;">INVITADO</span><br>${p.guest||''}</div></div>`;
+      html+=`<div class="ai-seg"><div class="ai-seg-label">${lang==='es'?'Intercambio':'Exchange'} ${i+1}</div>
+        <div style="margin-bottom:5px;"><span style="font-size:10px;font-weight:600;color:#7c3aed;">${hostLabel}</span><br>${p.host||''}</div>
+        <div><span style="font-size:10px;font-weight:600;color:#e11d48;">${guestLabel}</span><br>${p.guest||''}</div></div>`;
     });
-    area._copy=data.map((p,i)=>`[${i+1}]\nHost: ${p.host||''}\nInvitado: ${p.guest||''}`).join('\n\n');
-  } else if(mode==='misterio-biblico'){
-    data.forEach((l,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">Clip ${i+1}</div>${l}</div>`;});
-    area._copy=data.join('\n\n');
+    area._copy=data.map((p,i)=>`[${i+1}]\n${hostLabel}: ${p.host||''}\n${guestLabel}: ${p.guest||''}`).join('\n\n');
   } else if(mode==='libro-rapido'){
     const labels=lang==='es'
       ?['🎣 Gancho','📖 El Libro','💡 Ideas + Giro','🔥 En tu vida','🚀 Cierre + CTA']
       :['🎣 Hook','📖 The Book','💡 Ideas + Twist','🔥 In your life','🚀 Close + CTA'];
     data.forEach((s,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">${labels[i]||'Seg '+(i+1)}</div>${s}</div>`;});
     area._copy=labels.map((l,i)=>`${l}:\n${data[i]||''}`).join('\n\n');
-  } else if(mode==='documental-narrado'||mode==='testimonio-real'||mode==='ciencia-misterio'){
-    data.forEach((l,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">Clip ${i+1}</div>${l}</div>`;});
-    area._copy=data.map((l,i)=>`[${i+1}] ${l}`).join('\n\n');
   } else if(mode==='reflexion-biblica'){
     const labels=lang==='es'
       ?['🎣 Gancho','📖 Verso bíblico','💡 Contexto','🔥 Aplicación','🙏 Cierre / Oración']
       :['🎣 Hook','📖 Bible verse','💡 Context','🔥 Application','🙏 Close / Prayer'];
     data.forEach((s,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">${labels[i]||'Seg '+(i+1)}</div>${s}</div>`;});
     area._copy=labels.map((l,i)=>`${l}:\n${data[i]||''}`).join('\n\n');
+  } else {
+    // Todos los modos narradores: misterio-biblico, documental-narrado, testimonio-real,
+    // ciencia-misterio, finanzas-libertad, mentalidad-disciplina, historia-epica,
+    // psicologia-positiva, psicologia-oscura (narrator preview), etc.
+    data.forEach((l,i)=>{html+=`<div class="ai-seg"><div class="ai-seg-label">${lang==='es'?'Clip':'Clip'} ${i+1}</div>${l}</div>`;});
+    area._copy=data.map((l,i)=>`[${i+1}] ${l}`).join('\n\n');
   }
 
   html+='</div>';
