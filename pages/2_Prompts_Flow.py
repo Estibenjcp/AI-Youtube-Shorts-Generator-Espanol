@@ -1292,16 +1292,23 @@ async function generateNarratorPackage(){
 
   // ── Paleta de colores por narrador ──────────────────────────────────────────
   const NARRATOR_COLORS=['#185fa5','#7c3aed','#e11d48','#d97706'];
-  const NARRATOR_LABELS={
-    es:['Narrador 1','Narrador 2','Narrador 3','Narrador 4'],
-    en:['Narrator 1','Narrator 2','Narrator 3','Narrator 4']
-  };
 
   // ── Prompt de IA (unified multi-narrator format) ─────────────────────────────
   const numH=numHosts;
   const numG=numGuests;
   const n=numH+numG;  // total characters
   const isMulti=n>1;
+
+  // Genera labels según rol: Host / Invitado (o Host 1, Host 2… si hay varios)
+  function getNarratorLabel(i){
+    const isHost=i<numH;
+    if(isHost){
+      return numH>1?(lang==='es'?`Host ${i+1}`:`Host ${i+1}`):(lang==='es'?'Host':'Host');
+    } else {
+      const gi=i-numH+1;
+      return numG>1?(lang==='es'?`Invitado ${gi}`:`Guest ${gi}`):(lang==='es'?'Invitado':'Guest');
+    }
+  }
   const isPanel=n>=3;  // 3+ = round table setup
 
   const sceneDesc=n===1?'featuring a single narrator':n===2?'featuring a host and a guest in an interview format':`featuring a panel of ${n} participants around a round table`;
@@ -1397,14 +1404,15 @@ Rules:
     const tagsYT=Array.isArray(data.tags_youtube)?data.tags_youtube:[];
     const thumbP=data.thumbnail_prompt||'';
 
+    const castDesc=numG===0?(lang==='es'?`${numH} narrador${numH>1?'es':''}`:`${numH} narrator${numH>1?'s':''}`): (lang==='es'?`${numH} host${numH>1?'s':''} + ${numG} invitado${numG>1?'s':''}`:`${numH} host${numH>1?'s':''} + ${numG} guest${numG>1?'s':''}`);
     document.getElementById('config-out').textContent=
-      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${clips} clips × ${sec}s | ${n} narrador${n>1?'es':''} | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
+      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${clips} clips × ${sec}s | ${castDesc} | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
 
     window._allPrompts=[];
 
     // ── Header ────────────────────────────────────────────────────────────────
     let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;">
-      <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete completo · ${n} narrador${n>1?'es':''}</strong>
+      <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete completo · ${castDesc}</strong>
       <div style="display:flex;gap:6px;">
         <button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:28px;padding:0 10px;font-size:11px;background:#f0ede2;color:#1a1a1a;border:none;border-radius:6px;cursor:pointer;" data-i18n="backToTop">⬆️ Volver arriba</button>
         <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
@@ -1415,7 +1423,7 @@ Rules:
     const imgSceneType=isPanel?'panel':isMulti?'duo':'solo';
     narratorsArr.forEach((nr,i)=>{
       const color=NARRATOR_COLORS[i]||'#185fa5';
-      const label=(NARRATOR_LABELS[lang]||NARRATOR_LABELS.es)[i]||`Narrador ${i+1}`;
+      const label=getNarratorLabel(i);
       const imgLightRole=isPanel?'host':(i===0?'host':'guest');
       const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting,imgSceneType,imgLightRole);
       if(imgP) window._allPrompts.push(`=== PROMPT ${label.toUpperCase()} (ChatGPT) ===\n${imgP}`);
@@ -1436,7 +1444,7 @@ Rules:
         const nIdx=isMulti?((c.narrator_id||1)-1):0;
         const nr=narratorsArr[nIdx]||narratorsArr[0]||{};
         const color=NARRATOR_COLORS[nIdx]||'#185fa5';
-        const label=(NARRATOR_LABELS[lang]||NARRATOR_LABELS.es)[nIdx]||'Narrador';
+        const label=getNarratorLabel(nIdx);
         const dialogue=c.dialogue||'';
         const clipLightRole=isPanel?'host':(nIdx===0?'host':'guest');
         const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue,clipLightRole);
