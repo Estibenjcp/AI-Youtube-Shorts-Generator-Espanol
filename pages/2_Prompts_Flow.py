@@ -1124,10 +1124,7 @@ const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspira
 
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
-  if(!PODCAST_MODES.includes(mode)){
-    alert(lang==='es'?'Este modo genera narración. Usa el botón 👁️ Vista previa.':'This mode generates narration. Use the 👁️ Preview button.');
-    return;
-  }
+  if(!PODCAST_MODES.includes(mode)){generateWithAI();return;}
   const btn=document.getElementById('generate');
   const area=document.getElementById('output-area');
   const blocksEl=document.getElementById('output-blocks');
