@@ -1041,7 +1041,7 @@ Rules:
         const visual  =isHost?hostVisual:guestVisual;
         const voice   =isHost?hostVoice:guestVoice;
         const dialogue=c.dialogue||'';
-        const fullPrompt=buildClipPrompt(i+1,clipsArr.length,sec,spk,spkLabel,null,visual,voice,dialogue,setStyle);
+        const fullPrompt=buildClipPrompt(i+1,clipsArr.length,sec,spk,spkLabel,visual,voice,dialogue);
         window._allPrompts.push(fullPrompt);
         html+=`<div class="clip-card">
           <div class="clip-header" style="display:flex;justify-content:space-between;align-items:center;">
