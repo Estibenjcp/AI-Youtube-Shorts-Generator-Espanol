@@ -118,6 +118,14 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
 .footer{text-align:center;color:#999;font-size:11px;margin-top:24px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.1);}
 @media(max-width:600px){.grid2{grid-template-columns:1fr;}.format-row{grid-template-columns:1fr;}.mode-pill{min-width:100%;}}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.5s;}
+.copy-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px;}
+.copy-box{background:#fff;border-radius:14px;padding:16px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.copy-box-header{display:flex;justify-content:space-between;align-items:center;}
+.copy-box-header span{font-size:13px;font-weight:600;color:#1a1a1a;}
+.copy-box-header button{background:none;border:none;font-size:20px;cursor:pointer;color:#666;line-height:1;padding:0 4px;}
+.copy-box textarea{width:100%;flex:1;min-height:220px;max-height:55vh;font-size:11px;font-family:'SF Mono',Monaco,monospace;padding:10px;border:1px solid #ddd;border-radius:8px;resize:vertical;color:#1a1a1a;line-height:1.5;}
+.copy-box-hint{font-size:11px;color:#666;text-align:center;}
+.copy-box-hint kbd{background:#f0ede2;border:1px solid #ccc;border-radius:4px;padding:1px 5px;font-size:10px;font-family:monospace;}
 </style>
 </head>
 <body>
@@ -1065,19 +1073,35 @@ function showToast(msg){
 }
 
 function copyTxt(text){
-  const fallback=()=>{
-    const ta=document.createElement('textarea');
-    ta.value=text;ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
-    document.body.appendChild(ta);ta.focus();ta.select();
-    const ok=document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast(ok?(lang==='es'?'¡Copiado ✓':'Copied ✓'):(lang==='es'?'Selecciona el texto y usa Ctrl+C':'Select text and press Ctrl+C'));
-  };
-  try{
+  // Primero intentar clipboard API (funciona en algunos browsers incluso en iframe)
+  const tryClipboard=()=>{
     if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(()=>showToast(lang==='es'?'¡Copiado ✓':'Copied ✓')).catch(fallback);
-    }else{fallback();}
-  }catch(e){fallback();}
+      return navigator.clipboard.writeText(text).then(()=>{showToast(lang==='es'?'¡Copiado ✓':'Copied ✓');return true;}).catch(()=>false);
+    }
+    return Promise.resolve(false);
+  };
+  tryClipboard().then(ok=>{if(!ok)showCopyModal(text);});
+}
+
+function showCopyModal(text){
+  document.getElementById('copy-modal-overlay')?.remove();
+  const overlay=document.createElement('div');
+  overlay.id='copy-modal-overlay';overlay.className='copy-overlay';
+  const isEs=lang==='es';
+  overlay.innerHTML=`<div class="copy-box">
+    <div class="copy-box-header">
+      <span>📋 ${isEs?'Selecciona todo y copia':'Select all and copy'}</span>
+      <button onclick="document.getElementById('copy-modal-overlay').remove()">✕</button>
+    </div>
+    <textarea id="copy-modal-ta" readonly></textarea>
+    <div class="copy-box-hint">${isEs?'Haz clic en el texto →':'Click inside the text →'} <kbd>${isEs?'Ctrl':'Ctrl'}+A</kbd> ${isEs?'para seleccionar todo, luego':'to select all, then'} <kbd>Ctrl+C</kbd> ${isEs?'para copiar':'to copy'}</div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const ta=document.getElementById('copy-modal-ta');
+  ta.value=text;
+  ta.focus();ta.select();
+  // Cerrar al clic fuera del box
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
 }
 
 function copyAllPrompts(){
