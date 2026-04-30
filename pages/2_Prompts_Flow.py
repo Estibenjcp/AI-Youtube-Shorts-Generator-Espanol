@@ -753,6 +753,7 @@ async function recommendCombo(){
     'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
   };
   const fields=modeFields[mode]||['style','tone'];
+  const allFields=[...fields,'set-style'];
 
   // Construir lista de valores válidos para el modo actual
   const ms=MODE_SELECTS[mode]||{};
@@ -760,7 +761,7 @@ async function recommendCombo(){
     const opts=(ms[id]||{es:[],en:[]})[lang]||[];
     const vals=opts.filter(([v])=>v!=='random').map(([v])=>v).join('|');
     return `${id}: ${vals}`;
-  }).join('\n');
+  }).join('\n')+'\nset-style: oscuro|moderno|natural|neon|biblioteca|mistico';
 
   const sys=lang==='es'
     ?'Eres experto en viralidad de YouTube Shorts. Dado el modo de podcast y un tema, sugieres la mejor configuración Y un tema viral específico si no se proporcionó. Responde SOLO con JSON.'
@@ -771,8 +772,8 @@ async function recommendCombo(){
     :`No hay tema — sugiere un tema viral específico para el modo "${mode}" (campo "tema", máx 15 palabras)`;
 
   const usr=lang==='es'
-    ?`Modo: ${mode}\n${topicInstruction}\n\nDevuelve SOLO este JSON:\n{"tema":"","razon":"","${fields.join('":"","')}":""}\n\nValores válidos por campo:\n${validVals}\ntema: tema concreto y viral (máx 15 palabras)\nrazon: por qué esta combinación es viral (máx 18 palabras)`
-    :`Mode: ${mode}\n${topicInstruction.replace('Tema actual','Current topic').replace('No hay tema','No topic')}\n\nReturn ONLY this JSON:\n{"tema":"","reason":"","${fields.join('":"","')}":""}\n\nValid values per field:\n${validVals}\ntema: specific viral topic (max 15 words)\nreason: why this combination is viral (max 18 words)`;
+    ?`Modo: ${mode}\n${topicInstruction}\n\nDevuelve SOLO este JSON:\n{"tema":"","razon":"","${allFields.join('":"","')}":""}\n\nValores válidos por campo:\n${validVals}\ntema: tema concreto y viral (máx 15 palabras)\nrazon: por qué esta combinación es viral (máx 18 palabras)`
+    :`Mode: ${mode}\n${topicInstruction.replace('Tema actual','Current topic').replace('No hay tema','No topic')}\n\nReturn ONLY this JSON:\n{"tema":"","reason":"","${allFields.join('":"","')}":""}\n\nValid values per field:\n${validVals}\ntema: specific viral topic (max 15 words)\nreason: why this combination is viral (max 18 words)`;
 
   try{
     const raw=await _callOR(sys,usr,500);
@@ -790,9 +791,18 @@ async function recommendCombo(){
       if(el&&rec[id]){const match=[...el.options].some(o=>o.value===rec[id]);if(match)el.value=rec[id];}
     });
 
+    // Aplicar set-style recomendado
+    const validSetStyles=['oscuro','moderno','natural','neon','biblioteca','mistico'];
+    if(rec['set-style']&&validSetStyles.includes(rec['set-style'])){
+      setStyle=rec['set-style'];
+      document.querySelectorAll('[data-set]').forEach(b=>b.classList.toggle('active',b.dataset.set===setStyle));
+    }
+
     const razon=rec.razon||rec.reason||'';
     const temaMsg=(!currentTopic&&rec.tema)?`<br><span style="color:#7c3aed;">📌 Tema sugerido: <strong>${rec.tema}</strong></span>`:'';
-    area.innerHTML=`<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:10px 14px;font-size:12px;color:#4c1d95;margin-bottom:8px;">🎯 <strong>${lang==='es'?'Combo recomendado':'Recommended combo'}:</strong> ${razon}${temaMsg}</div>`;
+    const setNames={oscuro:'🕯️ Oscuro/Edison',moderno:'💡 Moderno/Softbox',natural:'🌿 Natural/Madera',neon:'🎨 Neon/Urbano',biblioteca:'📚 Biblioteca/Clásico',mistico:'🔮 Místico/Velas'};
+    const setMsg=rec['set-style']&&validSetStyles.includes(rec['set-style'])?`<br><span style="color:#185fa5;">🎬 Set: <strong>${setNames[rec['set-style']]||rec['set-style']}</strong></span>`:'';
+    area.innerHTML=`<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:10px 14px;font-size:12px;color:#4c1d95;margin-bottom:8px;">🎯 <strong>${lang==='es'?'Combo recomendado':'Recommended combo'}:</strong> ${razon}${temaMsg}${setMsg}</div>`;
     updateTags();
   }catch(e){
     area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:10px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
