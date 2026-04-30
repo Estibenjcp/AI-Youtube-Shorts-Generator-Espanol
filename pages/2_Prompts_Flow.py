@@ -38,14 +38,16 @@ h1{font-size:22px;margin:0 0 4px;font-weight:500;}
 .lang-switch{display:flex;background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:3px;flex-shrink:0;}
 .lang-btn{height:28px;padding:0 12px;border:none;background:transparent;border-radius:5px;font-size:13px;cursor:pointer;font-family:inherit;color:#666;font-weight:500;}
 .lang-btn.active{background:#1a1a1a;color:#fff;}
-.mode-selector{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-.mode-pill{flex:1;min-width:180px;padding:12px 14px;background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:12px;cursor:pointer;transition:all 0.15s;text-align:left;}
+.mode-selector-wrap{margin-bottom:14px;}
+.mode-cat-label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 5px;}
+.mode-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.mode-pill{display:flex;align-items:center;gap:5px;padding:6px 11px;background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:20px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
 .mode-pill:hover{background:#f5f4ed;}
 .mode-pill.active{background:#1a1a1a;border-color:#1a1a1a;}
-.mode-pill.active .mode-title,.mode-pill.active .mode-desc{color:#fff;}
-.mode-icon{font-size:20px;margin-bottom:3px;}
-.mode-title{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:1px;}
-.mode-desc{font-size:11px;color:#666;}
+.mode-pill.active .mode-title{color:#fff;}
+.mode-icon{font-size:14px;}
+.mode-title{font-size:12px;font-weight:500;color:#1a1a1a;}
+.mode-desc{display:none;}
 .format-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
 .format-block{background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:14px;}
 .format-block h4{font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;font-weight:500;}
@@ -197,7 +199,12 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
   </div>
 </div>
 
-<div class="mode-selector" id="mode-selector"></div>
+<div class="mode-selector-wrap">
+  <div class="mode-cat-label" data-i18n="podcastCat">🎙️ Podcast</div>
+  <div class="mode-selector" id="mode-selector-podcast"></div>
+  <div class="mode-cat-label" style="margin-top:8px;" data-i18n="narratorCat">📺 Narrador / Canal</div>
+  <div class="mode-selector" id="mode-selector-narrator"></div>
+</div>
 
 <div class="format-row" style="grid-template-columns:1fr 1fr 1fr;">
   <div class="format-block">
@@ -298,14 +305,14 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
 <script>
 // ── i18n ──────────────────────────────────────────────────────────────────────
 const T={
-  es:{title:"Generador de prompts",subtitle:"Multi-modo · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Formato del video",fmtLineal:"📖 Lineal",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Sub-tipo de highlight:",durationLabel:"Duración del video",setStyleLabel:"Estilo de set",topicSection:"Tema y estilo",topicLabel:"Tema del episodio",topicPH:"Escribe un tema o usa 🎲",styleLabel:"Estilo",toneLabel:"Tono",randomizeAll:"🎲 Aleatorizar todo",generateBtn:"⚡ Generar prompts Flow",copyBtn:"Copiar",copied:"✓ Copiado",manual:"manual",rnd:"aleatorio",
+  es:{title:"Generador de prompts",subtitle:"Multi-modo · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Formato del video",fmtLineal:"📖 Lineal",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Sub-tipo de highlight:",durationLabel:"Duración del video",setStyleLabel:"Estilo de set",topicSection:"Tema y estilo",topicLabel:"Tema del episodio",topicPH:"Escribe un tema o usa 🎲",styleLabel:"Estilo",toneLabel:"Tono",randomizeAll:"🎲 Aleatorizar todo",generateBtn:"⚡ Generar prompts Flow",copyBtn:"Copiar",copied:"✓ Copiado",manual:"manual",rnd:"aleatorio",podcastCat:"🎙️ Podcast",narratorCat:"📺 Narrador / Canal",nCountLabel:"Personajes en escena",backToTop:"⬆️ Volver arriba",
     durInfo:(n,clips,sec)=>`~${clips} clips de ${sec}s = ${n} minuto${n>1?'s':''}`,
     hlTypes:{rapida:"🌶️ Preguntas picantes",bestof:"🏆 Best-of / momentos pico",datos:"💡 Datos encadenados",comparacion:"⚔️ Comparaciones"},
     clipLabel:(i,total)=>`CLIP ${i} de ${total}`,
     outputTitles:{image1:"1️⃣ Prompt imagen del host (Image A)",image2:"2️⃣ Prompt imagen del invitado (Image A → reemplazo)",clips:"3️⃣ Prompts Flow completos por clip",meta:"4️⃣ Metadata publicación",imgNarrator:"1️⃣ Prompt imagen / escena",voiceNarrator:"2️⃣ Voice prompt narrador",clips2:"3️⃣ Prompts Flow completos por clip",meta2:"4️⃣ Metadata publicación"},
     hints:{image1:"Sin imagen de referencia — ChatGPT / Nano Banana",image2:"Sube Image A del host + pega esto",clips:"Cada bloque = 1 prompt para Google Flow.",meta:"TikTok / Reels / YouTube Shorts"}
   },
-  en:{title:"Prompt generator",subtitle:"Multi-mode · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Video format",fmtLineal:"📖 Linear",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Highlight sub-type:",durationLabel:"Video duration",setStyleLabel:"Set style",topicSection:"Topic & style",topicLabel:"Episode topic",topicPH:"Write a topic or use 🎲",styleLabel:"Style",toneLabel:"Tone",randomizeAll:"🎲 Randomize all",generateBtn:"⚡ Generate Flow prompts",copyBtn:"Copy",copied:"✓ Copied",manual:"manual",rnd:"random",
+  en:{title:"Prompt generator",subtitle:"Multi-mode · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Video format",fmtLineal:"📖 Linear",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Highlight sub-type:",durationLabel:"Video duration",setStyleLabel:"Set style",topicSection:"Topic & style",topicLabel:"Episode topic",topicPH:"Write a topic or use 🎲",styleLabel:"Style",toneLabel:"Tone",randomizeAll:"🎲 Randomize all",generateBtn:"⚡ Generate Flow prompts",copyBtn:"Copy",copied:"✓ Copied",manual:"manual",rnd:"random",podcastCat:"🎙️ Podcast",narratorCat:"📺 Narrator / Channel",nCountLabel:"Characters on screen",backToTop:"⬆️ Back to top",
     durInfo:(n,clips,sec)=>`~${clips} clips of ${sec}s = ${n} minute${n>1?'s':''}`,
     hlTypes:{rapida:"🌶️ Hot questions",bestof:"🏆 Best-of / peak moments",datos:"💡 Chained facts",comparacion:"⚔️ Comparisons"},
     clipLabel:(i,total)=>`CLIP ${i} of ${total}`,
@@ -831,9 +838,9 @@ async function generateWithAI(){
 function renderAI(data,topic){
   const area=document.getElementById('ai-output-area');
   const model=_orModel.split('/').pop();
-  let html=`<div class="ai-out"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+  let html=`<div class="ai-out"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
     <strong style="font-size:13px;color:#185fa5;">🤖 Generado con IA · ${model}</strong>
-    <button onclick="copyAI()" style="height:26px;padding:0 10px;font-size:11px;">📋 Copiar todo</button>
+    <div style="display:flex;gap:5px;"><button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:26px;padding:0 8px;font-size:11px;background:#f0ede2;border:none;border-radius:5px;cursor:pointer;">⬆️</button><button onclick="copyAI()" style="height:26px;padding:0 10px;font-size:11px;">📋 Copiar todo</button></div>
   </div><div style="font-size:11px;color:#666;margin-bottom:10px;">Tema: <strong>${topic}</strong></div>`;
 
   // Modos con formato host/guest (podcast de 2 personas)
@@ -879,12 +886,19 @@ function copyAI(){
 
 // ── UI Render ──────────────────────────────────────────────────────────────────
 function renderModes(){
-  const c=document.getElementById('mode-selector');c.innerHTML='';
+  const cPod=document.getElementById('mode-selector-podcast');
+  const cNar=document.getElementById('mode-selector-narrator');
+  if(cPod) cPod.innerHTML='';
+  if(cNar) cNar.innerHTML='';
+  const podcastSet=new Set(['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna']);
   Object.entries(MODES).forEach(([id,m])=>{
     const p=document.createElement('div');
     p.className='mode-pill'+(id===mode?' active':'');
-    p.innerHTML=`<div class="mode-icon">${m.icon}</div><div class="mode-title">${m.title[lang]}</div><div class="mode-desc">${m.desc[lang]}</div>`;
-    p.onclick=()=>setMode(id);c.appendChild(p);
+    p.title=m.desc[lang];
+    p.innerHTML=`<span class="mode-icon">${m.icon}</span><span class="mode-title">${m.title[lang]}</span>`;
+    p.onclick=()=>setMode(id);
+    const target=podcastSet.has(id)?cPod:cNar;
+    if(target) target.appendChild(p);
   });
 }
 
@@ -1389,9 +1403,12 @@ Rules:
     window._allPrompts=[];
 
     // ── Header ────────────────────────────────────────────────────────────────
-    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;">
       <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete completo · ${n} narrador${n>1?'es':''}</strong>
-      <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
+      <div style="display:flex;gap:6px;">
+        <button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:28px;padding:0 10px;font-size:11px;background:#f0ede2;color:#1a1a1a;border:none;border-radius:6px;cursor:pointer;" data-i18n="backToTop">⬆️ Volver arriba</button>
+        <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
+      </div>
     </div>`;
 
     // ── Prompts de imagen por narrador ────────────────────────────────────────
@@ -1589,9 +1606,12 @@ Rules:
     if(hostImageP)  window._allPrompts.push(`=== PROMPT HOST (ChatGPT) ===\n${hostImageP}`);
     if(guestImageP) window._allPrompts.push(`=== PROMPT GUEST (ChatGPT) ===\n${guestImageP}`);
 
-    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;">
       <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete de producción completo</strong>
-      <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
+      <div style="display:flex;gap:6px;">
+        <button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:28px;padding:0 10px;font-size:11px;background:#f0ede2;color:#1a1a1a;border:none;border-radius:6px;cursor:pointer;">⬆️ Volver arriba</button>
+        <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
+      </div>
     </div>`;
 
     // ── PROMPT HOST (ChatGPT) ─────────────────────────────────────────
@@ -1716,4 +1736,4 @@ fullRender();
 </body>
 </html>"""
 
-components.html(HTML, height=2200, scrolling=True)
+components.html(HTML, height=2800, scrolling=True)
