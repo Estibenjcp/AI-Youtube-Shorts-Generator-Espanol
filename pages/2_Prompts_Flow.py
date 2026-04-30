@@ -1188,19 +1188,20 @@ ${VEO3_CAMERA}`;
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
 const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico'];
 
-function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host'){
+function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host',charLabel=''){
   const sc=getScene();
+  const roleWord=charLabel||(lightingRole==='host'?'host':'guest');
   let poseBlock;
   if(sceneType==='panel'){
-    poseBlock=`POSE — PANEL PARTICIPANT:
+    poseBlock=`POSE — PANEL PARTICIPANT (${roleWord.toUpperCase()}):
 Seated at a round table. Slight 3/4 turn toward camera. Other participants slightly visible/blurred in background. Natural panel discussion posture.
 Engaged expression, leaning slightly forward, hands resting naturally on table.`;
   } else if(sceneType==='duo'){
-    poseBlock=`POSE — NARRATOR:
+    poseBlock=`POSE — ${roleWord.toUpperCase()}:
 Slight profile (3/4 angle) facing conversation partner. Natural engaged expression, open body language, subtle lean toward partner.
 Relaxed shoulders, natural breathing stance.`;
   } else {
-    poseBlock=`POSE — NARRATOR:
+    poseBlock=`POSE — ${roleWord.toUpperCase()}:
 Faces camera directly or slight 3/4 angle toward camera.
 Natural confident expression, engaging energy, slight lean forward.
 Subtle organic posture: natural breathing stance, relaxed shoulders.`;
@@ -1208,7 +1209,7 @@ Subtle organic posture: natural breathing stance, relaxed shoulders.`;
   const lightingDirective=sceneType==='panel'
     ?sc.lighting('host').replace('camera-LEFT','camera-FRONT-LEFT').replace('toward the guest on the right','toward other participants')
     :sc.lighting(lightingRole);
-  return `Ultra-realistic cinematic portrait of a video narrator. ${charDesc}
+  return `Ultra-realistic cinematic portrait of a video ${roleWord}. ${charDesc}
 
 SCENE: ${setting}
 ${sc.setup.split('MICROPHONE:')[0].trim()}
@@ -1220,29 +1221,29 @@ IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty
 FORMAT: vertical 9:16 aspect ratio, 1024x1792. Clean space at top 15% for text overlay.`;
 }
 
-function buildNarratorClipPrompt(clipNum,total,sec,visual,voice,setting,dialogue,lightingRole='host'){
+function buildNarratorClipPrompt(clipNum,total,sec,visual,voice,setting,dialogue,lightingRole='host',charLabel='Narrator'){
   const sc=getScene();
   const lightingDirective=sc.lighting(lightingRole);
   return `=== PROMPT GOOGLE FLOW / VEO 3 — CLIP ${clipNum} / ${total} ===
 Duration: ${sec} seconds
-Character: Narrator
+Character: ${charLabel}
 
 ${VEO3_RESTRICTIONS}
 
-⚠️ VISUAL CONSISTENCY — paste this IDENTICALLY in every clip:
+⚠️ VISUAL CONSISTENCY — paste this IDENTICALLY in every clip of ${charLabel}:
 ${visual}
 Lighting ratio: unchanged clip to clip. Hair style and volume: identical to clip 1. Skin texture: same natural imperfections, no smoothing. Depth of field: same blur radius on background. NO auto-beautification between clips.
 
 POSE & ACTION:
-Narrator faces camera directly (slight 3/4 angle). Engaged, confident energy. Subtle organic micro-movements: slow blink, slight chest breathing. NO sudden gestures. NO abrupt head turns. Eye contact with camera maintained throughout.
+${charLabel} faces camera directly (slight 3/4 angle). Engaged, confident energy. Subtle organic micro-movements: slow blink, slight chest breathing. NO sudden gestures. NO abrupt head turns. Eye contact with camera maintained throughout.
 
 SCENE / BACKGROUND (keep identical across all clips):
 ${setting}
 
-⚠️ VOICE CONSISTENCY — paste this IDENTICALLY in every clip:
+⚠️ VOICE CONSISTENCY — paste this IDENTICALLY in every clip of ${charLabel}:
 ${voice}
 
-DIALOGUE (spoken aloud — lip-sync required, narrator's lips must match every word):
+DIALOGUE (spoken aloud — lip-sync required, ${charLabel}'s lips must match every word):
 "${dialogue}"
 
 ${lightingDirective}
@@ -1425,7 +1426,7 @@ Rules:
       const color=NARRATOR_COLORS[i]||'#185fa5';
       const label=getNarratorLabel(i);
       const imgLightRole=isPanel?'host':(i===0?'host':'guest');
-      const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting,imgSceneType,imgLightRole);
+      const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting,imgSceneType,imgLightRole,label);
       if(imgP) window._allPrompts.push(`=== PROMPT ${label.toUpperCase()} (ChatGPT) ===\n${imgP}`);
       window._pStore.push(imgP);
       const imgIdx=window._pStore.length-1;
@@ -1447,7 +1448,7 @@ Rules:
         const label=getNarratorLabel(nIdx);
         const dialogue=c.dialogue||'';
         const clipLightRole=isPanel?'host':(nIdx===0?'host':'guest');
-        const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue,clipLightRole);
+        const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue,clipLightRole,label);
         window._allPrompts.push(fullPrompt);
         window._pStore.push(fullPrompt);
         const clipIdx=window._pStore.length-1;
