@@ -63,6 +63,9 @@ h1{font-size:22px;margin:0 0 4px;font-weight:500;}
 .dpill:hover{background:#e0ddd2;}
 .dpill.active{background:#185fa5;color:#fff;}
 .dur-info{font-size:11px;color:#888;margin-top:6px;}
+.npill{padding:5px 14px;background:#f0ede2;border:none;border-radius:20px;font-size:12px;cursor:pointer;font-family:inherit;color:#1a1a1a;font-weight:600;transition:all 0.15s;}
+.npill:hover{background:#e0ddd2;}
+.npill.active{background:#7c3aed;color:#fff;}
 .card{background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:14px;margin-bottom:14px;}
 .card h3{font-size:12px;font-weight:500;margin:0 0 10px;color:#666;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;}
 .tag{display:inline-block;padding:1px 7px;background:#e6f1fb;color:#0c447c;border-radius:4px;font-size:11px;font-weight:500;}
@@ -228,6 +231,19 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
       <button class="spill" data-set="biblioteca" style="text-align:left;padding:5px 12px;">📚 Biblioteca / Clásico</button>
       <button class="spill" data-set="mistico" style="text-align:left;padding:5px 12px;">🔮 Místico / Velas</button>
     </div>
+  </div>
+</div>
+
+<div id="narrator-count-row" style="display:none;margin-bottom:14px;">
+  <div style="background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:12px 14px;">
+    <h4 style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;font-weight:500;" data-i18n="nCountLabel">Personajes en escena</h4>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+      <button class="npill active" data-n="1">👤 1</button>
+      <button class="npill" data-n="2">👥 2</button>
+      <button class="npill" data-n="3">🎭 3</button>
+      <button class="npill" data-n="4">🎬 4</button>
+    </div>
+    <div style="font-size:11px;color:#888;" id="ncount-info">Un solo narrador conduce todos los clips.</div>
   </div>
 </div>
 
@@ -558,7 +574,7 @@ const LIBRO_SEGMENTS={
   ]
 };
 
-let lang='es', mode='ficticio-viral', format='lineal', hlType='rapida', dur=1, setStyle='oscuro';
+let lang='es', mode='ficticio-viral', format='lineal', hlType='rapida', dur=1, setStyle='oscuro', numNarrators=1;
 
 function t(key){return T[lang][key]||key;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
@@ -908,7 +924,25 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const k=el.getAttribute('data-i18n-placeholder');if(T[lang][k])el.placeholder=T[lang][k];});
 }
 
-function fullRender(){renderModes();renderBlocks();renderSelects();renderHighlightSubs();updateDurInfo();applyI18n();updateTags();updateRecommendBtn();}
+function updateNarratorCountRow(){
+  const row=document.getElementById('narrator-count-row');
+  if(!row) return;
+  const isNarrator=NARRATOR_MODES.includes(mode);
+  row.style.display=isNarrator?'block':'none';
+  updateNarratorCountInfo();
+}
+function updateNarratorCountInfo(){
+  const info=document.getElementById('ncount-info');
+  if(!info) return;
+  const msgs={
+    1:{es:'Un solo narrador conduce todos los clips.',en:'A single narrator leads all clips.'},
+    2:{es:'Dos narradores se alternan — debate, entrevista o co-conducción.',en:'Two narrators alternate — debate, interview or co-hosting.'},
+    3:{es:'Tres voces se turnan para dar variedad y dinamismo al video.',en:'Three voices take turns for variety and dynamism.'},
+    4:{es:'Cuatro narradores — máxima variedad visual y narrativa.',en:'Four narrators — maximum visual and narrative variety.'}
+  };
+  info.textContent=(msgs[numNarrators]||msgs[1])[lang]||'';
+}
+function fullRender(){renderModes();renderBlocks();renderSelects();renderHighlightSubs();updateDurInfo();applyI18n();updateTags();updateRecommendBtn();updateNarratorCountRow();}
 function updateRecommendBtn(){
   // El botón siempre está visible; solo cambia su label según el modo
   const btn=document.getElementById('recommend-combo');
@@ -924,7 +958,7 @@ function clearFields(){
   document.getElementById('ai-output-area').innerHTML='';
   updateTags();
 }
-function setMode(m){mode=m;document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
+function setMode(m){mode=m;numNarrators=1;document.querySelectorAll('.npill').forEach((p,i)=>p.classList.toggle('active',i===0));document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
 
 async function recommendCombo(){
   if(!_orKey){alert('Configura tu API key primero.');return;}
@@ -1209,47 +1243,70 @@ async function generateNarratorPackage(){
   const ctx=(MODE_CTX[mode]||{})[lang]||MODE_CTX[mode]?.es||mode;
   const settingHint=MODE_SETTING[mode]||'Clean minimal studio with relevant thematic background';
 
-  const sys=`You are a creative director for YouTube Shorts ${ctx} videos featuring a single narrator. Reply ONLY with valid JSON — no markdown, no extra text.`;
+  // ── Paleta de colores por narrador ──────────────────────────────────────────
+  const NARRATOR_COLORS=['#185fa5','#7c3aed','#e11d48','#d97706'];
+  const NARRATOR_LABELS={
+    es:['Narrador 1','Narrador 2','Narrador 3','Narrador 4'],
+    en:['Narrator 1','Narrator 2','Narrator 3','Narrator 4']
+  };
+
+  // ── Prompt de IA (unified multi-narrator format) ─────────────────────────────
+  const n=numNarrators;
+  const isMulti=n>1;
+  const sys=`You are a creative director for YouTube Shorts ${ctx} videos featuring ${n} narrator${n>1?'s':''}. Reply ONLY with valid JSON — no markdown, no extra text.`;
+
+  // Build narrator entries for the prompt
+  const narratorEntries=Array.from({length:n},(_,i)=>`    {
+      "id": ${i+1},
+      "char_desc": "[gender word], [age range], [hair], [clothing — no logos], [distinctive feature], [expression]. Example: Adult woman, 30-40, wavy auburn hair, dark blazer, warm confident smile.",
+      "visual": "Key visual traits identical across all clips for narrator ${i+1}: gender, age, hair, clothing, marks.",
+      "voice": "Voice profile narrator ${i+1}: [age]-year-old, [voice texture], [delivery style]. Temperament: [baseline]. CRITICAL: keep EXACT across all clips.",
+      "image_scene": "One-line ChatGPT scene: narrator ${i+1} in setting, mood."
+    }`).join(',\n');
+
+  const clipPattern=isMulti
+    ?`{"narrator_id":[1-${n} rotating],"dialogue":"[max 26 words]"}`
+    :`{"dialogue":"[max 28 words]"}`;
+
   const usr=`Topic: "${topic}" | Mode: ${mode} | Category: ${category} | Style: ${styleV} | Tone: ${toneV}
-NARRATOR: ${narratorGender}, type: ${narratorType}
-Clips: ${clips} × ${sec}s
-Suggested setting: ${settingHint}
+Narrators: ${n} | Primary gender: ${narratorGender}, type: ${narratorType}
+Clips: ${clips} × ${sec}s | Setting hint: ${settingHint}
 
 Return ONLY this JSON (no markdown):
 {
-  "narrator_char_desc": "One line: [gender word], [age range], [hair], [key clothing — no logos], [distinctive feature], [expression/energy]. Example: Adult man, 35-45, short dark hair, neat casual dark jacket, confident warm direct gaze.",
-  "narrator_visual": "One sentence of key visual traits to keep identical across all clips: gender, age, hair, clothing, distinctive marks.",
-  "narrator_voice": "Voice profile: [age]-year-old [${narratorGender}], [voice texture: warm/deep/breathy/powerful/gravelly], [delivery: pacing, pauses, energy]. Temperament: [baseline]. CRITICAL: maintain this EXACT voice profile across all clips without variation.",
-  "narrator_setting": "Detailed Veo 3 scene: background elements, lighting color/direction, mood, key props. Keep identical across all clips.",
-  "narrator_image_scene": "One-line scene for ChatGPT image: narrator in setting, key visual mood.",
-  "clips": [
-    {"dialogue":"[max 28 words — narration line]"}
+  "narrators": [
+${narratorEntries}
   ],
-  "hook": "Viral hook for caption — max 130 chars, creates curiosity, ends on suspense",
-  "copy": "Full social caption — 2-3 short impactful lines, no emoji spam",
+  "shared_setting": "Detailed Veo 3 scene shared by all narrators: background, lighting, mood, key props. Keep identical across all clips.",
+  "clips": [
+    ${clipPattern}
+  ],
+  "hook": "Viral hook — max 130 chars",
+  "copy": "Social caption — 2-3 short lines",
   "tags_tiktok": ["#tag1","#tag2","#tag3","#tag4","#tag5"],
   "tags_facebook": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8"],
   "tags_youtube": ["#tag1","#tag2","#tag3","#tag4"],
-  "thumbnail_prompt": "Ultra-realistic vertical 9:16 thumbnail for ChatGPT/DALL-E — narrator featured dramatically, high contrast, space for text overlay at top 20%"
+  "thumbnail_prompt": "Vertical 9:16 ChatGPT/DALL-E thumbnail — dramatic, high contrast, text space top 20%"
 }
 Rules:
-- clips: exactly ${clips} items, escalate information/emotion progressively toward an impactful close
-- All dialogue must be written in ${lang==='es'?'Spanish':'English'} only
-- hook and copy must be in ${lang==='es'?'Spanish':'English'}
-- hashtags: relevant, no spaces, lowercase, trending for the topic
-- narrator_char_desc: single compact line like the example`;
+- narrators: exactly ${n} objects with unique distinct appearances
+- clips: exactly ${clips} items${isMulti?`, rotate narrator_id 1-${n} evenly, escalate tension progressively`:', escalate progressively'}
+- All dialogue in ${lang==='es'?'Spanish':'English'}
+- hook and copy in ${lang==='es'?'Spanish':'English'}
+- hashtags lowercase, no spaces`;
 
   try{
-    const raw=await _callOR(sys,usr,4000);
+    const raw=await _callOR(sys,usr,4500);
     const m=raw.match(/\{[\s\S]*\}/);
     if(!m) throw new Error(lang==='es'?'La IA no devolvió JSON válido':'AI did not return valid JSON');
     const data=JSON.parse(m[0]);
 
-    const visual  =data.narrator_visual||'';
-    const voice   =data.narrator_voice||'';
-    const setting =data.narrator_setting||data.narrator_image_scene||'';
-    const charDesc=data.narrator_char_desc||'';
-    const imgScene=data.narrator_image_scene||setting;
+    const narratorsArr=Array.isArray(data.narrators)?data.narrators:[];
+    // Fallback: si la IA devolvió formato antiguo (single narrator fields)
+    if(narratorsArr.length===0 && data.narrator_char_desc){
+      narratorsArr.push({id:1,char_desc:data.narrator_char_desc,visual:data.narrator_visual||'',voice:data.narrator_voice||'',image_scene:data.narrator_image_scene||''});
+    }
+    const sharedSetting=data.shared_setting||data.narrator_setting||'';
     const clipsArr=Array.isArray(data.clips)?data.clips:[];
     const socialHook=data.hook||'';
     const socialCopy=data.copy||'';
@@ -1259,39 +1316,48 @@ Rules:
     const thumbP=data.thumbnail_prompt||'';
 
     document.getElementById('config-out').textContent=
-      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${clips} clips × ${sec}s | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
+      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${clips} clips × ${sec}s | ${n} narrador${n>1?'es':''} | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
 
     window._allPrompts=[];
-    const narratorImageP=buildNarratorImagePrompt(charDesc,imgScene);
-    if(narratorImageP) window._allPrompts.push(`=== PROMPT NARRADOR (ChatGPT) ===\n${narratorImageP}`);
 
+    // ── Header ────────────────────────────────────────────────────────────────
     let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete de producción completo</strong>
+      <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete completo · ${n} narrador${n>1?'es':''}</strong>
       <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
     </div>`;
 
-    if(narratorImageP){
-      html+=`<div class="clip-card" style="border-left:3px solid #185fa5;">
-        <div class="clip-header" style="color:#185fa5;">📸 PROMPT NARRADOR — ChatGPT (genera la imagen del narrador)</div>
-        <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Pega en ChatGPT con tu foto base para generar la imagen del narrador.</div>
-        <div class="clip-voice">${narratorImageP}</div>
-        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(narratorImageP)})">📋 Copiar</button>
+    // ── Prompts de imagen por narrador ────────────────────────────────────────
+    narratorsArr.forEach((nr,i)=>{
+      const color=NARRATOR_COLORS[i]||'#185fa5';
+      const label=(NARRATOR_LABELS[lang]||NARRATOR_LABELS.es)[i]||`Narrador ${i+1}`;
+      const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting);
+      if(imgP) window._allPrompts.push(`=== PROMPT ${label.toUpperCase()} (ChatGPT) ===\n${imgP}`);
+      html+=`<div class="clip-card" style="border-left:3px solid ${color};">
+        <div class="clip-header" style="color:${color};">📸 ${label.toUpperCase()} — ChatGPT (genera imagen)</div>
+        <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Pega en ChatGPT con tu foto base para generar al ${label.toLowerCase()}.</div>
+        <div class="clip-voice">${imgP}</div>
+        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(imgP)})">📋 Copiar</button>
       </div>`;
-    }
+    });
 
+    // ── Clips Veo 3 ───────────────────────────────────────────────────────────
     if(clipsArr.length){
       html+=`<div style="font-size:11px;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">📹 ${clipsArr.length} clips · Google Veo 3 / Flow</div>`;
       clipsArr.forEach((c,i)=>{
+        const nIdx=isMulti?((c.narrator_id||1)-1):0;
+        const nr=narratorsArr[nIdx]||narratorsArr[0]||{};
+        const color=NARRATOR_COLORS[nIdx]||'#185fa5';
+        const label=(NARRATOR_LABELS[lang]||NARRATOR_LABELS.es)[nIdx]||'Narrador';
         const dialogue=c.dialogue||'';
-        const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,visual,voice,setting,dialogue);
+        const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue);
         window._allPrompts.push(fullPrompt);
         html+=`<div class="clip-card">
           <div class="clip-header" style="display:flex;justify-content:space-between;align-items:center;">
             <span>📹 CLIP ${i+1} / ${clipsArr.length} &nbsp;·&nbsp; ${sec}s</span>
-            <span style="font-size:10px;font-weight:700;color:#185fa5;background:#185fa518;padding:2px 8px;border-radius:20px;">NARRADOR</span>
+            <span style="font-size:10px;font-weight:700;color:${color};background:${color}18;padding:2px 8px;border-radius:20px;">${label.toUpperCase()}</span>
           </div>
           <div class="clip-section">
-            <strong style="font-size:10px;color:#185fa5;">PROMPT COMPLETO → Google Veo 3 / Flow</strong>
+            <strong style="font-size:10px;color:${color};">PROMPT COMPLETO → Google Veo 3 / Flow</strong>
             <div class="clip-voice">${fullPrompt}</div>
           </div>
           <button class="clip-copy" onclick="copyTxt(${JSON.stringify(fullPrompt)})">📋 Copiar clip ${i+1}</button>
@@ -1299,6 +1365,7 @@ Rules:
       });
     }
 
+    // ── Paquete redes sociales ────────────────────────────────────────────────
     const tagRow=(tags,color,label)=>tags&&tags.length?`<div style="margin-bottom:6px;"><span style="font-size:9px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${label}</span><br><span style="font-size:11px;color:#444;">${tags.join(' ')}</span><button class="clip-copy" style="margin-left:8px;" onclick="copyTxt(${JSON.stringify(tags.join(' '))})">📋</button></div>`:'';
     if(socialHook||socialCopy||tagsTT.length||tagsFB.length||tagsYT.length||thumbP){
       const socContent=`${socialHook?`<div style="background:#f0f9ff;border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:4px;">🪝 HOOK / CAPTION</div><div style="font-size:12px;color:#1a1a1a;font-weight:500;">${socialHook}</div>${socialCopy?`<div style="font-size:11px;color:#555;margin-top:4px;white-space:pre-line;">${socialCopy}</div>`:''}<button class="clip-copy" onclick="copyTxt(${JSON.stringify(socialHook+(socialCopy?'\n\n'+socialCopy:''))})">📋 Copiar copy</button></div>`:''}${(tagsTT.length||tagsFB.length||tagsYT.length)?`<div style="background:#fafafa;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px;margin-bottom:8px;">${tagRow(tagsTT,'#000','TikTok (máx 5)')}${tagRow(tagsFB,'#1877f2','Facebook (máx 8)')}${tagRow(tagsYT,'#ff0000','YouTube (máx 4)')}</div>`:''}${thumbP?`<div style="background:#fff8f0;border-radius:8px;padding:10px;"><div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">🖼️ PROMPT PORTADA — ChatGPT / DALL-E</div><div class="clip-voice">${thumbP}</div><button class="clip-copy" onclick="copyTxt(${JSON.stringify(thumbP)})">📋 Copiar prompt portada</button></div>`:''}`;
@@ -1546,6 +1613,7 @@ document.querySelectorAll('.fpill[data-format]').forEach(b=>b.addEventListener('
 document.querySelectorAll('.dpill').forEach(b=>b.addEventListener('click',()=>{dur=parseInt(b.dataset.dur);document.querySelectorAll('.dpill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateDurInfo();}));
 document.getElementById('roll-topic').addEventListener('click',()=>{document.getElementById('topic').value=mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]);});
 document.addEventListener('change',e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')updateTags();});
+document.querySelectorAll('.npill').forEach(b=>b.addEventListener('click',()=>{numNarrators=parseInt(b.dataset.n);document.querySelectorAll('.npill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateNarratorCountInfo();}));
 
 fullRender();
 </script>
