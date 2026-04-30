@@ -1174,7 +1174,8 @@ ${VEO3_CAMERA}`;
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
 const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico'];
 
-function buildNarratorImagePrompt(charDesc,setting,sceneType='solo'){
+function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host'){
+  const sc=getScene();
   let poseBlock;
   if(sceneType==='panel'){
     poseBlock=`POSE — PANEL PARTICIPANT:
@@ -1182,8 +1183,7 @@ Seated at a round table. Slight 3/4 turn toward camera. Other participants sligh
 Engaged expression, leaning slightly forward, hands resting naturally on table.`;
   } else if(sceneType==='duo'){
     poseBlock=`POSE — NARRATOR:
-Slight profile facing partner, with a natural 3/4 angle toward camera.
-Natural engaged expression, open body language, subtle lean toward conversation partner.
+Slight profile (3/4 angle) facing conversation partner. Natural engaged expression, open body language, subtle lean toward partner.
 Relaxed shoulders, natural breathing stance.`;
   } else {
     poseBlock=`POSE — NARRATOR:
@@ -1191,18 +1191,24 @@ Faces camera directly or slight 3/4 angle toward camera.
 Natural confident expression, engaging energy, slight lean forward.
 Subtle organic posture: natural breathing stance, relaxed shoulders.`;
   }
+  const lightingDirective=sceneType==='panel'
+    ?sc.lighting('host').replace('camera-LEFT','camera-FRONT-LEFT').replace('toward the guest on the right','toward other participants')
+    :sc.lighting(lightingRole);
   return `Ultra-realistic cinematic portrait of a video narrator. ${charDesc}
 
 SCENE: ${setting}
+${sc.setup.split('MICROPHONE:')[0].trim()}
 
 ${poseBlock}
 
-LIGHTING: Cinematic portrait lighting matching the scene — key light from front-left, subtle fill from right, soft background bokeh.
+${lightingDirective}
 IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty filters, no auto-enhancement.
 FORMAT: vertical 9:16 aspect ratio, 1024x1792. Clean space at top 15% for text overlay.`;
 }
 
-function buildNarratorClipPrompt(clipNum,total,sec,visual,voice,setting,dialogue){
+function buildNarratorClipPrompt(clipNum,total,sec,visual,voice,setting,dialogue,lightingRole='host'){
+  const sc=getScene();
+  const lightingDirective=sc.lighting(lightingRole);
   return `=== PROMPT GOOGLE FLOW / VEO 3 — CLIP ${clipNum} / ${total} ===
 Duration: ${sec} seconds
 Character: Narrator
@@ -1225,6 +1231,7 @@ ${voice}
 DIALOGUE (spoken aloud — lip-sync required, narrator's lips must match every word):
 "${dialogue}"
 
+${lightingDirective}
 ${VEO3_CAMERA}`;
 }
 
@@ -1297,7 +1304,17 @@ async function generateNarratorPackage(){
     'misterio-biblico':'Round table ancient study — participants seated around a stone circular table, candlelit mystical atmosphere, ancient scrolls visible',
     'psicologia-positiva':'Round table wellness panel — participants seated around a light circular table, soft golden natural light, plants and flowers in background'
   };
-  const effectiveSettingHint=isPanel?(PANEL_SETTINGS[mode]||`Round table panel studio — ${n} participants seated around a modern circular table, professional broadcast lighting, thematic background`):settingHint;
+  const STYLE_ATMOSPHERE={
+    oscuro:'Dark moody atmosphere — single warm Edison rim light, deep dramatic shadows, very dark walls, intimate',
+    moderno:'Modern bright studio — clean white LED softbox panels, minimal background, crisp professional lighting',
+    natural:'Natural warm tones — wooden desk, indoor plants, soft diffused window light, warm earth tones',
+    neon:'Dark studio with colorful neon accent lighting — purple/blue/pink neon bokeh in background, dramatic dark shadows',
+    biblioteca:'Classic library — warm amber desk lamp, floor-to-ceiling bookshelves, scholarly warm tones',
+    mistico:'Mystical candlelit — multiple tall white candles, stone textures, ancient artifacts, flickering orange light'
+  };
+  const styleAtm=STYLE_ATMOSPHERE[setStyle]||'';
+  const baseHint=isPanel?(PANEL_SETTINGS[mode]||`Round table panel studio — ${n} participants seated around a modern circular table, thematic background`):settingHint;
+  const effectiveSettingHint=styleAtm?`${baseHint}. Lighting/atmosphere: ${styleAtm}`:baseHint;
 
   // Build narrator entries for the prompt with proper roles
   const narratorEntries=Array.from({length:n},(_,i)=>{
@@ -1382,7 +1399,8 @@ Rules:
     narratorsArr.forEach((nr,i)=>{
       const color=NARRATOR_COLORS[i]||'#185fa5';
       const label=(NARRATOR_LABELS[lang]||NARRATOR_LABELS.es)[i]||`Narrador ${i+1}`;
-      const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting,imgSceneType);
+      const imgLightRole=isPanel?'host':(i===0?'host':'guest');
+      const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting,imgSceneType,imgLightRole);
       if(imgP) window._allPrompts.push(`=== PROMPT ${label.toUpperCase()} (ChatGPT) ===\n${imgP}`);
       window._pStore.push(imgP);
       const imgIdx=window._pStore.length-1;
@@ -1403,7 +1421,8 @@ Rules:
         const color=NARRATOR_COLORS[nIdx]||'#185fa5';
         const label=(NARRATOR_LABELS[lang]||NARRATOR_LABELS.es)[nIdx]||'Narrador';
         const dialogue=c.dialogue||'';
-        const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue);
+        const clipLightRole=isPanel?'host':(nIdx===0?'host':'guest');
+        const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue,clipLightRole);
         window._allPrompts.push(fullPrompt);
         window._pStore.push(fullPrompt);
         const clipIdx=window._pStore.length-1;
