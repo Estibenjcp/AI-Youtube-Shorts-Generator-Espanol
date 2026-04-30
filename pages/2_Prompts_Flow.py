@@ -659,13 +659,22 @@ async function generateWithAI(){
 
   let sys='', usr='';
 
-  if(mode==='ficticio-viral'){
-    sys=lang==='es'
-      ?'Eres el guionista de un podcast ficticio viral de misterio. Generas diálogos cortos, impactantes y adictivos. Responde SOLO con JSON array de objetos {"host":"...","guest":"..."} sin texto extra.'
-      :'You are the scriptwriter of a viral fictional mystery podcast. Generate short, impactful dialogues. Reply ONLY with a JSON array of {"host":"...","guest":"..."} objects, no extra text.';
-    usr=lang==='es'
-      ?`Tema: "${topic}" | Estilo: ${styleV} | Tono: ${toneV} | Formato: ${format}\n\nGenera 8 intercambios HOST/GUEST (máximo 20 palabras cada uno). El host presiona, el invitado revela algo perturbador.\n\nJSON:\n[{"host":"...","guest":"..."}]`
-      :`Topic: "${topic}" | Style: ${styleV} | Tone: ${toneV} | Format: ${format}\n\nGenerate 8 HOST/GUEST exchanges (max 20 words each). Host presses, guest reveals something disturbing.\n\nJSON:\n[{"host":"...","guest":"..."}]`;
+  const PODCAST_PREVIEW_SYS={
+    'ficticio-viral':{es:'Eres el guionista de un podcast ficticio viral de misterio. Responde SOLO con JSON array de objetos {"host":"...","guest":"..."} sin texto extra.',en:'You are the scriptwriter of a viral fictional mystery podcast. Reply ONLY with a JSON array of {"host":"...","guest":"..."} objects.'},
+    'true-crime':{es:'Eres el guionista de un podcast de true crime. El host investiga, el invitado revela. Responde SOLO con JSON array de objetos {"host":"...","guest":"..."} sin texto extra.',en:'You are the scriptwriter of a true crime podcast. Host investigates, guest reveals. Reply ONLY with a JSON array of {"host":"...","guest":"..."} objects.'},
+    'psicologia-oscura':{es:'Eres el guionista de un podcast de psicología oscura. El experto expone patrones, el invitado los reconoce en su experiencia. Responde SOLO con JSON array de objetos {"host":"...","guest":"..."} sin texto extra.',en:'You are the scriptwriter of a dark psychology podcast. Expert exposes patterns, guest recognizes them from experience. Reply ONLY with a JSON array of {"host":"...","guest":"..."} objects.'},
+    'conspiracion-moderna':{es:'Eres el guionista de un podcast de conspiración moderna. El periodista presiona, el informante revela datos perturbadores. Responde SOLO con JSON array de objetos {"host":"...","guest":"..."} sin texto extra.',en:'You are the scriptwriter of a modern conspiracy podcast. Journalist presses, whistleblower reveals disturbing data. Reply ONLY with a JSON array of {"host":"...","guest":"..."} objects.'}
+  };
+  const PODCAST_PREVIEW_USR={
+    'ficticio-viral':{es:`Tema: "${topic}" | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 intercambios HOST/GUEST (máx 20 palabras cada uno). El host presiona, el invitado revela algo perturbador.\n\nJSON:\n[{"host":"...","guest":"..."}]`,en:`Topic: "${topic}" | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 HOST/GUEST exchanges (max 20 words each).\n\nJSON:\n[{"host":"...","guest":"..."}]`},
+    'true-crime':{es:`Caso: "${topic}" | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 intercambios INVESTIGADOR/TESTIGO (máx 22 palabras cada uno). El investigador interroga, el testigo revela detalles perturbadores. Escala la tensión.\n\nJSON:\n[{"host":"...","guest":"..."}]`,en:`Case: "${topic}" | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 INVESTIGATOR/WITNESS exchanges (max 22 words each). Investigator interrogates, witness reveals disturbing details. Escalate tension.\n\nJSON:\n[{"host":"...","guest":"..."}]`},
+    'psicologia-oscura':{es:`Tema: "${topic}" | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 intercambios EXPERTO/SOBREVIVIENTE (máx 22 palabras cada uno). El experto expone tácticas, el sobreviviente las reconoce con horror.\n\nJSON:\n[{"host":"...","guest":"..."}]`,en:`Topic: "${topic}" | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 EXPERT/SURVIVOR exchanges (max 22 words each). Expert exposes tactics, survivor recognizes them with horror.\n\nJSON:\n[{"host":"...","guest":"..."}]`},
+    'conspiracion-moderna':{es:`Tema: "${topic}" | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 intercambios PERIODISTA/INFORMANTE (máx 22 palabras cada uno). El periodista cuestiona, el informante revela datos que no debería saber nadie.\n\nJSON:\n[{"host":"...","guest":"..."}]`,en:`Topic: "${topic}" | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 JOURNALIST/WHISTLEBLOWER exchanges (max 22 words each). Journalist questions, whistleblower reveals data nobody should know.\n\nJSON:\n[{"host":"...","guest":"..."}]`}
+  };
+
+  if(PODCAST_PREVIEW_SYS[mode]){
+    sys=PODCAST_PREVIEW_SYS[mode][lang]||PODCAST_PREVIEW_SYS[mode].es;
+    usr=PODCAST_PREVIEW_USR[mode][lang]||PODCAST_PREVIEW_USR[mode].es;
   } else if(mode==='misterio-biblico'){
     sys=lang==='es'
       ?'Eres un narrador experto en misterios bíblicos y textos apócrifos. Generas revelaciones cinematográficas y oscuras. Responde SOLO con JSON array de strings.'
@@ -1067,8 +1076,14 @@ ${VEO3_LIGHTING(speaker)}
 ${VEO3_CAMERA}`;
 }
 
+const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
+
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
+  if(!PODCAST_MODES.includes(mode)){
+    alert(lang==='es'?'Este modo genera narración. Usa el botón 👁️ Vista previa.':'This mode generates narration. Use the 👁️ Preview button.');
+    return;
+  }
   const btn=document.getElementById('generate');
   const area=document.getElementById('output-area');
   const blocksEl=document.getElementById('output-blocks');

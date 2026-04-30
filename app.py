@@ -1632,7 +1632,7 @@ if st.session_state.get("app_seccion") == "prompts_flow":
             f"let _orKey  = localStorage.getItem('or_key') || {_json.dumps(_injected_key)};",
         )
     st.markdown("## ✨ Prompts Flow / Veo 3")
-    _components.html(_html_block, height=2400, scrolling=True)
+    _components.html(_html_block, height=3600, scrolling=True)
     st.stop()
 
 # ── A partir de aquí: lógica normal del Generador ───────────────────────────
