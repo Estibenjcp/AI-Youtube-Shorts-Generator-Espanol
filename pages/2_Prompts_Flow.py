@@ -293,7 +293,13 @@ const MODES={
   'documental-narrado':{icon:'🎬',title:{es:'Documental narrado',en:'Narrated documentary'},desc:{es:'Voz en off tipo NatGeo — historia oscura, catástrofes, secretos',en:'NatGeo-style voice-over — dark history, disasters, secrets'}},
   'testimonio-real':{icon:'😱',title:{es:'Testimonio real',en:'Real testimony'},desc:{es:'Primera persona, confesión dramatizada, tono perturbador',en:'First person, dramatized confession, disturbing tone'}},
   'reflexion-biblica':{icon:'🙏',title:{es:'Reflexión bíblica',en:'Biblical reflection'},desc:{es:'Devocional corto, voz calmada, versículo y reflexión',en:'Short devotional, calm voice, verse and reflection'}},
-  'ciencia-misterio':{icon:'🌌',title:{es:'Ciencia y misterio',en:'Science & mystery'},desc:{es:'Narrador científico, datos impactantes, preguntas abiertas',en:'Scientific narrator, shocking facts, open questions'}}
+  'ciencia-misterio':{icon:'🌌',title:{es:'Ciencia y misterio',en:'Science & mystery'},desc:{es:'Narrador científico, datos impactantes, preguntas abiertas',en:'Scientific narrator, shocking facts, open questions'}},
+  'true-crime':{icon:'🔍',title:{es:'True Crime',en:'True Crime'},desc:{es:'Detective + testigo — caso criminal oscuro y adictivo',en:'Detective + witness — dark addictive criminal case'}},
+  'psicologia-oscura':{icon:'🧠',title:{es:'Psicología oscura',en:'Dark psychology'},desc:{es:'Experto + sobreviviente — manipulación, narcisismo, mente tóxica',en:'Expert + survivor — manipulation, narcissism, toxic mind'}},
+  'conspiracion-moderna':{icon:'👁️',title:{es:'Conspiración moderna',en:'Modern conspiracy'},desc:{es:'Periodista + informante — IA, élites, tecnología y poder',en:'Journalist + whistleblower — AI, elites, tech and power'}},
+  'finanzas-libertad':{icon:'💰',title:{es:'Finanzas & libertad',en:'Finance & freedom'},desc:{es:'Educación financiera viral, mentalidad de riqueza, libertad',en:'Viral financial education, wealth mindset, freedom'}},
+  'mentalidad-disciplina':{icon:'💪',title:{es:'Mentalidad & disciplina',en:'Mindset & discipline'},desc:{es:'Motivación, hábitos, resiliencia — voz directa al espectador',en:'Motivation, habits, resilience — direct voice to viewer'}},
+  'historia-epica':{icon:'⚔️',title:{es:'Historia épica',en:'Epic history'},desc:{es:'Batallas, imperios, héroes — narración cinematográfica épica',en:'Battles, empires, heroes — epic cinematic narration'}}
 };
 
 const MODE_SELECTS={
@@ -351,6 +357,60 @@ const MODE_SELECTS={
   'category':{es:[['random','🎲 Aleatorio'],['universo','Misterios del universo y astronomía'],['oceano','Secretos del océano profundo'],['fisica-cuantica','Física cuántica y realidad'],['evolucion','Evolución y animales extraordinarios'],['fenomenos','Fenómenos naturales extremos'],['cerebro','Psicología y el cerebro humano'],['tiempo','Tiempo, física y realidad']],en:[['random','🎲 Random'],['universo','Universe mysteries and astronomy'],['oceano','Deep ocean secrets'],['fisica-cuantica','Quantum physics and reality'],['evolucion','Evolution and extraordinary animals'],['fenomenos','Extreme natural phenomena'],['cerebro','Psychology and the human brain'],['tiempo','Time, physics and reality']]},
   'style':{es:[['random','🎲 Aleatorio'],['revelador','Revelador / asombroso'],['educativo','Educativo / divulgativo'],['reflexivo','Reflexivo / filosófico'],['impactante','Impactante / viral']],en:[['random','🎲 Random'],['revelador','Revealing / amazing'],['educativo','Educational'],['reflexivo','Reflective / philosophical'],['impactante','Shocking / viral']]},
   'tone':{es:[['random','🎲 Aleatorio'],['fascinado','Fascinado / maravillado'],['analitico','Analítico / preciso'],['filosofico','Filosófico / profundo'],['dramatico','Dramático / cinematográfico']],en:[['random','🎲 Random'],['fascinado','Fascinated / amazed'],['analitico','Analytical / precise'],['filosofico','Philosophical / deep'],['dramatico','Dramatic / cinematic']]}
+},
+'true-crime':{
+  'host-type':{es:[['random','🎲 Aleatorio'],['detective-retirado','Detective retirado'],['periodista-crimen','Periodista de crimen'],['fiscal-investigador','Fiscal investigador'],['profiler','Profiler / perfilador criminal'],['investigador-privado','Investigador privado']],en:[['random','🎲 Random'],['detective-retirado','Retired detective'],['periodista-crimen','Crime journalist'],['fiscal-investigador','Investigative prosecutor'],['profiler','Criminal profiler'],['investigador-privado','Private investigator']]},
+  'host-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'host-region':{es:[['random','🎲 Aleatorio'],['latam-neutro','Latinoamérica (neutro)'],['mexico-centroam','México / Centroamérica'],['caribe','Caribe'],['sudamerica','Sudamérica'],['espana','España']],en:[['random','🎲 Random'],['latam-neutro','Latin America (neutral)'],['mexico-centroam','Mexico / Central America'],['caribe','Caribbean'],['sudamerica','South America'],['espana','Spain']]},
+  'guest-type':{es:[['random','🎲 Aleatorio'],['testigo-ocular','Testigo ocular directo'],['familiar-victima','Familiar de la víctima'],['sospechoso-absuelto','Sospechoso absuelto'],['sobreviviente','Sobreviviente del crimen'],['complice-arrepentido','Cómplice arrepentido'],['exrecluso','Exrecluso con secreto']],en:[['random','🎲 Random'],['testigo-ocular','Direct eyewitness'],['familiar-victima','Victim\'s family member'],['sospechoso-absuelto','Acquitted suspect'],['sobreviviente','Crime survivor'],['complice-arrepentido','Repentant accomplice'],['exrecluso','Ex-convict with a secret']]},
+  'guest-gender':{es:[['random','🎲 Aleatorio'],['female','Femenino'],['male','Masculino']],en:[['random','🎲 Random'],['female','Female'],['male','Male']]},
+  'guest-region':{es:[['random','🎲 Aleatorio'],['latam-general','Latinoamérica'],['mexico-centroam','México / Centroamérica'],['caribe','Caribe'],['sudamerica','Sudamérica'],['espana-europa','España / Europa'],['internacional','Internacional']],en:[['random','🎲 Random'],['latam-general','Latin America'],['mexico-centroam','Mexico / Central America'],['caribe','Caribbean'],['sudamerica','South America'],['espana-europa','Spain / Europe'],['internacional','International']]},
+  'guest-age':{es:[['random','🎲 Aleatorio'],['18-25','18-25'],['25-35','25-35'],['35-50','35-50'],['50-70','50-70']],en:[['random','🎲 Random'],['18-25','18-25'],['25-35','25-35'],['35-50','35-50'],['50-70','50-70']]},
+  'style':{es:[['random','🎲 Aleatorio'],['interrogatorio','Interrogatorio frío'],['revelador','Revelación escalofriante'],['procesal','Procesal / periodístico'],['psicologico','Análisis psicológico']],en:[['random','🎲 Random'],['interrogatorio','Cold interrogation'],['revelador','Chilling revelation'],['procesal','Procedural / journalistic'],['psicologico','Psychological analysis']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['tenso-frio','Tenso / frío'],['urgente','Urgente / alarmante'],['calculado','Calculado / preciso'],['emocional','Emocional / pesado']],en:[['random','🎲 Random'],['tenso-frio','Tense / cold'],['urgente','Urgent / alarming'],['calculado','Calculated / precise'],['emocional','Emotional / heavy']]}
+},
+'psicologia-oscura':{
+  'host-type':{es:[['random','🎲 Aleatorio'],['psicologo-clinico','Psicólogo clínico'],['coach-recuperacion','Coach de recuperación'],['terapeuta-trauma','Terapeuta de trauma'],['investigador-forense','Investigador forense'],['divulgador-psico','Divulgador de psicología']],en:[['random','🎲 Random'],['psicologo-clinico','Clinical psychologist'],['coach-recuperacion','Recovery coach'],['terapeuta-trauma','Trauma therapist'],['investigador-forense','Forensic researcher'],['divulgador-psico','Psychology communicator']]},
+  'host-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'host-region':{es:[['random','🎲 Aleatorio'],['latam-neutro','Latinoamérica (neutro)'],['mexico-centroam','México / Centroamérica'],['sudamerica','Sudamérica'],['espana','España']],en:[['random','🎲 Random'],['latam-neutro','Latin America (neutral)'],['mexico-centroam','Mexico / Central America'],['sudamerica','South America'],['espana','Spain']]},
+  'guest-type':{es:[['random','🎲 Aleatorio'],['sobreviviente-narcisista','Sobreviviente de narcisista'],['expareja-toxica','Expareja de relación tóxica'],['victima-manipulacion','Víctima de manipulación'],['exmanipulador','Ex manipulador / narcisista'],['recuperado-secta','Recuperado de secta o culto']],en:[['random','🎲 Random'],['sobreviviente-narcisista','Narcissist survivor'],['expareja-toxica','Toxic relationship ex-partner'],['victima-manipulacion','Manipulation victim'],['exmanipulador','Ex manipulator / narcissist'],['recuperado-secta','Cult recovery survivor']]},
+  'guest-gender':{es:[['random','🎲 Aleatorio'],['female','Femenino'],['male','Masculino']],en:[['random','🎲 Random'],['female','Female'],['male','Male']]},
+  'guest-region':{es:[['random','🎲 Aleatorio'],['latam-general','Latinoamérica'],['mexico-centroam','México / Centroamérica'],['caribe','Caribe'],['sudamerica','Sudamérica'],['espana-europa','España / Europa'],['internacional','Internacional']],en:[['random','🎲 Random'],['latam-general','Latin America'],['mexico-centroam','Mexico / Central America'],['caribe','Caribbean'],['sudamerica','South America'],['espana-europa','Spain / Europe'],['internacional','International']]},
+  'guest-age':{es:[['random','🎲 Aleatorio'],['18-25','18-25'],['25-35','25-35'],['35-50','35-50'],['50-70','50-70']],en:[['random','🎲 Random'],['18-25','18-25'],['25-35','25-35'],['35-50','35-50'],['50-70','50-70']]},
+  'style':{es:[['random','🎲 Aleatorio'],['revelador','Revelador / perturbador'],['educativo-oscuro','Educativo / oscuro'],['confesional','Confesional íntimo'],['analitico','Analítico clínico']],en:[['random','🎲 Random'],['revelador','Revealing / disturbing'],['educativo-oscuro','Educational / dark'],['confesional','Intimate confessional'],['analitico','Clinical analytical']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['intenso','Intenso / perturbador'],['frio-analitico','Frío / analítico'],['empatico-pesado','Empático / pesado'],['calculado','Calculado / controlado']],en:[['random','🎲 Random'],['intenso','Intense / disturbing'],['frio-analitico','Cold / analytical'],['empatico-pesado','Empathetic / heavy'],['calculado','Calculated / controlled']]}
+},
+'conspiracion-moderna':{
+  'host-type':{es:[['random','🎲 Aleatorio'],['periodista-investigador','Periodista investigador'],['analista-datos','Analista de datos'],['investigador-independiente','Investigador independiente'],['activista-digital','Activista digital'],['youtuber-critico','Creador de contenido crítico']],en:[['random','🎲 Random'],['periodista-investigador','Investigative journalist'],['analista-datos','Data analyst'],['investigador-independiente','Independent researcher'],['activista-digital','Digital activist'],['youtuber-critico','Critical content creator']]},
+  'host-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'host-region':{es:[['random','🎲 Aleatorio'],['latam-neutro','Latinoamérica (neutro)'],['mexico-centroam','México / Centroamérica'],['sudamerica','Sudamérica'],['espana','España'],['eeuu-hispano','EE.UU. hispano']],en:[['random','🎲 Random'],['latam-neutro','Latin America (neutral)'],['mexico-centroam','Mexico / Central America'],['sudamerica','South America'],['espana','Spain'],['eeuu-hispano','US Hispanic']]},
+  'guest-type':{es:[['random','🎲 Aleatorio'],['informante-tech','Informante tecnológico'],['ex-empleado-faang','Ex empleado de Google/Meta/Apple'],['hacker-etico','Hacker ético'],['analista-inteligencia','Analista de inteligencia retirado'],['experto-vigilancia','Experto en vigilancia digital'],['denunciante','Denunciante / whistleblower']],en:[['random','🎲 Random'],['informante-tech','Tech whistleblower'],['ex-empleado-faang','Ex Google/Meta/Apple employee'],['hacker-etico','Ethical hacker'],['analista-inteligencia','Retired intelligence analyst'],['experto-vigilancia','Digital surveillance expert'],['denunciante','Whistleblower']]},
+  'guest-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'guest-region':{es:[['random','🎲 Aleatorio'],['latam-general','Latinoamérica'],['eeuu-hispano','EE.UU. hispano'],['espana-europa','España / Europa'],['internacional','Internacional / anónimo']],en:[['random','🎲 Random'],['latam-general','Latin America'],['eeuu-hispano','US Hispanic'],['espana-europa','Spain / Europe'],['internacional','International / anonymous']]},
+  'guest-age':{es:[['random','🎲 Aleatorio'],['25-35','25-35'],['35-50','35-50'],['50-70','50-70']],en:[['random','🎲 Random'],['25-35','25-35'],['35-50','35-50'],['50-70','50-70']]},
+  'style':{es:[['random','🎲 Aleatorio'],['paranoico-urgente','Paranoico / urgente'],['analitico-preciso','Analítico / preciso'],['revelador-impactante','Revelador / impactante'],['periodistico','Periodístico / frío']],en:[['random','🎲 Random'],['paranoico-urgente','Paranoid / urgent'],['analitico-preciso','Analytical / precise'],['revelador-impactante','Revealing / shocking'],['periodistico','Journalistic / cold']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['tenso','Tenso / presionado'],['urgente','Urgente / alarmante'],['calculado','Calculado / susurrado'],['conspirativo','Conspirativo / desconfiado']],en:[['random','🎲 Random'],['tenso','Tense / pressured'],['urgente','Urgent / alarming'],['calculado','Calculated / whispered'],['conspirativo','Conspiratorial / suspicious']]}
+},
+'finanzas-libertad':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['coach-financiero','Coach financiero'],['inversor-exitoso','Inversor exitoso autodidacta'],['economista-viral','Economista divulgador'],['emprendedor','Emprendedor millonario'],['ex-endeudado','Persona que salió de deudas']],en:[['random','🎲 Random'],['coach-financiero','Financial coach'],['inversor-exitoso','Self-taught successful investor'],['economista-viral','Viral economist'],['emprendedor','Millionaire entrepreneur'],['ex-endeudado','Debt-free success story']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['inversion','Inversión y bolsa'],['ahorro','Ahorro e independencia'],['mentalidad-riqueza','Mentalidad de riqueza'],['ingresos-pasivos','Ingresos pasivos'],['deudas','Salir de deudas'],['emprendimiento','Emprendimiento viral']],en:[['random','🎲 Random'],['inversion','Investment and stocks'],['ahorro','Savings and independence'],['mentalidad-riqueza','Wealth mindset'],['ingresos-pasivos','Passive income'],['deudas','Getting out of debt'],['emprendimiento','Viral entrepreneurship']]},
+  'style':{es:[['random','🎲 Aleatorio'],['revelador','Revelador / sorprendente'],['practico','Práctico / accionable'],['motivacional','Motivacional / inspirador'],['directo','Directo / sin filtros']],en:[['random','🎲 Random'],['revelador','Revealing / surprising'],['practico','Practical / actionable'],['motivacional','Motivational / inspiring'],['directo','Direct / no filter']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['urgente','Urgente / despertador'],['amigable','Amigable / cercano'],['intenso','Intenso / enérgico'],['sereno','Sereno / sabio']],en:[['random','🎲 Random'],['urgente','Urgent / wake-up call'],['amigable','Friendly / relatable'],['intenso','Intense / energetic'],['sereno','Calm / wise']]}
+},
+'mentalidad-disciplina':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['coach-motivacional','Coach motivacional'],['atleta-elite','Atleta de élite'],['emprendedor-resiliente','Emprendedor resiliente'],['filosofo-moderno','Filósofo moderno'],['militar-liderazgo','Ex militar / liderazgo']],en:[['random','🎲 Random'],['coach-motivacional','Motivational coach'],['atleta-elite','Elite athlete'],['emprendedor-resiliente','Resilient entrepreneur'],['filosofo-moderno','Modern philosopher'],['militar-liderazgo','Ex military / leadership']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['disciplina','Disciplina y constancia'],['habitos','Hábitos que transforman'],['resiliencia','Resiliencia y adversidad'],['mentalidad-ganadora','Mentalidad ganadora'],['zona-confort','Salir de la zona de confort'],['proposito','Propósito y dirección']],en:[['random','🎲 Random'],['disciplina','Discipline and consistency'],['habitos','Life-changing habits'],['resiliencia','Resilience and adversity'],['mentalidad-ganadora','Winner mindset'],['zona-confort','Leaving the comfort zone'],['proposito','Purpose and direction']]},
+  'style':{es:[['random','🎲 Aleatorio'],['brutal-honesto','Brutal y honesto'],['inspirador','Inspirador / épico'],['narrativo','Historia real de superación'],['filosofico','Filosófico / reflexivo']],en:[['random','🎲 Random'],['brutal-honesto','Brutally honest'],['inspirador','Inspiring / epic'],['narrativo','Real overcoming story'],['filosofico','Philosophical / reflective']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['fuego','De fuego / urgente'],['sereno-poderoso','Sereno pero poderoso'],['directo','Directo al alma'],['epico','Épico / cinematográfico']],en:[['random','🎲 Random'],['fuego','On fire / urgent'],['sereno-poderoso','Calm but powerful'],['directo','Direct to the soul'],['epico','Epic / cinematic']]}
+},
+'historia-epica':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['historiador-apasionado','Historiador apasionado'],['narrador-cinematografico','Narrador cinematográfico'],['cronista-epico','Cronista épico'],['arqueólogo','Arqueólogo aventurero']],en:[['random','🎲 Random'],['historiador-apasionado','Passionate historian'],['narrador-cinematografico','Cinematic narrator'],['cronista-epico','Epic chronicler'],['arqueólogo','Adventure archaeologist']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['male','Masculino'],['female','Femenino']],en:[['random','🎲 Random'],['male','Male'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['batallas','Batallas épicas históricas'],['imperios','Imperios y su caída'],['heroes-olvidados','Héroes olvidados'],['revoluciones','Revoluciones que cambiaron el mundo'],['figuras-extraordinarias','Figuras extraordinarias'],['civilizaciones','Civilizaciones asombrosas']],en:[['random','🎲 Random'],['batallas','Epic historical battles'],['imperios','Empires and their fall'],['heroes-olvidados','Forgotten heroes'],['revoluciones','World-changing revolutions'],['figuras-extraordinarias','Extraordinary figures'],['civilizaciones','Amazing civilizations']]},
+  'style':{es:[['random','🎲 Aleatorio'],['epico','Épico / grandioso'],['revelador','Revelador / sorprendente'],['dramatico','Dramático / cinematográfico'],['educativo','Educativo / fascinante']],en:[['random','🎲 Random'],['epico','Epic / grandiose'],['revelador','Revealing / surprising'],['dramatico','Dramatic / cinematic'],['educativo','Educational / fascinating']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['apasionado','Apasionado / encendido'],['solemne','Solemne / grandioso'],['urgente','Urgente / impactante'],['narrativo','Narrativo / íntimo']],en:[['random','🎲 Random'],['apasionado','Passionate / fired up'],['solemne','Solemn / grand'],['urgente','Urgent / impactful'],['narrativo','Narrative / intimate']]}
 }
 };
 
@@ -382,6 +442,30 @@ const MODE_BLOCKS={
 'ciencia-misterio':[
   {id:'sci-narrator-block',title:{es:'Narrador científico',en:'Scientific narrator'},fields:[{id:'narrator-type',label:{es:'Tipo',en:'Type'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
   {id:'sci-theme-block',title:{es:'Temática científica',en:'Science theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'true-crime':[
+  {id:'tc-host-block',title:{es:'Investigador / Host',en:'Investigator / Host'},fields:[{id:'host-type',label:{es:'Perfil',en:'Profile'}},{id:'host-gender',label:{es:'Género',en:'Gender'}},{id:'host-region',label:{es:'Región',en:'Region'}}]},
+  {id:'tc-guest-block',title:{es:'Testigo / Involucrado',en:'Witness / Involved'},fields:[{id:'guest-type',label:{es:'Rol',en:'Role'}},{id:'guest-gender',label:{es:'Género',en:'Gender'}},{id:'guest-region',label:{es:'Región de origen',en:'Region of origin'}},{id:'guest-age',label:{es:'Edad',en:'Age'}}]}
+],
+'psicologia-oscura':[
+  {id:'ps-host-block',title:{es:'Experto / Host',en:'Expert / Host'},fields:[{id:'host-type',label:{es:'Perfil',en:'Profile'}},{id:'host-gender',label:{es:'Género',en:'Gender'}},{id:'host-region',label:{es:'Región',en:'Region'}}]},
+  {id:'ps-guest-block',title:{es:'Sobreviviente / Invitado',en:'Survivor / Guest'},fields:[{id:'guest-type',label:{es:'Perfil',en:'Profile'}},{id:'guest-gender',label:{es:'Género',en:'Gender'}},{id:'guest-region',label:{es:'Región',en:'Region'}},{id:'guest-age',label:{es:'Edad',en:'Age'}}]}
+],
+'conspiracion-moderna':[
+  {id:'cm-host-block',title:{es:'Periodista / Host',en:'Journalist / Host'},fields:[{id:'host-type',label:{es:'Perfil',en:'Profile'}},{id:'host-gender',label:{es:'Género',en:'Gender'}},{id:'host-region',label:{es:'Región',en:'Region'}}]},
+  {id:'cm-guest-block',title:{es:'Informante / Invitado',en:'Whistleblower / Guest'},fields:[{id:'guest-type',label:{es:'Rol',en:'Role'}},{id:'guest-gender',label:{es:'Género',en:'Gender'}},{id:'guest-region',label:{es:'Región / anonimato',en:'Region / anonymity'}},{id:'guest-age',label:{es:'Edad',en:'Age'}}]}
+],
+'finanzas-libertad':[
+  {id:'fin-narrator-block',title:{es:'Narrador',en:'Narrator'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'fin-theme-block',title:{es:'Temática financiera',en:'Financial theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'mentalidad-disciplina':[
+  {id:'men-narrator-block',title:{es:'Narrador / Coach',en:'Narrator / Coach'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'men-theme-block',title:{es:'Temática',en:'Theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'historia-epica':[
+  {id:'his-narrator-block',title:{es:'Narrador épico',en:'Epic narrator'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'his-theme-block',title:{es:'Temática histórica',en:'Historic theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
 ]
 };
 
@@ -409,6 +493,30 @@ const RAND_TOPICS={
   'ciencia-misterio':{
     es:['El 95% del universo es materia oscura y energía oscura que no podemos ver ni tocar','En el océano profundo hay criaturas que producen su propia luz sin ninguna fuente externa','El efecto túnel cuántico hace que los átomos atraviesen paredes sólidas todos los días','El cerebro humano tarda 80 milisegundos en procesar la realidad — vivimos en el pasado'],
     en:['95% of the universe is dark matter and energy we can\'t see or touch','In the deep ocean there are creatures that produce their own light with no external source','Quantum tunneling makes atoms pass through solid walls every day','The human brain takes 80ms to process reality — we live in the past']
+  },
+  'true-crime':{
+    es:['Un detective descubrió que el culpable había estado frente a él desde el primer día','La mujer que vivió 3 años con su asesino sin saber quién era realmente','El caso que la policía cerró como accidente y un periodista reabrió 20 años después','Un jurado que condenó al hombre equivocado — y lo supo el mismo día del veredicto'],
+    en:['A detective discovered the culprit had been right in front of him from day one','The woman who lived 3 years with her killer without knowing who he really was','The case the police closed as an accident that a journalist reopened 20 years later','A jury that convicted the wrong man — and knew it the very day of the verdict']
+  },
+  'psicologia-oscura':{
+    es:['Cómo un narcisista te hace sentir loco hasta que ya no confías en ti mismo','Las 7 tácticas que usa un manipulador para controlarte sin que lo notes','Por qué las víctimas de abuso defienden a su agresor — la ciencia lo explica','El patrón exacto que sigue cada relación tóxica y que nadie te enseñó a ver'],
+    en:['How a narcissist makes you feel crazy until you no longer trust yourself','The 7 tactics a manipulator uses to control you without you noticing','Why abuse victims defend their abuser — science explains it','The exact pattern every toxic relationship follows that nobody taught you to see']
+  },
+  'conspiracion-moderna':{
+    es:['Google sabe en qué piensas antes de que tú mismo lo sepas','Las redes sociales fueron diseñadas para crear adicción, no conexión — hay documentos internos','El ex empleado de Meta que reveló lo que nunca debías saber sobre el algoritmo','Por qué tu teléfono te escucha aunque el micrófono esté desactivado'],
+    en:['Google knows what you\'re thinking before you do','Social media was designed to create addiction, not connection — there are internal documents','The ex-Meta employee who revealed what you were never supposed to know about the algorithm','Why your phone listens to you even when the microphone is off']
+  },
+  'finanzas-libertad':{
+    es:['El error financiero que el 95% comete antes de los 30 y que los hunde para siempre','Por qué trabajar más horas nunca te hará rico — y qué hacen diferente los que sí lo son','El hábito de 10 minutos al día que separa a los que tienen dinero de los que no','Warren Buffett compró su primera acción a los 11 años — lo que nadie te cuenta de eso'],
+    en:['The financial mistake 95% of people make before 30 that sinks them forever','Why working more hours will never make you rich — and what wealthy people do differently','The 10-minute daily habit that separates those who have money from those who don\'t','Warren Buffett bought his first stock at 11 — what nobody tells you about that']
+  },
+  'mentalidad-disciplina':{
+    es:['La única razón por la que no logras lo que quieres — y no es lo que crees','David Goggins corrió 100 millas con el pie roto porque nadie le dijo que podía parar','El hábito de 5 minutos que cambia la química de tu cerebro según la neurociencia','Por qué tu zona de confort literalmente te mata — y cómo salir de ella hoy'],
+    en:['The only reason you\'re not achieving what you want — and it\'s not what you think','David Goggins ran 100 miles with a broken foot because no one told him he could stop','The 5-minute habit that changes your brain chemistry according to neuroscience','Why your comfort zone is literally killing you — and how to leave it today']
+  },
+  'historia-epica':{
+    es:['El hombre que detuvo solo a un ejército de 3000 soldados en el año 480 a.C.','Espartaco: el esclavo que hizo temblar al Imperio Romano durante 3 años','La civilización más avanzada de la historia antigua que desapareció en menos de 100 años','Alejandro Magno conquistó medio mundo conocido antes de cumplir 30 años'],
+    en:['The man who alone stopped an army of 3000 soldiers in 480 BC','Spartacus: the slave who made the Roman Empire tremble for 3 years','The most advanced ancient civilization that disappeared in less than 100 years','Alexander the Great conquered half the known world before turning 30']
   }
 };
 
@@ -601,6 +709,27 @@ async function generateWithAI(){
     usr=lang==='es'
       ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de divulgación científica (máx 26 palabras cada una). Usa datos reales, analogías visuales, termina con una pregunta que expande la mente.\n\nJSON:\n["frase1","frase2",...]`
       :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 science communication lines (max 26 words each). Use real facts, visual analogies, end with a mind-expanding question.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='finanzas-libertad'){
+    sys=lang==='es'
+      ?'Eres un educador financiero viral. Hablas directo, con datos reales, sin jerga aburrida. Sacudes creencias y das pasos concretos. Responde SOLO con JSON array de strings.'
+      :'You are a viral financial educator. Direct, real data, no boring jargon. You shake beliefs and give concrete steps. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de educación financiera (máx 26 palabras cada una). Inicia con un dato que sacuda, escala con pasos reales, cierra con una frase que cambie la mentalidad.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 financial education lines (max 26 words each). Start with a mind-shaking fact, escalate with real steps, close with a mindset-shifting line.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='mentalidad-disciplina'){
+    sys=lang==='es'
+      ?'Eres un coach de mentalidad y disciplina extremadamente viral. Hablas con fuego, datos y verdades incómodas. Responde SOLO con JSON array de strings.'
+      :'You are an extremely viral mindset and discipline coach. You speak with fire, data, and uncomfortable truths. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de mentalidad / motivación (máx 24 palabras cada una). Habla directo al espectador, usa "tú", inicia con una verdad incómoda, escala hacia la acción.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 mindset / motivation lines (max 24 words each). Speak directly to the viewer, use "you", start with an uncomfortable truth, escalate toward action.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='historia-epica'){
+    sys=lang==='es'
+      ?'Eres un narrador épico de historia, estilo documental cinematográfico de Hollywood. Voz poderosa, datos impactantes, tensión crescente. Responde SOLO con JSON array de strings.'
+      :'You are an epic history narrator, Hollywood cinematic documentary style. Powerful voice, shocking facts, rising tension. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de narración épica histórica (máx 28 palabras cada una). Inicia con un hecho impactante, escala la tensión dramática, termina con una frase legendaria.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 epic historical narration lines (max 28 words each). Start with a shocking fact, escalate dramatic tension, end with a legendary line.\n\nJSON:\n["line1","line2",...]`;
   }
 
   try{
@@ -753,10 +882,16 @@ async function recommendCombo(){
   // Campos disponibles por modo para incluir en el prompt
   const modeFields={
     'ficticio-viral':['host-type','host-gender','host-region','guest-type','guest-gender','guest-region','guest-age','style','tone'],
+    'true-crime':['host-type','host-gender','host-region','guest-type','guest-gender','guest-region','guest-age','style','tone'],
+    'psicologia-oscura':['host-type','host-gender','host-region','guest-type','guest-gender','guest-region','guest-age','style','tone'],
+    'conspiracion-moderna':['host-type','host-gender','host-region','guest-type','guest-gender','guest-region','guest-age','style','tone'],
     'documental-narrado':['narrator-type','narrator-gender','category','style','tone'],
     'testimonio-real':['narrator-type','narrator-gender','category','style','tone'],
     'reflexion-biblica':['narrator-type','narrator-gender','category','style','tone'],
     'ciencia-misterio':['narrator-type','narrator-gender','category','style','tone'],
+    'finanzas-libertad':['narrator-type','narrator-gender','category','style','tone'],
+    'mentalidad-disciplina':['narrator-type','narrator-gender','category','style','tone'],
+    'historia-epica':['narrator-type','narrator-gender','category','style','tone'],
     'misterio-biblico':['narrator-type','narrator-gender','narrator-lang','scene-type','subtopic','style','tone'],
     'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
   };
@@ -956,7 +1091,13 @@ async function generate(){
   const guestRegion=gv('guest-region')||'latam-neutro';
   const guestAge   =gv('guest-age')||'25-35';
 
-  const sys=`You are a creative director for YouTube Shorts dark podcast videos.
+  const MODE_CONTEXT={
+    'ficticio-viral':'dark mystery fictional podcast — host presses, guest reveals something disturbing',
+    'true-crime':'true crime investigation podcast — a detective/journalist interrogates a witness, suspect, or survivor of a real or fictional criminal case',
+    'psicologia-oscura':'dark psychology podcast — an expert exposes manipulation tactics, narcissism, or toxic behaviors while a survivor shares their experience',
+    'conspiracion-moderna':'modern conspiracy podcast — a journalist interviews a whistleblower or tech expert about surveillance, AI, elites, or hidden power structures'
+  };
+  const sys=`You are a creative director for YouTube Shorts ${MODE_CONTEXT[mode]||'dark podcast'} videos.
 You write character descriptions and dialogue. Reply ONLY with valid JSON — no markdown, no extra text.`;
 
   const usr=`Topic: "${topic}" | Mode: ${mode} | Style: ${styleV} | Tone: ${toneV}
