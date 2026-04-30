@@ -236,14 +236,28 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
 
 <div id="narrator-count-row" style="display:none;margin-bottom:14px;">
   <div style="background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:12px 14px;">
-    <h4 style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 10px;font-weight:500;" data-i18n="nCountLabel">Personajes en escena</h4>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-      <button class="npill active" data-n="1">👤 1</button>
-      <button class="npill" data-n="2">👥 2</button>
-      <button class="npill" data-n="3">🎭 3</button>
-      <button class="npill" data-n="4">🎬 4</button>
+    <h4 style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 12px;font-weight:500;" data-i18n="nCountLabel">Personajes en escena</h4>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:160px;">
+        <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px;display:flex;align-items:center;gap:4px;">🎙️ HOST(S)</div>
+        <div style="display:flex;gap:5px;">
+          <button class="npill host-pill active" data-n="1">1</button>
+          <button class="npill host-pill" data-n="2">2</button>
+          <button class="npill host-pill" data-n="3">3</button>
+          <button class="npill host-pill" data-n="4">4</button>
+        </div>
+      </div>
+      <div style="flex:1;min-width:160px;">
+        <div style="font-size:11px;font-weight:700;color:#e11d48;margin-bottom:6px;display:flex;align-items:center;gap:4px;">🎤 GUEST(S)</div>
+        <div style="display:flex;gap:5px;">
+          <button class="npill guest-pill active" data-n="0">0</button>
+          <button class="npill guest-pill" data-n="1">1</button>
+          <button class="npill guest-pill" data-n="2">2</button>
+          <button class="npill guest-pill" data-n="3">3</button>
+        </div>
+      </div>
     </div>
-    <div style="font-size:11px;color:#888;" id="ncount-info">Un solo narrador conduce todos los clips.</div>
+    <div style="font-size:11px;color:#888;margin-top:8px;" id="ncount-info">Un solo narrador en escena.</div>
   </div>
 </div>
 
@@ -574,7 +588,7 @@ const LIBRO_SEGMENTS={
   ]
 };
 
-let lang='es', mode='ficticio-viral', format='lineal', hlType='rapida', dur=1, setStyle='oscuro', numNarrators=1;
+let lang='es', mode='ficticio-viral', format='lineal', hlType='rapida', dur=1, setStyle='oscuro', numHosts=1, numGuests=0;
 
 function t(key){return T[lang][key]||key;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
@@ -934,13 +948,12 @@ function updateNarratorCountRow(){
 function updateNarratorCountInfo(){
   const info=document.getElementById('ncount-info');
   if(!info) return;
-  const msgs={
-    1:{es:'Un solo narrador conduce todos los clips.',en:'A single narrator leads all clips.'},
-    2:{es:'Dos narradores se alternan — debate, entrevista o co-conducción.',en:'Two narrators alternate — debate, interview or co-hosting.'},
-    3:{es:'Tres voces se turnan para dar variedad y dinamismo al video.',en:'Three voices take turns for variety and dynamism.'},
-    4:{es:'Cuatro narradores — máxima variedad visual y narrativa.',en:'Four narrators — maximum visual and narrative variety.'}
-  };
-  info.textContent=(msgs[numNarrators]||msgs[1])[lang]||'';
+  const total=numHosts+numGuests;
+  let msg;
+  if(total===1){msg=lang==='es'?'1 narrador único — solo en escena.':'1 solo narrator on screen.';}
+  else if(total===2){msg=lang==='es'?`${numHosts} host + ${numGuests} guest — formato entrevista o debate.`:`${numHosts} host + ${numGuests} guest — interview or debate format.`;}
+  else{msg=lang==='es'?`Mesa redonda con ${total} personas (${numHosts} host${numHosts>1?'s':''} + ${numGuests} guest${numGuests>1?'s':''}) — panel de conversación natural.`:`Round table with ${total} people (${numHosts} host${numHosts>1?'s':''} + ${numGuests} guest${numGuests>1?'s':''}) — natural conversation panel.`;}
+  info.textContent=msg;
 }
 function fullRender(){renderModes();renderBlocks();renderSelects();renderHighlightSubs();updateDurInfo();applyI18n();updateTags();updateRecommendBtn();updateNarratorCountRow();}
 function updateRecommendBtn(){
@@ -958,7 +971,7 @@ function clearFields(){
   document.getElementById('ai-output-area').innerHTML='';
   updateTags();
 }
-function setMode(m){mode=m;numNarrators=1;document.querySelectorAll('.npill').forEach((p,i)=>p.classList.toggle('active',i===0));document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
+function setMode(m){mode=m;numHosts=1;numGuests=0;document.querySelectorAll('.host-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.querySelectorAll('.guest-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
 
 async function recommendCombo(){
   if(!_orKey){alert('Configura tu API key primero.');return;}
@@ -1161,15 +1174,28 @@ ${VEO3_CAMERA}`;
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
 const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico'];
 
-function buildNarratorImagePrompt(charDesc,setting){
+function buildNarratorImagePrompt(charDesc,setting,sceneType='solo'){
+  let poseBlock;
+  if(sceneType==='panel'){
+    poseBlock=`POSE — PANEL PARTICIPANT:
+Seated at a round table. Slight 3/4 turn toward camera. Other participants slightly visible/blurred in background. Natural panel discussion posture.
+Engaged expression, leaning slightly forward, hands resting naturally on table.`;
+  } else if(sceneType==='duo'){
+    poseBlock=`POSE — NARRATOR:
+Slight profile facing partner, with a natural 3/4 angle toward camera.
+Natural engaged expression, open body language, subtle lean toward conversation partner.
+Relaxed shoulders, natural breathing stance.`;
+  } else {
+    poseBlock=`POSE — NARRATOR:
+Faces camera directly or slight 3/4 angle toward camera.
+Natural confident expression, engaging energy, slight lean forward.
+Subtle organic posture: natural breathing stance, relaxed shoulders.`;
+  }
   return `Ultra-realistic cinematic portrait of a video narrator. ${charDesc}
 
 SCENE: ${setting}
 
-POSE — NARRATOR:
-Faces camera directly or slight 3/4 angle toward camera.
-Natural confident expression, engaging energy, slight lean forward.
-Subtle organic posture: natural breathing stance, relaxed shoulders.
+${poseBlock}
 
 LIGHTING: Cinematic portrait lighting matching the scene — key light from front-left, subtle fill from right, soft background bokeh.
 IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty filters, no auto-enhancement.
@@ -1251,26 +1277,50 @@ async function generateNarratorPackage(){
   };
 
   // ── Prompt de IA (unified multi-narrator format) ─────────────────────────────
-  const n=numNarrators;
+  const numH=numHosts;
+  const numG=numGuests;
+  const n=numH+numG;  // total characters
   const isMulti=n>1;
-  const sys=`You are a creative director for YouTube Shorts ${ctx} videos featuring ${n} narrator${n>1?'s':''}. Reply ONLY with valid JSON — no markdown, no extra text.`;
+  const isPanel=n>=3;  // 3+ = round table setup
 
-  // Build narrator entries for the prompt
-  const narratorEntries=Array.from({length:n},(_,i)=>`    {
+  const sceneDesc=n===1?'featuring a single narrator':n===2?'featuring a host and a guest in an interview format':`featuring a panel of ${n} participants around a round table`;
+  const sys=`You are a creative director for YouTube Shorts ${ctx} videos ${sceneDesc}. Reply ONLY with valid JSON — no markdown, no extra text.`;
+
+  // Override settingHint for panel scenes
+  const PANEL_SETTINGS={
+    'finanzas-libertad':'Round table financial discussion studio — participants seated around a modern circular table, professional broadcast lighting, warm neutral tones, books and financial props',
+    'mentalidad-disciplina':'Round table motivation studio — participants seated around a modern circular table, dramatic side lighting, high-contrast industrial atmosphere',
+    'historia-epica':'Round table historian panel — participants seated around an ancient stone circular table, warm amber torch-like lighting, epic cinematic atmosphere',
+    'ciencia-misterio':'Round table science panel — participants seated around a sleek circular table, cool blue/purple cosmic lighting, abstract cosmic background',
+    'documental-narrado':'Round table documentary studio — participants seated around a modern circular broadcast table, dramatic cinematic lighting',
+    'testimonio-real':'Round table intimate discussion — participants seated around a dim circular table, single warm practical light, raw confessional atmosphere',
+    'misterio-biblico':'Round table ancient study — participants seated around a stone circular table, candlelit mystical atmosphere, ancient scrolls visible',
+    'psicologia-positiva':'Round table wellness panel — participants seated around a light circular table, soft golden natural light, plants and flowers in background'
+  };
+  const effectiveSettingHint=isPanel?(PANEL_SETTINGS[mode]||`Round table panel studio — ${n} participants seated around a modern circular table, professional broadcast lighting, thematic background`):settingHint;
+
+  // Build narrator entries for the prompt with proper roles
+  const narratorEntries=Array.from({length:n},(_,i)=>{
+    const isHost=i<numH;
+    const roleLabel=isHost?(numH>1?`Host ${i+1}`:'Host'):(numG>1?`Guest ${i+1-numH}`:'Guest');
+    const role=isHost?'host':'guest';
+    return `    {
       "id": ${i+1},
+      "role": "${role}",
       "char_desc": "[gender word], [age range], [hair], [clothing — no logos], [distinctive feature], [expression]. Example: Adult woman, 30-40, wavy auburn hair, dark blazer, warm confident smile.",
-      "visual": "Key visual traits identical across all clips for narrator ${i+1}: gender, age, hair, clothing, marks.",
-      "voice": "Voice profile narrator ${i+1}: [age]-year-old, [voice texture], [delivery style]. Temperament: [baseline]. CRITICAL: keep EXACT across all clips.",
-      "image_scene": "One-line ChatGPT scene: narrator ${i+1} in setting, mood."
-    }`).join(',\n');
+      "visual": "Key visual traits identical across all clips for ${roleLabel}: gender, age, hair, clothing, marks.",
+      "voice": "Voice profile ${roleLabel}: [age]-year-old, [voice texture], [delivery style]. Temperament: [baseline]. CRITICAL: keep EXACT across all clips.",
+      "image_scene": "One-line ChatGPT scene: ${roleLabel} in setting, mood."
+    }`;
+  }).join(',\n');
 
   const clipPattern=isMulti
     ?`{"narrator_id":[1-${n} rotating],"dialogue":"[max 26 words]"}`
     :`{"dialogue":"[max 28 words]"}`;
 
   const usr=`Topic: "${topic}" | Mode: ${mode} | Category: ${category} | Style: ${styleV} | Tone: ${toneV}
-Narrators: ${n} | Primary gender: ${narratorGender}, type: ${narratorType}
-Clips: ${clips} × ${sec}s | Setting hint: ${settingHint}
+Narrators: ${n} (${numH} host${numH>1?'s':''} + ${numG} guest${numG>1?'s':''}) | Primary gender: ${narratorGender}, type: ${narratorType}
+Clips: ${clips} × ${sec}s | Setting hint: ${effectiveSettingHint}
 
 Return ONLY this JSON (no markdown):
 {
@@ -1289,13 +1339,14 @@ ${narratorEntries}
   "thumbnail_prompt": "Vertical 9:16 ChatGPT/DALL-E thumbnail — dramatic, high contrast, text space top 20%"
 }
 Rules:
-- narrators: exactly ${n} objects with unique distinct appearances
-- clips: exactly ${clips} items${isMulti?`, rotate narrator_id 1-${n} evenly, escalate tension progressively`:', escalate progressively'}
+- narrators: exactly ${n} objects with unique distinct appearances and assigned roles (host/guest)
+- clips: exactly ${clips} items${isMulti?`, rotate narrator_id 1-${n} evenly across all ${n} characters, escalate tension progressively`:', escalate progressively'}
 - All dialogue in ${lang==='es'?'Spanish':'English'}
 - hook and copy in ${lang==='es'?'Spanish':'English'}
 - hashtags lowercase, no spaces`;
 
   try{
+    window._pStore=[];
     const raw=await _callOR(sys,usr,4500);
     const m=raw.match(/\{[\s\S]*\}/);
     if(!m) throw new Error(lang==='es'?'La IA no devolvió JSON válido':'AI did not return valid JSON');
@@ -1327,16 +1378,19 @@ Rules:
     </div>`;
 
     // ── Prompts de imagen por narrador ────────────────────────────────────────
+    const imgSceneType=isPanel?'panel':isMulti?'duo':'solo';
     narratorsArr.forEach((nr,i)=>{
       const color=NARRATOR_COLORS[i]||'#185fa5';
       const label=(NARRATOR_LABELS[lang]||NARRATOR_LABELS.es)[i]||`Narrador ${i+1}`;
-      const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting);
+      const imgP=buildNarratorImagePrompt(nr.char_desc||'',nr.image_scene||sharedSetting,imgSceneType);
       if(imgP) window._allPrompts.push(`=== PROMPT ${label.toUpperCase()} (ChatGPT) ===\n${imgP}`);
+      window._pStore.push(imgP);
+      const imgIdx=window._pStore.length-1;
       html+=`<div class="clip-card" style="border-left:3px solid ${color};">
         <div class="clip-header" style="color:${color};">📸 ${label.toUpperCase()} — ChatGPT (genera imagen)</div>
         <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Pega en ChatGPT con tu foto base para generar al ${label.toLowerCase()}.</div>
         <div class="clip-voice">${imgP}</div>
-        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(imgP)})">📋 Copiar</button>
+        <button class="clip-copy" onclick="copyTxt(window._pStore[${imgIdx}])">📋 Copiar</button>
       </div>`;
     });
 
@@ -1351,6 +1405,8 @@ Rules:
         const dialogue=c.dialogue||'';
         const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue);
         window._allPrompts.push(fullPrompt);
+        window._pStore.push(fullPrompt);
+        const clipIdx=window._pStore.length-1;
         html+=`<div class="clip-card">
           <div class="clip-header" style="display:flex;justify-content:space-between;align-items:center;">
             <span>📹 CLIP ${i+1} / ${clipsArr.length} &nbsp;·&nbsp; ${sec}s</span>
@@ -1360,15 +1416,35 @@ Rules:
             <strong style="font-size:10px;color:${color};">PROMPT COMPLETO → Google Veo 3 / Flow</strong>
             <div class="clip-voice">${fullPrompt}</div>
           </div>
-          <button class="clip-copy" onclick="copyTxt(${JSON.stringify(fullPrompt)})">📋 Copiar clip ${i+1}</button>
+          <button class="clip-copy" onclick="copyTxt(window._pStore[${clipIdx}])">📋 Copiar clip ${i+1}</button>
         </div>`;
       });
     }
 
     // ── Paquete redes sociales ────────────────────────────────────────────────
-    const tagRow=(tags,color,label)=>tags&&tags.length?`<div style="margin-bottom:6px;"><span style="font-size:9px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${label}</span><br><span style="font-size:11px;color:#444;">${tags.join(' ')}</span><button class="clip-copy" style="margin-left:8px;" onclick="copyTxt(${JSON.stringify(tags.join(' '))})">📋</button></div>`:'';
+    const tagRow=(tags,tColor,tLabel)=>{
+      if(!tags||!tags.length) return '';
+      const tagStr=tags.join(' ');
+      window._pStore.push(tagStr);
+      const tIdx=window._pStore.length-1;
+      return `<div style="margin-bottom:6px;"><span style="font-size:9px;font-weight:700;color:${tColor};text-transform:uppercase;letter-spacing:0.5px;">${tLabel}</span><br><span style="font-size:11px;color:#444;">${tagStr}</span><button class="clip-copy" style="margin-left:8px;" onclick="copyTxt(window._pStore[${tIdx}])">📋</button></div>`;
+    };
     if(socialHook||socialCopy||tagsTT.length||tagsFB.length||tagsYT.length||thumbP){
-      const socContent=`${socialHook?`<div style="background:#f0f9ff;border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:4px;">🪝 HOOK / CAPTION</div><div style="font-size:12px;color:#1a1a1a;font-weight:500;">${socialHook}</div>${socialCopy?`<div style="font-size:11px;color:#555;margin-top:4px;white-space:pre-line;">${socialCopy}</div>`:''}<button class="clip-copy" onclick="copyTxt(${JSON.stringify(socialHook+(socialCopy?'\n\n'+socialCopy:''))})">📋 Copiar copy</button></div>`:''}${(tagsTT.length||tagsFB.length||tagsYT.length)?`<div style="background:#fafafa;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px;margin-bottom:8px;">${tagRow(tagsTT,'#000','TikTok (máx 5)')}${tagRow(tagsFB,'#1877f2','Facebook (máx 8)')}${tagRow(tagsYT,'#ff0000','YouTube (máx 4)')}</div>`:''}${thumbP?`<div style="background:#fff8f0;border-radius:8px;padding:10px;"><div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">🖼️ PROMPT PORTADA — ChatGPT / DALL-E</div><div class="clip-voice">${thumbP}</div><button class="clip-copy" onclick="copyTxt(${JSON.stringify(thumbP)})">📋 Copiar prompt portada</button></div>`:''}`;
+      let socContent='';
+      if(socialHook){
+        const hookCopy=socialHook+(socialCopy?'\n\n'+socialCopy:'');
+        window._pStore.push(hookCopy);
+        const hookIdx=window._pStore.length-1;
+        socContent+=`<div style="background:#f0f9ff;border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:4px;">🪝 HOOK / CAPTION</div><div style="font-size:12px;color:#1a1a1a;font-weight:500;">${socialHook}</div>${socialCopy?`<div style="font-size:11px;color:#555;margin-top:4px;white-space:pre-line;">${socialCopy}</div>`:''}<button class="clip-copy" onclick="copyTxt(window._pStore[${hookIdx}])">📋 Copiar copy</button></div>`;
+      }
+      if(tagsTT.length||tagsFB.length||tagsYT.length){
+        socContent+=`<div style="background:#fafafa;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px;margin-bottom:8px;">${tagRow(tagsTT,'#000','TikTok (máx 5)')}${tagRow(tagsFB,'#1877f2','Facebook (máx 8)')}${tagRow(tagsYT,'#ff0000','YouTube (máx 4)')}</div>`;
+      }
+      if(thumbP){
+        window._pStore.push(thumbP);
+        const thumbIdx=window._pStore.length-1;
+        socContent+=`<div style="background:#fff8f0;border-radius:8px;padding:10px;"><div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">🖼️ PROMPT PORTADA — ChatGPT / DALL-E</div><div class="clip-voice">${thumbP}</div><button class="clip-copy" onclick="copyTxt(window._pStore[${thumbIdx}])">📋 Copiar prompt portada</button></div>`;
+      }
       html+=`<div class="clip-card" style="border-left:3px solid #0ea5e9;">
         <div class="clip-header" style="color:#0369a1;">📱 Paquete redes sociales</div>
         ${socContent}
@@ -1613,7 +1689,8 @@ document.querySelectorAll('.fpill[data-format]').forEach(b=>b.addEventListener('
 document.querySelectorAll('.dpill').forEach(b=>b.addEventListener('click',()=>{dur=parseInt(b.dataset.dur);document.querySelectorAll('.dpill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateDurInfo();}));
 document.getElementById('roll-topic').addEventListener('click',()=>{document.getElementById('topic').value=mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]);});
 document.addEventListener('change',e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')updateTags();});
-document.querySelectorAll('.npill').forEach(b=>b.addEventListener('click',()=>{numNarrators=parseInt(b.dataset.n);document.querySelectorAll('.npill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateNarratorCountInfo();}));
+document.querySelectorAll('.host-pill').forEach(b=>b.addEventListener('click',()=>{numHosts=parseInt(b.dataset.n);document.querySelectorAll('.host-pill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateNarratorCountInfo();}));
+document.querySelectorAll('.guest-pill').forEach(b=>b.addEventListener('click',()=>{numGuests=parseInt(b.dataset.n);document.querySelectorAll('.guest-pill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateNarratorCountInfo();}));
 
 fullRender();
 </script>
