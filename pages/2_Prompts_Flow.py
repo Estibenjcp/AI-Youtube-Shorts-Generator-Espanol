@@ -117,6 +117,7 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
 @keyframes spin{to{transform:rotate(360deg)}}
 .footer{text-align:center;color:#999;font-size:11px;margin-top:24px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,0.1);}
 @media(max-width:600px){.grid2{grid-template-columns:1fr;}.format-row{grid-template-columns:1fr;}.mode-pill{min-width:100%;}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:600;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.5s;}
 </style>
 </head>
 <body>
@@ -210,10 +211,14 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
     <div class="dur-info" id="dur-info"></div>
   </div>
   <div class="format-block">
-    <h4>Estilo de set</h4>
+    <h4 data-i18n="setStyleLabel">Estilo de set</h4>
     <div class="format-pills" style="flex-direction:column;gap:5px;">
       <button class="spill active" data-set="oscuro" style="text-align:left;padding:5px 12px;">🕯️ Oscuro / Edison</button>
       <button class="spill" data-set="moderno" style="text-align:left;padding:5px 12px;">💡 Moderno / Softbox</button>
+      <button class="spill" data-set="natural" style="text-align:left;padding:5px 12px;">🌿 Natural / Madera</button>
+      <button class="spill" data-set="neon" style="text-align:left;padding:5px 12px;">🎨 Neon / Urbano</button>
+      <button class="spill" data-set="biblioteca" style="text-align:left;padding:5px 12px;">📚 Biblioteca / Clásico</button>
+      <button class="spill" data-set="mistico" style="text-align:left;padding:5px 12px;">🔮 Místico / Velas</button>
     </div>
   </div>
 </div>
@@ -255,14 +260,14 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
 <script>
 // ── i18n ──────────────────────────────────────────────────────────────────────
 const T={
-  es:{title:"Generador de prompts",subtitle:"Multi-modo · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Formato del video",fmtLineal:"📖 Lineal",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Sub-tipo de highlight:",durationLabel:"Duración del video",topicSection:"Tema y estilo",topicLabel:"Tema del episodio",topicPH:"Escribe un tema o usa 🎲",styleLabel:"Estilo",toneLabel:"Tono",randomizeAll:"🎲 Aleatorizar todo",generateBtn:"⚡ Generar prompts Flow",copyBtn:"Copiar",copied:"✓ Copiado",manual:"manual",rnd:"aleatorio",
+  es:{title:"Generador de prompts",subtitle:"Multi-modo · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Formato del video",fmtLineal:"📖 Lineal",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Sub-tipo de highlight:",durationLabel:"Duración del video",setStyleLabel:"Estilo de set",topicSection:"Tema y estilo",topicLabel:"Tema del episodio",topicPH:"Escribe un tema o usa 🎲",styleLabel:"Estilo",toneLabel:"Tono",randomizeAll:"🎲 Aleatorizar todo",generateBtn:"⚡ Generar prompts Flow",copyBtn:"Copiar",copied:"✓ Copiado",manual:"manual",rnd:"aleatorio",
     durInfo:(n,clips,sec)=>`~${clips} clips de ${sec}s = ${n} minuto${n>1?'s':''}`,
     hlTypes:{rapida:"🌶️ Preguntas picantes",bestof:"🏆 Best-of / momentos pico",datos:"💡 Datos encadenados",comparacion:"⚔️ Comparaciones"},
     clipLabel:(i,total)=>`CLIP ${i} de ${total}`,
     outputTitles:{image1:"1️⃣ Prompt imagen del host (Image A)",image2:"2️⃣ Prompt imagen del invitado (Image A → reemplazo)",clips:"3️⃣ Prompts Flow completos por clip",meta:"4️⃣ Metadata publicación",imgNarrator:"1️⃣ Prompt imagen / escena",voiceNarrator:"2️⃣ Voice prompt narrador",clips2:"3️⃣ Prompts Flow completos por clip",meta2:"4️⃣ Metadata publicación"},
     hints:{image1:"Sin imagen de referencia — ChatGPT / Nano Banana",image2:"Sube Image A del host + pega esto",clips:"Cada bloque = 1 prompt para Google Flow.",meta:"TikTok / Reels / YouTube Shorts"}
   },
-  en:{title:"Prompt generator",subtitle:"Multi-mode · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Video format",fmtLineal:"📖 Linear",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Highlight sub-type:",durationLabel:"Video duration",topicSection:"Topic & style",topicLabel:"Episode topic",topicPH:"Write a topic or use 🎲",styleLabel:"Style",toneLabel:"Tone",randomizeAll:"🎲 Randomize all",generateBtn:"⚡ Generate Flow prompts",copyBtn:"Copy",copied:"✓ Copied",manual:"manual",rnd:"random",
+  en:{title:"Prompt generator",subtitle:"Multi-mode · ChatGPT + Google Flow / Veo 3 + CapCut",formatLabel:"Video format",fmtLineal:"📖 Linear",fmtHighlight:"⚡ Highlight",highlightSubLabel:"Highlight sub-type:",durationLabel:"Video duration",setStyleLabel:"Set style",topicSection:"Topic & style",topicLabel:"Episode topic",topicPH:"Write a topic or use 🎲",styleLabel:"Style",toneLabel:"Tone",randomizeAll:"🎲 Randomize all",generateBtn:"⚡ Generate Flow prompts",copyBtn:"Copy",copied:"✓ Copied",manual:"manual",rnd:"random",
     durInfo:(n,clips,sec)=>`~${clips} clips of ${sec}s = ${n} minute${n>1?'s':''}`,
     hlTypes:{rapida:"🌶️ Hot questions",bestof:"🏆 Best-of / peak moments",datos:"💡 Chained facts",comparacion:"⚔️ Comparisons"},
     clipLabel:(i,total)=>`CLIP ${i} of ${total}`,
@@ -643,10 +648,10 @@ function renderAI(data,topic){
   area.innerHTML=html;
 }
 
-async function copyAI(){
+function copyAI(){
   const area=document.getElementById('ai-output-area');
   if(!area||!area._copy) return;
-  try{await navigator.clipboard.writeText(area._copy);}catch(e){const ta=document.createElement('textarea');ta.value=area._copy;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+  copyTxt(area._copy);
 }
 
 // ── UI Render ──────────────────────────────────────────────────────────────────
@@ -799,13 +804,46 @@ async function recommendCombo(){
 function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));fullRender();}
 
 // ── Templates fijos de producción ─────────────────────────────────────────────
-const SCENE_SETUP=`SCENE SETUP: Sitting at a moody dark podcast studio. Round wooden table in the foreground. Background: dark walls with vintage wooden shelves and crates, warm Edison bulb lanterns on both sides creating amber ambient glow. Dark defocused background with subtle warm bokeh.
-MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the table surface — UPRIGHT, NO boom arm, NO diagonal arm. Positioned directly in front of the character on the table.`;
+const SET_SCENES={
+  oscuro:{
+    setup:`SCENE SETUP: Sitting at a moody dark podcast studio. Round wooden table in the foreground. Background: dark walls with vintage wooden shelves and crates, warm Edison bulb lanterns on both sides creating amber ambient glow. Dark defocused background with subtle warm bokeh.
+MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the table surface — UPRIGHT, NO boom arm, NO diagonal arm. Positioned directly in front of the character on the table.`,
+    lighting:(s)=>{const r=s==='host'?'camera-LEFT':'camera-RIGHT',d=s==='host'?'right':'left';return `LIGHTING: Warm amber rim light from ${r}. Deep cinematic shadows on ${d} side of face. Dark background with Edison lantern glow. Do NOT increase brightness or add fill light on later clips.`;}
+  },
+  moderno:{
+    setup:`SCENE SETUP: Modern minimalist podcast studio. Clean white desk with light gray walls. Professional softbox lights visible in background. Sleek, neutral, contemporary aesthetic.
+MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the desk surface — UPRIGHT, NO boom arm, NO diagonal arm.`,
+    lighting:(s)=>{const r=s==='host'?'camera-LEFT':'camera-RIGHT';return `LIGHTING: Balanced soft softbox light from ${r}. Even professional fill light. No harsh shadows. Clean, crisp look. Do NOT alter light balance between clips.`;}
+  },
+  natural:{
+    setup:`SCENE SETUP: Warm rustic podcast studio with natural wood and plants. Exposed brick wall, raw wooden table, hanging potted plants in background. Cozy warm incandescent bulbs overhead.
+MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the table surface — UPRIGHT, NO boom arm, NO diagonal arm.`,
+    lighting:(s)=>{const r=s==='host'?'camera-LEFT':'camera-RIGHT',d=s==='host'?'right':'left';return `LIGHTING: Warm golden rim light from ${r}. Soft earthy shadows on ${d} side of face. Warm incandescent glow from background. Do NOT over-brighten or add cool fill light.`;}
+  },
+  neon:{
+    setup:`SCENE SETUP: Dark urban podcast studio with neon accent lighting. Black matte desk, dark walls with out-of-focus neon signs (purple, blue, pink) in background. Edgy modern aesthetic.
+MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the desk surface — UPRIGHT, NO boom arm, NO diagonal arm.`,
+    lighting:(s)=>{const r=s==='host'?'camera-LEFT':'camera-RIGHT',d=s==='host'?'right':'left';return `LIGHTING: Deep purple-blue neon rim light from ${r}. Dark dramatic shadows on ${d} side of face. Colorful neon bokeh in background. Do NOT wash out with white fill light.`;}
+  },
+  biblioteca:{
+    setup:`SCENE SETUP: Classic library podcast setting. Dark mahogany desk, floor-to-ceiling shelves with old leather-bound books in background, warm incandescent reading lamp. Scholarly, timeless atmosphere.
+MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the desk surface — UPRIGHT, NO boom arm, NO diagonal arm.`,
+    lighting:(s)=>{const r=s==='host'?'camera-LEFT':'camera-RIGHT',d=s==='host'?'right':'left';return `LIGHTING: Warm desk lamp amber glow from ${r}. Soft intellectual shadows on ${d} side of face. Classic warm tone. No modern LED fill light. Do NOT alter color temperature between clips.`;}
+  },
+  mistico:{
+    setup:`SCENE SETUP: Mystical dark studio with candle lighting. Stone-textured dark walls, multiple tall white candles burning on and around the table, ancient artifacts, crystals, and dried herbs visible. Atmospheric and mysterious.
+MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the table surface — UPRIGHT, NO boom arm, NO diagonal arm.`,
+    lighting:(s)=>{const r=s==='host'?'camera-LEFT':'camera-RIGHT',d=s==='host'?'right':'left';return `LIGHTING: Flickering orange candle rim light from ${r}. Deep dramatic shadows on ${d} side of face. Warm mysterious candle glow from background. No electric fill light. Do NOT stabilize flicker between clips.`;}
+  }
+};
+
+function getScene(){return SET_SCENES[setStyle]||SET_SCENES.oscuro;}
 
 function buildHostImagePrompt(charDesc){
+  const sc=getScene();
   return `Ultra-realistic cinematic portrait of a podcast host. ${charDesc}
 
-${SCENE_SETUP}
+${sc.setup}
 
 POSE — HOST POSITION:
 3/4 side-profile facing RIGHT — head and body angled clearly to the RIGHT side of frame.
@@ -813,18 +851,19 @@ Looking attentively toward the RIGHT, as if the guest is seated to the right.
 Eye line directed clearly to the RIGHT. NOT toward camera.
 In the two-shot edit, this character will be placed on the LEFT side of frame — so this rightward gaze points toward the guest on the right.
 
-LIGHTING: Warm rim light from camera-LEFT (host sits on left in two-shot), deep cinematic shadows on the right side of face. Edison lantern glow from background.
+${sc.lighting('host')}
 IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty filters, no auto-enhancement.
 FORMAT: vertical 9:16 aspect ratio, 1024x1792. Black border top 12% for safe area.`;
 }
 
 function buildGuestImagePrompt(genderWord, charDetails){
+  const sc=getScene();
   return `Ultra-realistic cinematic portrait for a podcast guest. Generate a completely new ${genderWord} character — do NOT reuse any person from previous images.
 
 CHARACTER DETAILS:
 ${charDetails}
 
-${SCENE_SETUP}
+${sc.setup}
 
 POSE — GUEST POSITION:
 3/4 side-profile facing LEFT — head and body angled clearly to the LEFT side of frame.
@@ -832,7 +871,7 @@ Looking attentively toward the LEFT, as if the host is seated to the left.
 Eye line directed clearly to the LEFT. NOT toward camera.
 In the two-shot edit, this character will be placed on the RIGHT side of frame — so this leftward gaze will point toward the host on the left.
 
-LIGHTING: Warm rim light from camera-RIGHT (guest sits on right in two-shot), deep cinematic shadows on the left side of face. Edison lantern glow from background.
+${sc.lighting('guest')}
 IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty filters.
 FORMAT: vertical 9:16, 1024x1792. Keep top black border identical to Image A.`;
 }
@@ -846,11 +885,7 @@ const VEO3_POSE=(facesDir)=>`Strict side-profile (3/4 angle), looking off-camera
 const VEO3_CAMERA=`CAMERA: 100% static. No zoom in or out. No pan. Only imperceptible organic micro-shake from breathing.
 FORMAT: Vertical 9:16, 1024x1792. No letterboxing, no pillarboxing.`;
 
-const VEO3_LIGHTING=(speaker)=>{
-  const rimSide  =speaker==='host'?'camera-LEFT':'camera-RIGHT';
-  const shadSide =speaker==='host'?'right':'left';
-  return `LIGHTING: Warm rim light from ${rimSide}. Deep cinematic shadows on ${shadSide} side of face. Dark background with Edison lantern ambient glow. Do NOT increase brightness or fill light on later clips.`;
-};
+const VEO3_LIGHTING=(speaker)=>getScene().lighting(speaker);
 
 function buildClipPrompt(clipNum,total,sec,speaker,spkLabel,visualConsistency,voiceConsistency,dialogue){
   const facesDir=speaker==='host'?'RIGHT':'LEFT';
@@ -893,7 +928,7 @@ async function generate(){
   const {clips,sec}=DUR_CLIPS[dur];
   const styleV=gv('style')||'conspirativo';
   const toneV =gv('tone')||'tenso';
-  const numClips=Math.min(clips,8);
+  const numClips=clips;
 
   const hostGender =gv('host-gender')||'male';
   const hostType   =gv('host-type')||'periodista-investigador';
@@ -920,13 +955,13 @@ Return ONLY this JSON (no markdown):
   "guest_visual": "One sentence of key visual traits to keep identical across all guest clips: gender, age, hair, clothing, distinctive marks.",
   "guest_voice": "Voice profile: [age]-year-old [region] ${guestGender}, [voice texture], [accent], [delivery style]. Temperament: [baseline]. CRITICAL: maintain this EXACT voice profile across all clips of this character without variation.",
   "clips": [
-    {"speaker":"host","dialogue":"[IN SPANISH — max 22 words, impactful opening]"},
-    {"speaker":"guest","dialogue":"[IN SPANISH — max 22 words]"}
+    {"speaker":"host","dialogue":"[max 22 words — impactful opening]"},
+    {"speaker":"guest","dialogue":"[max 22 words]"}
   ]
 }
 Rules:
 - clips: exactly ${numClips} items, alternate host/guest, escalate tension toward a dark revelation
-- All dialogue IN SPANISH only
+- All dialogue must be written in ${lang==='es'?'Spanish':'English'} only
 - host_char_desc: single line like the example
 - guest_char_details: 2-3 lines with line breaks`;
 
@@ -1013,13 +1048,30 @@ Rules:
   }
 }
 
+function showToast(msg){
+  const el=document.createElement('div');el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),500);},1800);
+}
+
 function copyTxt(text){
-  navigator.clipboard.writeText(text).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
+  const fallback=()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    const ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(ok?(lang==='es'?'¡Copiado ✓':'Copied ✓'):(lang==='es'?'Selecciona el texto y usa Ctrl+C':'Select text and press Ctrl+C'));
+  };
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>showToast(lang==='es'?'¡Copiado ✓':'Copied ✓')).catch(fallback);
+    }else{fallback();}
+  }catch(e){fallback();}
 }
 
 function copyAllPrompts(){
-  const text=(window._allPrompts||[]).join('\n\n---\n\n');
-  navigator.clipboard.writeText(text).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);});
+  copyTxt((window._allPrompts||[]).join('\n\n---\n\n'));
 }
 
 document.querySelectorAll('.lang-btn').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
