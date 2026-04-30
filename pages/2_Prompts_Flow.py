@@ -299,7 +299,8 @@ const MODES={
   'conspiracion-moderna':{icon:'👁️',title:{es:'Conspiración moderna',en:'Modern conspiracy'},desc:{es:'Periodista + informante — IA, élites, tecnología y poder',en:'Journalist + whistleblower — AI, elites, tech and power'}},
   'finanzas-libertad':{icon:'💰',title:{es:'Finanzas & libertad',en:'Finance & freedom'},desc:{es:'Educación financiera viral, mentalidad de riqueza, libertad',en:'Viral financial education, wealth mindset, freedom'}},
   'mentalidad-disciplina':{icon:'💪',title:{es:'Mentalidad & disciplina',en:'Mindset & discipline'},desc:{es:'Motivación, hábitos, resiliencia — voz directa al espectador',en:'Motivation, habits, resilience — direct voice to viewer'}},
-  'historia-epica':{icon:'⚔️',title:{es:'Historia épica',en:'Epic history'},desc:{es:'Batallas, imperios, héroes — narración cinematográfica épica',en:'Battles, empires, heroes — epic cinematic narration'}}
+  'historia-epica':{icon:'⚔️',title:{es:'Historia épica',en:'Epic history'},desc:{es:'Batallas, imperios, héroes — narración cinematográfica épica',en:'Battles, empires, heroes — epic cinematic narration'}},
+  'psicologia-positiva':{icon:'🌸',title:{es:'Psicología positiva',en:'Positive psychology'},desc:{es:'Autoestima, sanación emocional, límites, apego — contenido que sana',en:'Self-esteem, healing, boundaries, attachment — content that heals'}}
 };
 
 const MODE_SELECTS={
@@ -411,6 +412,13 @@ const MODE_SELECTS={
   'category':{es:[['random','🎲 Aleatorio'],['batallas','Batallas épicas históricas'],['imperios','Imperios y su caída'],['heroes-olvidados','Héroes olvidados'],['revoluciones','Revoluciones que cambiaron el mundo'],['figuras-extraordinarias','Figuras extraordinarias'],['civilizaciones','Civilizaciones asombrosas']],en:[['random','🎲 Random'],['batallas','Epic historical battles'],['imperios','Empires and their fall'],['heroes-olvidados','Forgotten heroes'],['revoluciones','World-changing revolutions'],['figuras-extraordinarias','Extraordinary figures'],['civilizaciones','Amazing civilizations']]},
   'style':{es:[['random','🎲 Aleatorio'],['epico','Épico / grandioso'],['revelador','Revelador / sorprendente'],['dramatico','Dramático / cinematográfico'],['educativo','Educativo / fascinante']],en:[['random','🎲 Random'],['epico','Epic / grandiose'],['revelador','Revealing / surprising'],['dramatico','Dramatic / cinematic'],['educativo','Educational / fascinating']]},
   'tone':{es:[['random','🎲 Aleatorio'],['apasionado','Apasionado / encendido'],['solemne','Solemne / grandioso'],['urgente','Urgente / impactante'],['narrativo','Narrativo / íntimo']],en:[['random','🎲 Random'],['apasionado','Passionate / fired up'],['solemne','Solemn / grand'],['urgente','Urgent / impactful'],['narrativo','Narrative / intimate']]}
+},
+'psicologia-positiva':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['psicologa-empatica','Psicóloga empática'],['terapeuta-cercana','Terapeuta cercana'],['coach-bienestar','Coach de bienestar'],['voz-amiga','Voz de amiga que sana'],['experto-apego','Experto en apego y vínculos']],en:[['random','🎲 Random'],['psicologa-empatica','Empathetic psychologist'],['terapeuta-cercana','Warm therapist'],['coach-bienestar','Wellness coach'],['voz-amiga','Healing friend voice'],['experto-apego','Attachment & bonding expert']]},
+  'narrator-gender':{es:[['random','🎲 Aleatorio'],['female','Femenino'],['male','Masculino']],en:[['random','🎲 Random'],['female','Female'],['male','Male']]},
+  'category':{es:[['random','🎲 Aleatorio'],['autoestima','Autoestima y amor propio'],['sanacion-emocional','Sanación emocional'],['limites','Límites y autorespeto'],['apego','Estilos de apego y relaciones'],['ansiedad','Ansiedad y regulación emocional'],['duelo','Duelo y cierre emocional'],['autocuidado','Autocuidado y bienestar']],en:[['random','🎲 Random'],['autoestima','Self-esteem and self-love'],['sanacion-emocional','Emotional healing'],['limites','Boundaries and self-respect'],['apego','Attachment styles and relationships'],['ansiedad','Anxiety and emotional regulation'],['duelo','Grief and emotional closure'],['autocuidado','Self-care and well-being']]},
+  'style':{es:[['random','🎲 Aleatorio'],['reconfortante','Reconfortante / sanador'],['revelador','Revelador / que abre los ojos'],['practico','Práctico / con pasos concretos'],['narrativo','Narrativo / historia personal']],en:[['random','🎲 Random'],['reconfortante','Comforting / healing'],['revelador','Eye-opening / revealing'],['practico','Practical / with concrete steps'],['narrativo','Narrative / personal story']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['calido-cercano','Cálido / cercano'],['suave-poderoso','Suave pero poderoso'],['esperanzador','Esperanzador / luminoso'],['directo-amoroso','Directo y amoroso']],en:[['random','🎲 Random'],['calido-cercano','Warm / close'],['suave-poderoso','Soft but powerful'],['esperanzador','Hopeful / luminous'],['directo-amoroso','Direct and loving']]}
 }
 };
 
@@ -466,6 +474,10 @@ const MODE_BLOCKS={
 'historia-epica':[
   {id:'his-narrator-block',title:{es:'Narrador épico',en:'Epic narrator'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
   {id:'his-theme-block',title:{es:'Temática histórica',en:'Historic theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'psicologia-positiva':[
+  {id:'pp-narrator-block',title:{es:'Narrador / Terapeuta',en:'Narrator / Therapist'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'pp-theme-block',title:{es:'Temática',en:'Theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
 ]
 };
 
@@ -503,8 +515,8 @@ const RAND_TOPICS={
     en:['How a narcissist makes you feel crazy until you no longer trust yourself','The 7 tactics a manipulator uses to control you without you noticing','Why abuse victims defend their abuser — science explains it','The exact pattern every toxic relationship follows that nobody taught you to see']
   },
   'conspiracion-moderna':{
-    es:['Google sabe en qué piensas antes de que tú mismo lo sepas','Las redes sociales fueron diseñadas para crear adicción, no conexión — hay documentos internos','El ex empleado de Meta que reveló lo que nunca debías saber sobre el algoritmo','Por qué tu teléfono te escucha aunque el micrófono esté desactivado'],
-    en:['Google knows what you\'re thinking before you do','Social media was designed to create addiction, not connection — there are internal documents','The ex-Meta employee who revealed what you were never supposed to know about the algorithm','Why your phone listens to you even when the microphone is off']
+    es:['Un gigante tecnológico sabe en qué piensas antes de que tú mismo lo sepas','Las redes sociales fueron diseñadas para crear adicción, no conexión — hay documentos internos filtrados','Un ex empleado de una gran plataforma digital reveló lo que nunca debías saber del algoritmo','Por qué tu teléfono te escucha aunque el micrófono esté desactivado según un experto en seguridad'],
+    en:['A tech giant knows what you\'re thinking before you do','Social media was designed to create addiction, not connection — there are leaked internal documents','A former employee of a major digital platform revealed what you were never supposed to know about the algorithm','Why your phone listens to you even when the microphone is off according to a security expert']
   },
   'finanzas-libertad':{
     es:['El error financiero que el 95% comete antes de los 30 y que los hunde para siempre','Por qué trabajar más horas nunca te hará rico — y qué hacen diferente los que sí lo son','El hábito de 10 minutos al día que separa a los que tienen dinero de los que no','Warren Buffett compró su primera acción a los 11 años — lo que nadie te cuenta de eso'],
@@ -517,6 +529,10 @@ const RAND_TOPICS={
   'historia-epica':{
     es:['El hombre que detuvo solo a un ejército de 3000 soldados en el año 480 a.C.','Espartaco: el esclavo que hizo temblar al Imperio Romano durante 3 años','La civilización más avanzada de la historia antigua que desapareció en menos de 100 años','Alejandro Magno conquistó medio mundo conocido antes de cumplir 30 años'],
     en:['The man who alone stopped an army of 3000 soldiers in 480 BC','Spartacus: the slave who made the Roman Empire tremble for 3 years','The most advanced ancient civilization that disappeared in less than 100 years','Alexander the Great conquered half the known world before turning 30']
+  },
+  'psicologia-positiva':{
+    es:['La razón por la que no puedes parar de pensar en esa persona y cómo sanar de verdad','Cuando alguien te dice "estás exagerando" — eso se llama invalidación emocional y tiene consecuencias','El tipo de apego que tienes determina cómo amas — y cómo te lastimas','Poner límites no es ser egoísta — es respetarte y enseñar a otros cómo tratarte'],
+    en:['The reason you can\'t stop thinking about that person and how to truly heal','When someone tells you "you\'re overreacting" — that\'s called emotional invalidation and it has consequences','Your attachment style determines how you love — and how you get hurt','Setting boundaries isn\'t being selfish — it\'s respecting yourself and teaching others how to treat you']
   }
 };
 
@@ -634,11 +650,13 @@ async function testApi(){
   }
 }
 
+const _SAFETY=`\n\nSAFETY RULES (mandatory):\n- Never mention real brand names, company names, or registered trademarks. Use generics: "cadena de comida rápida / fast food chain", "gigante tecnológico / tech giant", "plataforma social / social media platform", "farmacéutica / pharma company", "aerolínea / airline", "banco multinacional / multinational bank".\n- Do not present fictional or speculative content as verified facts. Use narrative or hypothetical framing.\n- No defamatory statements about real, identifiable individuals.\n- Content must comply with TikTok, YouTube Shorts, and Facebook community guidelines.`;
+
 async function _callOR(sys,user,maxTok=1000){
   const r=await fetch('https://openrouter.ai/api/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':'Bearer '+_orKey,'Content-Type':'application/json','HTTP-Referer':'https://generador-prompts.local','X-Title':'Generador Multi-Modo'},
-    body:JSON.stringify({model:getActiveModel(),messages:[{role:'system',content:sys},{role:'user',content:user}],max_tokens:maxTok,temperature:0.88})
+    body:JSON.stringify({model:getActiveModel(),messages:[{role:'system',content:sys+_SAFETY},{role:'user',content:user}],max_tokens:maxTok,temperature:0.88})
   });
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+r.status);}
   const d=await r.json();
@@ -718,6 +736,13 @@ async function generateWithAI(){
     usr=lang==='es'
       ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de divulgación científica (máx 26 palabras cada una). Usa datos reales, analogías visuales, termina con una pregunta que expande la mente.\n\nJSON:\n["frase1","frase2",...]`
       :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 science communication lines (max 26 words each). Use real facts, visual analogies, end with a mind-expanding question.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='psicologia-positiva'){
+    sys=lang==='es'
+      ?'Eres una psicóloga empática y divulgadora de bienestar emocional para YouTube Shorts. Hablas con calidez, claridad y amor. Responde SOLO con JSON array de strings.'
+      :'You are an empathetic psychologist and emotional wellness communicator for YouTube Shorts. Speak with warmth, clarity and love. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Categoría: ${gv('category')||'autoestima'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de psicología positiva (máx 24 palabras cada una). Habla directo al espectador ("tú", "te"), inicia con algo que resuene emocionalmente, da validación y un paso de acción concreto al final.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Category: ${gv('category')||'self-esteem'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 positive psychology lines (max 24 words each). Speak directly to the viewer ("you"), start with something emotionally resonant, give validation and one concrete action step at the end.\n\nJSON:\n["line1","line2",...]`;
   } else if(mode==='finanzas-libertad'){
     sys=lang==='es'
       ?'Eres un educador financiero viral. Hablas directo, con datos reales, sin jerga aburrida. Sacudes creencias y das pasos concretos. Responde SOLO con JSON array de strings.'
@@ -747,6 +772,24 @@ async function generateWithAI(){
     if(!m) throw new Error(lang==='es'?'La IA no devolvió JSON válido':'AI did not return valid JSON');
     const data=JSON.parse(m[0]);
     renderAI(data,topic);
+    // ── Paquete redes sociales (segunda llamada ligera) ────────────────
+    try{
+      const soc=await _callOR(
+        'You are a viral social media expert for YouTube Shorts, TikTok and Facebook. Reply ONLY with valid JSON, no markdown.',
+        `Content mode: ${mode} | Topic: "${topic}" | Language: ${lang==='es'?'Spanish':'English'}\n\nReturn ONLY this JSON:\n{\n  "hook":"Viral hook max 130 chars — curiosity, ends on suspense",\n  "copy":"Caption 2-3 short lines",\n  "tags_tiktok":["#tag1","#tag2","#tag3","#tag4","#tag5"],\n  "tags_facebook":["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8"],\n  "tags_youtube":["#tag1","#tag2","#tag3","#tag4"],\n  "thumbnail_prompt":"Vertical 9:16 ChatGPT/DALL-E prompt for thumbnail — dramatic, high contrast, text space top 20%"\n}\nAll text in ${lang==='es'?'Spanish':'English'}. No brand names — use generics.`,
+        600
+      );
+      const sm=soc.match(/\{[\s\S]*\}/);
+      if(sm){
+        const sd=JSON.parse(sm[0]);
+        const tagRow=(tags,color,label)=>tags&&tags.length?`<div style="margin-bottom:6px;"><span style="font-size:9px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${label}</span><br><span style="font-size:11px;color:#444;">${tags.join(' ')}</span><button class="clip-copy" style="margin-left:8px;" onclick="copyTxt(${JSON.stringify(tags.join(' '))})">📋</button></div>`:'';
+        const socHtml=`${sd.hook?`<div style="background:#f0f9ff;border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:4px;">🪝 HOOK / CAPTION</div><div style="font-size:12px;color:#1a1a1a;font-weight:500;">${sd.hook}</div>${sd.copy?`<div style="font-size:11px;color:#555;margin-top:4px;white-space:pre-line;">${sd.copy}</div>`:''}<button class="clip-copy" onclick="copyTxt(${JSON.stringify((sd.hook||'')+(sd.copy?'\n\n'+sd.copy:''))})">📋 Copiar copy</button></div>`:''}
+        ${(sd.tags_tiktok||sd.tags_facebook||sd.tags_youtube)?`<div style="background:#fafafa;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px;margin-bottom:8px;">${tagRow(sd.tags_tiktok,'#000','TikTok (máx 5)')}${tagRow(sd.tags_facebook,'#1877f2','Facebook (máx 8)')}${tagRow(sd.tags_youtube,'#ff0000','YouTube (máx 4)')}</div>`:''}
+        ${sd.thumbnail_prompt?`<div style="background:#fff8f0;border-radius:8px;padding:10px;"><div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">🖼️ PROMPT PORTADA — ChatGPT / DALL-E</div><div class="clip-voice">${sd.thumbnail_prompt}</div><button class="clip-copy" onclick="copyTxt(${JSON.stringify(sd.thumbnail_prompt)})">📋 Copiar prompt portada</button></div>`:''}`;
+        const existingArea=document.getElementById('ai-output-area');
+        existingArea.insertAdjacentHTML('beforeend',`<div class="ai-out" style="border-left:3px solid #0ea5e9;padding-left:14px;"><div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:10px;">📱 Paquete redes sociales</div>${socHtml}</div>`);
+      }
+    }catch(e2){/* no bloquear si la segunda call falla */}
   }catch(e){
     area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
   }finally{
@@ -901,6 +944,7 @@ async function recommendCombo(){
     'finanzas-libertad':['narrator-type','narrator-gender','category','style','tone'],
     'mentalidad-disciplina':['narrator-type','narrator-gender','category','style','tone'],
     'historia-epica':['narrator-type','narrator-gender','category','style','tone'],
+    'psicologia-positiva':['narrator-type','narrator-gender','category','style','tone'],
     'misterio-biblico':['narrator-type','narrator-gender','narrator-lang','scene-type','subtopic','style','tone'],
     'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
   };
@@ -1131,11 +1175,19 @@ Return ONLY this JSON (no markdown):
   "clips": [
     {"speaker":"host","dialogue":"[max 22 words — impactful opening]"},
     {"speaker":"guest","dialogue":"[max 22 words]"}
-  ]
+  ],
+  "hook": "Viral hook for the caption — max 130 chars, creates curiosity, ends on suspense",
+  "copy": "Full social caption — 2-3 short impactful lines, no emojis spam",
+  "tags_tiktok": ["#tag1","#tag2","#tag3","#tag4","#tag5"],
+  "tags_facebook": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8"],
+  "tags_youtube": ["#tag1","#tag2","#tag3","#tag4"],
+  "thumbnail_prompt": "Ultra-realistic vertical 9:16 thumbnail prompt for ChatGPT/DALL-E — dramatic scene, high contrast, space for text overlay at top 20%"
 }
 Rules:
 - clips: exactly ${numClips} items, alternate host/guest, escalate tension toward a dark revelation
 - All dialogue must be written in ${lang==='es'?'Spanish':'English'} only
+- hook and copy must be in ${lang==='es'?'Spanish':'English'}
+- hashtags: relevant, no spaces, lowercase, trending for the topic
 - host_char_desc: single line like the example
 - guest_char_details: 2-3 lines with line breaks`;
 
@@ -1153,6 +1205,12 @@ Rules:
     const guestVisual=data.guest_visual||'';
     const guestVoice =data.guest_voice||'';
     const clipsArr   =Array.isArray(data.clips)?data.clips:[];
+    const socialHook =data.hook||'';
+    const socialCopy =data.copy||'';
+    const tagsTT     =Array.isArray(data.tags_tiktok)?data.tags_tiktok:[];
+    const tagsFB     =Array.isArray(data.tags_facebook)?data.tags_facebook:[];
+    const tagsYT     =Array.isArray(data.tags_youtube)?data.tags_youtube:[];
+    const thumbP     =data.thumbnail_prompt||'';
 
     document.getElementById('config-out').textContent=
       `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${numClips} clips × ${sec}s | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
@@ -1211,6 +1269,16 @@ Rules:
           </div>
         </div>`;
       });
+    }
+
+    // ── REDES SOCIALES ────────────────────────────────────────────────
+    if(socialHook||tagsTT.length){
+      const tagRow=(tags,color,label)=>tags.length?`<div style="margin-bottom:6px;"><span style="font-size:9px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${label}</span><br><span style="font-size:11px;color:#444;">${tags.join(' ')}</span><button class="clip-copy" style="margin-left:8px;" onclick="copyTxt(${JSON.stringify(tags.join(' '))})">📋</button></div>`:'';
+      const socialBlock=`${socialHook?`<div style="background:#f0f9ff;border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:4px;">🪝 HOOK / CAPTION</div><div style="font-size:12px;color:#1a1a1a;font-weight:500;">${socialHook}</div>${socialCopy?`<div style="font-size:11px;color:#555;margin-top:4px;white-space:pre-line;">${socialCopy}</div>`:''}<button class="clip-copy" onclick="copyTxt(${JSON.stringify(socialHook+(socialCopy?'\n\n'+socialCopy:''))})">📋 Copiar copy</button></div>`:''}
+      ${tagsTT.length||tagsFB.length||tagsYT.length?`<div style="background:#fafafa;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px;margin-bottom:8px;">${tagRow(tagsTT,'#000','TikTok (máx 5)')}${tagRow(tagsFB,'#1877f2','Facebook (máx 8)')}${tagRow(tagsYT,'#ff0000','YouTube (máx 4)')}</div>`:''}
+      ${thumbP?`<div style="background:#fff8f0;border-radius:8px;padding:10px;"><div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">🖼️ PROMPT PORTADA — ChatGPT / DALL-E</div><div class="clip-voice">${thumbP}</div><button class="clip-copy" onclick="copyTxt(${JSON.stringify(thumbP)})">📋 Copiar prompt portada</button></div>`:''}`;
+      html+=`<div class="clip-card" style="border-left:3px solid #0ea5e9;"><div class="clip-header" style="color:#0369a1;">📱 Paquete redes sociales</div>${socialBlock}</div>`;
+      window._allPrompts.push(`=== REDES SOCIALES ===\nHOOK: ${socialHook}\n\n${socialCopy}\n\nTikTok: ${tagsTT.join(' ')}\nFacebook: ${tagsFB.join(' ')}\nYouTube: ${tagsYT.join(' ')}\n\n=== PORTADA ===\n${thumbP}`);
     }
 
     blocksEl.innerHTML=html;
