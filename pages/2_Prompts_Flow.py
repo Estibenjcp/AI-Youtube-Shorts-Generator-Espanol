@@ -798,7 +798,45 @@ async function recommendCombo(){
 }
 function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));fullRender();}
 
-// ── Plantilla fija de restricciones Veo 3 ────────────────────────────────────
+// ── Templates fijos de producción ─────────────────────────────────────────────
+const SCENE_SETUP=`SCENE SETUP: Sitting at a moody dark podcast studio. Round wooden table in the foreground. Background: dark walls with vintage wooden shelves and crates, warm Edison bulb lanterns on both sides creating amber ambient glow. Dark defocused background with subtle warm bokeh.
+MICROPHONE: professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the table surface — UPRIGHT, NO boom arm, NO diagonal arm. Positioned directly in front of the character on the table.`;
+
+function buildHostImagePrompt(charDesc){
+  return `Ultra-realistic cinematic portrait of a podcast host. ${charDesc}
+
+${SCENE_SETUP}
+
+POSE — HOST POSITION:
+3/4 side-profile facing RIGHT — head and body angled clearly to the RIGHT side of frame.
+Looking attentively toward the RIGHT, as if the guest is seated to the right.
+Eye line directed clearly to the RIGHT. NOT toward camera.
+In the two-shot edit, this character will be placed on the LEFT side of frame — so this rightward gaze points toward the guest on the right.
+
+LIGHTING: Warm rim light from camera-LEFT (host sits on left in two-shot), deep cinematic shadows on the right side of face. Edison lantern glow from background.
+IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty filters, no auto-enhancement.
+FORMAT: vertical 9:16 aspect ratio, 1024x1792. Black border top 12% for safe area.`;
+}
+
+function buildGuestImagePrompt(genderWord, charDetails){
+  return `Ultra-realistic cinematic portrait for a podcast guest. Generate a completely new ${genderWord} character — do NOT reuse any person from previous images.
+
+CHARACTER DETAILS:
+${charDetails}
+
+${SCENE_SETUP}
+
+POSE — GUEST POSITION:
+3/4 side-profile facing LEFT — head and body angled clearly to the LEFT side of frame.
+Looking attentively toward the LEFT, as if the host is seated to the left.
+Eye line directed clearly to the LEFT. NOT toward camera.
+In the two-shot edit, this character will be placed on the RIGHT side of frame — so this leftward gaze will point toward the host on the left.
+
+LIGHTING: Warm rim light from camera-RIGHT (guest sits on right in two-shot), deep cinematic shadows on the left side of face. Edison lantern glow from background.
+IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty filters.
+FORMAT: vertical 9:16, 1024x1792. Keep top black border identical to Image A.`;
+}
+
 const VEO3_RESTRICTIONS=`❌ NO SUBTITLES. NO captions. NO burned-in text of any kind. NO watermarks. Clean video only.
 ❌ NO auto-enhancement. NO sharpness boost. NO extra lighting on face between clips.
 ❌ NO variation in character appearance from clip to clip — same face, same hair, same skin tone, same lighting ratio, same depth of field.`;
@@ -808,16 +846,19 @@ const VEO3_POSE=(facesDir)=>`Strict side-profile (3/4 angle), looking off-camera
 const VEO3_CAMERA=`CAMERA: 100% static. No zoom in or out. No pan. Only imperceptible organic micro-shake from breathing.
 FORMAT: Vertical 9:16, 1024x1792. No letterboxing, no pillarboxing.`;
 
-const VEO3_LIGHTING=(setStyle)=>setStyle==='oscuro'
-  ?`LIGHTING: Warm rim light from camera-LEFT. Deep cinematic shadows on right side of face. Dark background with Edison lantern ambient glow. Do NOT increase brightness or fill light on later clips.`
-  :`LIGHTING: Soft key light from camera-LEFT. Professional softbox fill on right. Clean modern studio background. Consistent exposure across all clips.`;
+const VEO3_LIGHTING=(speaker)=>{
+  const rimSide  =speaker==='host'?'camera-LEFT':'camera-RIGHT';
+  const shadSide =speaker==='host'?'right':'left';
+  return `LIGHTING: Warm rim light from ${rimSide}. Deep cinematic shadows on ${shadSide} side of face. Dark background with Edison lantern ambient glow. Do NOT increase brightness or fill light on later clips.`;
+};
 
-function buildClipPrompt(clipNum,total,sec,speaker,spkLabel,visualDesc,visualConsistency,voiceConsistency,dialogue,setStyle){
+function buildClipPrompt(clipNum,total,sec,speaker,spkLabel,visualConsistency,voiceConsistency,dialogue){
   const facesDir=speaker==='host'?'RIGHT':'LEFT';
+  const toward  =speaker==='host'?'guest':'host';
   return `=== PROMPT GOOGLE FLOW / VEO 3 — CLIP ${clipNum} / ${total} ===
 Duration: ${sec} seconds
 Character: ${spkLabel}
-${spkLabel.toUpperCase()} POSITION: faces ${facesDir} — toward ${speaker==='host'?'guest':'host'}.
+${spkLabel.toUpperCase()} POSITION: faces ${facesDir} — toward ${toward}.
 
 ${VEO3_RESTRICTIONS}
 
@@ -834,7 +875,7 @@ ${voiceConsistency}
 DIALOGUE (spoken aloud — lip-sync required, character's lips must match every word):
 "${dialogue}"
 
-${VEO3_LIGHTING(setStyle)}
+${VEO3_LIGHTING(speaker)}
 ${VEO3_CAMERA}`;
 }
 
@@ -862,30 +903,32 @@ async function generate(){
   const guestRegion=gv('guest-region')||'latam-neutro';
   const guestAge   =gv('guest-age')||'25-35';
 
-  const sys=`You are an expert creative director for YouTube Shorts podcast-style videos.
-You create character descriptions and dialogue for Google Veo 3 video generation.
-Reply ONLY with valid JSON — no markdown fences, no extra text.`;
+  const sys=`You are a creative director for YouTube Shorts dark podcast videos.
+You write character descriptions and dialogue. Reply ONLY with valid JSON — no markdown, no extra text.`;
 
-  const usr=`Podcast topic: "${topic}"
-Mode: ${mode} | Style: ${styleV} | Tone: ${toneV} | Set: ${setStyle}
+  const usr=`Topic: "${topic}" | Mode: ${mode} | Style: ${styleV} | Tone: ${toneV}
 HOST: ${hostGender}, ${hostType}, region: ${hostRegion}
-GUEST: ${guestGender}, ${guestType}, region: ${guestRegion}, age range: ${guestAge}
-Total clips: ${numClips} of ${sec}s each
+GUEST: ${guestGender}, ${guestType}, region: ${guestRegion}, age: ${guestAge}
+Clips: ${numClips} × ${sec}s
 
-Return this JSON:
+Return ONLY this JSON (no markdown):
 {
-  "host_image_prompt": "Ultra-realistic cinematic portrait transformation. Replace the existing subject from Image A with a completely new ${hostGender==='female'?'female':'male'} character. Character details: [WRITE full description: approximate age, physical appearance, clothing fitting a ${hostType} for a ${styleV} podcast about '${topic}' — NO logos, NO text on clothing]. CRITICAL SCENE PRESERVATION: Maintain 100% of the original podcast studio environment from Image A — same background, same microphone position, same lighting, same camera angle, same framing, same depth of field, same composition, same photography style. ONLY replace the person. Image quality: ultra-realistic, 8K detail, sharp focus, natural skin texture, visible pores, no beauty filters. Format: vertical 9:16, 1024x1792. Keep top black border intact.",
-  "guest_image_prompt": "Ultra-realistic cinematic portrait transformation. Replace the existing subject from Image A with a completely new ${guestGender==='female'?'female':'male'} character. Character details: [WRITE full description: approximate age from range ${guestAge}, physical appearance, clothing fitting a ${guestType} for topic '${topic}' — NO logos, NO text on clothing]. CRITICAL SCENE PRESERVATION: Maintain 100% of the original podcast studio environment from Image A — same background, same microphone position, same lighting, same camera angle, same framing, same depth of field, same composition, same photography style. ONLY replace the person. Image quality: ultra-realistic, 8K detail, sharp focus, natural skin texture, visible pores, no beauty filters. Format: vertical 9:16, 1024x1792. Keep top black border intact.",
-  "host_visual": "[1-2 sentences: age, gender, key visual details — hair, skin, clothing, distinctive features — that must stay identical across all host clips]",
-  "host_voice": "[voice profile in English: age, origin/accent from ${hostRegion}, voice texture, delivery style, temperament. CRITICAL: maintain this EXACT voice profile across all clips]",
-  "guest_visual": "[1-2 sentences: age, gender, key visual details that must stay identical across all guest clips]",
-  "guest_voice": "[voice profile in English: age, origin/accent from ${guestRegion}, voice texture, delivery style, temperament. CRITICAL: maintain this EXACT voice profile across all clips]",
+  "host_char_desc": "One line: [gender word], [age range], [hair], [key clothing — no logos], [distinctive physical feature], [expression/gaze]. Example: Adult woman, 40-50, long dark hair, visible tattoos, black leather jacket, dark eye makeup. Worn intense gaze.",
+  "guest_char_details": "Multi-line block:\\n[gender word], [age from ${guestAge}], [region] origin. [clothing — no logos, no text]. [distinctive feature]. [expression].",
+  "host_visual": "One sentence of key visual traits to keep identical across all host clips: gender, age, hair, clothing, distinctive marks.",
+  "host_voice": "Voice profile: [age]-year-old [region] ${hostGender}, [voice texture: gravelly/smooth/breathy/raspy], [accent description], [delivery: slow/fast, pauses, bursts]. Temperament: [baseline]. CRITICAL: maintain this EXACT voice profile across all clips of this character without variation.",
+  "guest_visual": "One sentence of key visual traits to keep identical across all guest clips: gender, age, hair, clothing, distinctive marks.",
+  "guest_voice": "Voice profile: [age]-year-old [region] ${guestGender}, [voice texture], [accent], [delivery style]. Temperament: [baseline]. CRITICAL: maintain this EXACT voice profile across all clips of this character without variation.",
   "clips": [
-    {"speaker": "host", "dialogue": "[host's line IN SPANISH — max 22 words, impactful, fits clip 1]"},
-    {"speaker": "guest", "dialogue": "[guest's line IN SPANISH — max 22 words]"},
-    ...exactly ${numClips} items alternating host/guest, escalating tension toward revelation]
+    {"speaker":"host","dialogue":"[IN SPANISH — max 22 words, impactful opening]"},
+    {"speaker":"guest","dialogue":"[IN SPANISH — max 22 words]"}
   ]
-}`;
+}
+Rules:
+- clips: exactly ${numClips} items, alternate host/guest, escalate tension toward a dark revelation
+- All dialogue IN SPANISH only
+- host_char_desc: single line like the example
+- guest_char_details: 2-3 lines with line breaks`;
 
   try{
     const raw=await _callOR(sys,usr,4000);
@@ -893,8 +936,9 @@ Return this JSON:
     if(!m) throw new Error('JSON inválido');
     const data=JSON.parse(m[0]);
 
-    const hostImageP =data.host_image_prompt||'';
-    const guestImageP=data.guest_image_prompt||'';
+    const hostImageP =buildHostImagePrompt(data.host_char_desc||'');
+    const guestGenderWord=guestGender==='female'?'female':'male';
+    const guestImageP=buildGuestImagePrompt(guestGenderWord, data.guest_char_details||'');
     const hostVisual =data.host_visual||'';
     const hostVoice  =data.host_voice||'';
     const guestVisual=data.guest_visual||'';
