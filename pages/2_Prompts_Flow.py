@@ -1125,10 +1125,217 @@ ${VEO3_CAMERA}`;
 }
 
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
+const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico'];
+
+function buildNarratorImagePrompt(charDesc,setting){
+  return `Ultra-realistic cinematic portrait of a video narrator. ${charDesc}
+
+SCENE: ${setting}
+
+POSE — NARRATOR:
+Faces camera directly or slight 3/4 angle toward camera.
+Natural confident expression, engaging energy, slight lean forward.
+Subtle organic posture: natural breathing stance, relaxed shoulders.
+
+LIGHTING: Cinematic portrait lighting matching the scene — key light from front-left, subtle fill from right, soft background bokeh.
+IMAGE QUALITY: ultra-realistic, 8K detail, sharp focus, visible pores, no beauty filters, no auto-enhancement.
+FORMAT: vertical 9:16 aspect ratio, 1024x1792. Clean space at top 15% for text overlay.`;
+}
+
+function buildNarratorClipPrompt(clipNum,total,sec,visual,voice,setting,dialogue){
+  return `=== PROMPT GOOGLE FLOW / VEO 3 — CLIP ${clipNum} / ${total} ===
+Duration: ${sec} seconds
+Character: Narrator
+
+${VEO3_RESTRICTIONS}
+
+⚠️ VISUAL CONSISTENCY — paste this IDENTICALLY in every clip:
+${visual}
+Lighting ratio: unchanged clip to clip. Hair style and volume: identical to clip 1. Skin texture: same natural imperfections, no smoothing. Depth of field: same blur radius on background. NO auto-beautification between clips.
+
+POSE & ACTION:
+Narrator faces camera directly (slight 3/4 angle). Engaged, confident energy. Subtle organic micro-movements: slow blink, slight chest breathing. NO sudden gestures. NO abrupt head turns. Eye contact with camera maintained throughout.
+
+SCENE / BACKGROUND (keep identical across all clips):
+${setting}
+
+⚠️ VOICE CONSISTENCY — paste this IDENTICALLY in every clip:
+${voice}
+
+DIALOGUE (spoken aloud — lip-sync required, narrator's lips must match every word):
+"${dialogue}"
+
+${VEO3_CAMERA}`;
+}
+
+async function generateNarratorPackage(){
+  const btn=document.getElementById('generate');
+  const area=document.getElementById('output-area');
+  const blocksEl=document.getElementById('output-blocks');
+  btn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Generando...':'Generating...');
+  btn.disabled=true;
+  area.style.display='block';
+  blocksEl.innerHTML=`<div style="text-align:center;padding:24px;color:#888;font-size:12px;">🎬 ${lang==='es'?'Generando paquete completo...':'Generating full package...'}</div>`;
+
+  const topic=(gv('topic')||'').trim()||pick(RAND_TOPICS[mode]?.[lang]||[])||'tema general';
+  const {clips,sec}=DUR_CLIPS[dur]||{clips:8,sec:8};
+  const narratorType=gv('narrator-type')||'random';
+  const narratorGender=gv('narrator-gender')||'male';
+  const category=gv('category')||'random';
+  const styleV=gv('style')||'random';
+  const toneV=gv('tone')||'random';
+
+  const MODE_CTX={
+    'documental-narrado':{es:'documental narrado estilo NatGeo/BBC con narrador de voz en off',en:'NatGeo/BBC style narrated documentary with voice-over narrator'},
+    'ciencia-misterio':{es:'canal de divulgación científica y misterios del universo',en:'science mystery and universe exploration channel'},
+    'finanzas-libertad':{es:'canal de educación financiera viral y mentalidad de riqueza',en:'viral financial education and wealth mindset channel'},
+    'mentalidad-disciplina':{es:'canal motivacional de mentalidad, hábitos y disciplina extrema',en:'motivational mindset, habits and extreme discipline channel'},
+    'historia-epica':{es:'canal de historia épica cinematográfica — batallas, imperios, héroes',en:'cinematic epic history channel — battles, empires, heroes'},
+    'psicologia-positiva':{es:'canal de psicología positiva y bienestar emocional',en:'positive psychology and emotional wellness channel'},
+    'testimonio-real':{es:'canal de testimonios reales en primera persona, confesional',en:'real first-person confessional testimony channel'},
+    'misterio-biblico':{es:'canal de misterios bíblicos y textos apócrifos',en:'biblical mysteries and apocryphal texts channel'}
+  };
+  const MODE_SETTING={
+    'documental-narrado':'Documentary studio or relevant environmental backdrop, dramatic lighting, cinematic atmosphere',
+    'ciencia-misterio':'Dark minimal science environment — subtle galaxy bokeh or abstract cosmic background, cool blue/purple tones',
+    'finanzas-libertad':'Modern minimal home office, warm neutral tones, soft bokeh with books or a plant in background',
+    'mentalidad-disciplina':'Dark industrial loft or gym environment, dramatic side lighting, high-contrast shadows, motivated energy',
+    'historia-epica':'Ancient stone architecture or dramatic cinematic landscape, warm torch-like amber lighting, epic atmosphere',
+    'psicologia-positiva':'Warm cozy interior, soft golden natural light, plants or flowers in background, calm healing atmosphere',
+    'testimonio-real':'Dimly lit intimate room, single warm practical light source from one side, raw confessional atmosphere',
+    'misterio-biblico':'Candlelit stone room, ancient scrolls or artifacts on table, mysterious dramatic shadows, mystical atmosphere'
+  };
+
+  const ctx=(MODE_CTX[mode]||{})[lang]||MODE_CTX[mode]?.es||mode;
+  const settingHint=MODE_SETTING[mode]||'Clean minimal studio with relevant thematic background';
+
+  const sys=`You are a creative director for YouTube Shorts ${ctx} videos featuring a single narrator. Reply ONLY with valid JSON — no markdown, no extra text.`;
+  const usr=`Topic: "${topic}" | Mode: ${mode} | Category: ${category} | Style: ${styleV} | Tone: ${toneV}
+NARRATOR: ${narratorGender}, type: ${narratorType}
+Clips: ${clips} × ${sec}s
+Suggested setting: ${settingHint}
+
+Return ONLY this JSON (no markdown):
+{
+  "narrator_char_desc": "One line: [gender word], [age range], [hair], [key clothing — no logos], [distinctive feature], [expression/energy]. Example: Adult man, 35-45, short dark hair, neat casual dark jacket, confident warm direct gaze.",
+  "narrator_visual": "One sentence of key visual traits to keep identical across all clips: gender, age, hair, clothing, distinctive marks.",
+  "narrator_voice": "Voice profile: [age]-year-old [${narratorGender}], [voice texture: warm/deep/breathy/powerful/gravelly], [delivery: pacing, pauses, energy]. Temperament: [baseline]. CRITICAL: maintain this EXACT voice profile across all clips without variation.",
+  "narrator_setting": "Detailed Veo 3 scene: background elements, lighting color/direction, mood, key props. Keep identical across all clips.",
+  "narrator_image_scene": "One-line scene for ChatGPT image: narrator in setting, key visual mood.",
+  "clips": [
+    {"dialogue":"[max 28 words — narration line]"}
+  ],
+  "hook": "Viral hook for caption — max 130 chars, creates curiosity, ends on suspense",
+  "copy": "Full social caption — 2-3 short impactful lines, no emoji spam",
+  "tags_tiktok": ["#tag1","#tag2","#tag3","#tag4","#tag5"],
+  "tags_facebook": ["#tag1","#tag2","#tag3","#tag4","#tag5","#tag6","#tag7","#tag8"],
+  "tags_youtube": ["#tag1","#tag2","#tag3","#tag4"],
+  "thumbnail_prompt": "Ultra-realistic vertical 9:16 thumbnail for ChatGPT/DALL-E — narrator featured dramatically, high contrast, space for text overlay at top 20%"
+}
+Rules:
+- clips: exactly ${clips} items, escalate information/emotion progressively toward an impactful close
+- All dialogue must be written in ${lang==='es'?'Spanish':'English'} only
+- hook and copy must be in ${lang==='es'?'Spanish':'English'}
+- hashtags: relevant, no spaces, lowercase, trending for the topic
+- narrator_char_desc: single compact line like the example`;
+
+  try{
+    const raw=await _callOR(sys,usr,4000);
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error(lang==='es'?'La IA no devolvió JSON válido':'AI did not return valid JSON');
+    const data=JSON.parse(m[0]);
+
+    const visual  =data.narrator_visual||'';
+    const voice   =data.narrator_voice||'';
+    const setting =data.narrator_setting||data.narrator_image_scene||'';
+    const charDesc=data.narrator_char_desc||'';
+    const imgScene=data.narrator_image_scene||setting;
+    const clipsArr=Array.isArray(data.clips)?data.clips:[];
+    const socialHook=data.hook||'';
+    const socialCopy=data.copy||'';
+    const tagsTT=Array.isArray(data.tags_tiktok)?data.tags_tiktok:[];
+    const tagsFB=Array.isArray(data.tags_facebook)?data.tags_facebook:[];
+    const tagsYT=Array.isArray(data.tags_youtube)?data.tags_youtube:[];
+    const thumbP=data.thumbnail_prompt||'';
+
+    document.getElementById('config-out').textContent=
+      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${clips} clips × ${sec}s | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
+
+    window._allPrompts=[];
+    const narratorImageP=buildNarratorImagePrompt(charDesc,imgScene);
+    if(narratorImageP) window._allPrompts.push(`=== PROMPT NARRADOR (ChatGPT) ===\n${narratorImageP}`);
+
+    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete de producción completo</strong>
+      <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
+    </div>`;
+
+    if(narratorImageP){
+      html+=`<div class="clip-card" style="border-left:3px solid #185fa5;">
+        <div class="clip-header" style="color:#185fa5;">📸 PROMPT NARRADOR — ChatGPT (genera la imagen del narrador)</div>
+        <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Pega en ChatGPT con tu foto base para generar la imagen del narrador.</div>
+        <div class="clip-voice">${narratorImageP}</div>
+        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(narratorImageP)})">📋 Copiar</button>
+      </div>`;
+    }
+
+    if(clipsArr.length){
+      html+=`<div style="font-size:11px;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">📹 ${clipsArr.length} clips · Google Veo 3 / Flow</div>`;
+      clipsArr.forEach((c,i)=>{
+        const dialogue=c.dialogue||'';
+        const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,visual,voice,setting,dialogue);
+        window._allPrompts.push(fullPrompt);
+        html+=`<div class="clip-card">
+          <div class="clip-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>📹 CLIP ${i+1} / ${clipsArr.length} &nbsp;·&nbsp; ${sec}s</span>
+            <span style="font-size:10px;font-weight:700;color:#185fa5;background:#185fa518;padding:2px 8px;border-radius:20px;">NARRADOR</span>
+          </div>
+          <div class="clip-section">
+            <strong style="font-size:10px;color:#185fa5;">PROMPT COMPLETO → Google Veo 3 / Flow</strong>
+            <div class="clip-voice">${fullPrompt}</div>
+          </div>
+          <button class="clip-copy" onclick="copyTxt(${JSON.stringify(fullPrompt)})">📋 Copiar clip ${i+1}</button>
+        </div>`;
+      });
+    }
+
+    const tagRow=(tags,color,label)=>tags&&tags.length?`<div style="margin-bottom:6px;"><span style="font-size:9px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${label}</span><br><span style="font-size:11px;color:#444;">${tags.join(' ')}</span><button class="clip-copy" style="margin-left:8px;" onclick="copyTxt(${JSON.stringify(tags.join(' '))})">📋</button></div>`:'';
+    if(socialHook||socialCopy||tagsTT.length||tagsFB.length||tagsYT.length||thumbP){
+      const socContent=`${socialHook?`<div style="background:#f0f9ff;border-radius:8px;padding:10px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:#0369a1;margin-bottom:4px;">🪝 HOOK / CAPTION</div><div style="font-size:12px;color:#1a1a1a;font-weight:500;">${socialHook}</div>${socialCopy?`<div style="font-size:11px;color:#555;margin-top:4px;white-space:pre-line;">${socialCopy}</div>`:''}<button class="clip-copy" onclick="copyTxt(${JSON.stringify(socialHook+(socialCopy?'\n\n'+socialCopy:''))})">📋 Copiar copy</button></div>`:''}${(tagsTT.length||tagsFB.length||tagsYT.length)?`<div style="background:#fafafa;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px;margin-bottom:8px;">${tagRow(tagsTT,'#000','TikTok (máx 5)')}${tagRow(tagsFB,'#1877f2','Facebook (máx 8)')}${tagRow(tagsYT,'#ff0000','YouTube (máx 4)')}</div>`:''}${thumbP?`<div style="background:#fff8f0;border-radius:8px;padding:10px;"><div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">🖼️ PROMPT PORTADA — ChatGPT / DALL-E</div><div class="clip-voice">${thumbP}</div><button class="clip-copy" onclick="copyTxt(${JSON.stringify(thumbP)})">📋 Copiar prompt portada</button></div>`:''}`;
+      html+=`<div class="clip-card" style="border-left:3px solid #0ea5e9;">
+        <div class="clip-header" style="color:#0369a1;">📱 Paquete redes sociales</div>
+        ${socContent}
+      </div>`;
+    }
+
+    blocksEl.innerHTML=html;
+    area.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    blocksEl.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
+  }finally{
+    btn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
+    btn.disabled=false;
+  }
+}
 
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
-  if(!PODCAST_MODES.includes(mode)){generateWithAI();return;}
+  if(NARRATOR_MODES.includes(mode)){
+    await generateNarratorPackage();
+    return;
+  }
+  if(!PODCAST_MODES.includes(mode)){
+    const genBtn=document.getElementById('generate');
+    genBtn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Generando...':'Generating...');
+    genBtn.disabled=true;
+    try{await generateWithAI();}finally{
+      genBtn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
+      genBtn.disabled=false;
+    }
+    const outEl=document.getElementById('ai-output-area');
+    if(outEl)outEl.scrollIntoView({behavior:'smooth',block:'start'});
+    return;
+  }
   const btn=document.getElementById('generate');
   const area=document.getElementById('output-area');
   const blocksEl=document.getElementById('output-blocks');
