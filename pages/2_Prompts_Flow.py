@@ -798,6 +798,46 @@ async function recommendCombo(){
 }
 function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));fullRender();}
 
+// ── Plantilla fija de restricciones Veo 3 ────────────────────────────────────
+const VEO3_RESTRICTIONS=`❌ NO SUBTITLES. NO captions. NO burned-in text of any kind. NO watermarks. Clean video only.
+❌ NO auto-enhancement. NO sharpness boost. NO extra lighting on face between clips.
+❌ NO variation in character appearance from clip to clip — same face, same hair, same skin tone, same lighting ratio, same depth of field.`;
+
+const VEO3_POSE=(facesDir)=>`Strict side-profile (3/4 angle), looking off-camera to the ${facesDir}. Addressing someone seated to their ${facesDir}. Subtle organic micro-movements only: slow blink, slight chest breathing. NO head turns. NO hand gestures. Professional desktop podcast microphone (Shure SM7B-style condenser, no logo) on a short desktop stand on the table surface — UPRIGHT, NO boom arm, NO diagonal arm.`;
+
+const VEO3_CAMERA=`CAMERA: 100% static. No zoom in or out. No pan. Only imperceptible organic micro-shake from breathing.
+FORMAT: Vertical 9:16, 1024x1792. No letterboxing, no pillarboxing.`;
+
+const VEO3_LIGHTING=(setStyle)=>setStyle==='oscuro'
+  ?`LIGHTING: Warm rim light from camera-LEFT. Deep cinematic shadows on right side of face. Dark background with Edison lantern ambient glow. Do NOT increase brightness or fill light on later clips.`
+  :`LIGHTING: Soft key light from camera-LEFT. Professional softbox fill on right. Clean modern studio background. Consistent exposure across all clips.`;
+
+function buildClipPrompt(clipNum,total,sec,speaker,spkLabel,visualDesc,visualConsistency,voiceConsistency,dialogue,setStyle){
+  const facesDir=speaker==='host'?'RIGHT':'LEFT';
+  return `=== PROMPT GOOGLE FLOW / VEO 3 — CLIP ${clipNum} / ${total} ===
+Duration: ${sec} seconds
+Character: ${spkLabel}
+${spkLabel.toUpperCase()} POSITION: faces ${facesDir} — toward ${speaker==='host'?'guest':'host'}.
+
+${VEO3_RESTRICTIONS}
+
+⚠️ VISUAL CONSISTENCY — paste this IDENTICALLY in every clip of this character:
+${visualConsistency}
+Lighting ratio: unchanged from clip to clip. No sharpness increase on last clips. Hair style and volume: identical to clip 1. Skin texture: same natural imperfections, no smoothing. Depth of field: same blur radius on background. NO auto-beautification between clips.
+
+POSE & ACTION:
+${VEO3_POSE(facesDir)}
+
+⚠️ VOICE CONSISTENCY — paste this IDENTICALLY in every clip of this character:
+${voiceConsistency}
+
+DIALOGUE (spoken aloud — lip-sync required, character's lips must match every word):
+"${dialogue}"
+
+${VEO3_LIGHTING(setStyle)}
+${VEO3_CAMERA}`;
+}
+
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
   const btn=document.getElementById('generate');
@@ -810,11 +850,10 @@ async function generate(){
 
   const topic=(gv('topic')||'').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
   const {clips,sec}=DUR_CLIPS[dur];
-  const styleV=gv('style')||'random';
-  const toneV=gv('tone')||'random';
+  const styleV=gv('style')||'conspirativo';
+  const toneV =gv('tone')||'tenso';
   const numClips=Math.min(clips,8);
 
-  // ── Parámetros de personajes ─────────────────────────────────────
   const hostGender =gv('host-gender')||'male';
   const hostType   =gv('host-type')||'periodista-investigador';
   const hostRegion =gv('host-region')||'latam-neutro';
@@ -822,105 +861,100 @@ async function generate(){
   const guestType  =gv('guest-type')||'sobreviviente';
   const guestRegion=gv('guest-region')||'latam-neutro';
   const guestAge   =gv('guest-age')||'25-35';
-  const isPodcast  =(mode==='ficticio-viral');
 
-  const sys=`You are an expert prompt engineer for ChatGPT image generation and Google Veo 3 / Flow video generation.
-You create complete production packages for YouTube Shorts podcast-style videos with 2 characters.
-Reply ONLY with valid JSON, no markdown, no extra text.`;
+  const sys=`You are an expert creative director for YouTube Shorts podcast-style videos.
+You create character descriptions and dialogue for Google Veo 3 video generation.
+Reply ONLY with valid JSON — no markdown fences, no extra text.`;
 
-  const charTemplate=`Ultra-realistic cinematic portrait transformation. Replace the existing subject from Image A with a completely new [GENDER] character. Character details: [FULL DESCRIPTION — appearance, estimated age, clothing style matching the topic, distinctive features, expression, physical details. NO text, NO logos on clothing.] CRITICAL SCENE PRESERVATION: Maintain 100% of the original podcast studio environment from Image A — same background, same microphone position, same lighting, same camera angle, same framing, same depth of field, same composition, same photography style. ONLY replace the person. Image quality: ultra-realistic, 8K detail, sharp focus, natural skin texture, visible pores, no beauty filters, no skin smoothing. Format: vertical 9:16 aspect ratio, 1024x1792. Keep top black border intact.`;
+  const usr=`Podcast topic: "${topic}"
+Mode: ${mode} | Style: ${styleV} | Tone: ${toneV} | Set: ${setStyle}
+HOST: ${hostGender}, ${hostType}, region: ${hostRegion}
+GUEST: ${guestGender}, ${guestType}, region: ${guestRegion}, age range: ${guestAge}
+Total clips: ${numClips} of ${sec}s each
 
-  const voiceTemplate=`A [AGE]-year-old [BACKGROUND] with [PERSONA]. Voice: [TEXTURE — gravelly/smooth/breathy, accent, resonance]. Speaking style: [RHYTHM, pacing, pauses]. Temperament: [EMOTIONAL BASELINE]. He/She begins speaking in a strict side-profile orientation addressing the person beside them, projecting voice laterally. Micro-details: [SPECIFIC VOCAL QUIRKS, breathing patterns].`;
-
-  const clipTemplate=`{"clip":[N],"speaker":"host|guest","prompt":"[40-55 word cinematic Veo 3 prompt in English: scene, camera, lighting, mood, character action]","voice_prompt":"[voice characteristics of speaker + exactly what they say in this clip, combined into one Veo 3 voice description in English. Include age, accent, voice texture, then say 'says:' followed by their line in Spanish — max 20 words]"}`;
-
-  const usr=`Podcast mode: ${mode} | Topic: "${topic}"
-Style: ${styleV} | Tone: ${toneV} | Set: ${setStyle}
-Host: ${hostGender} ${hostType} (region: ${hostRegion})
-Guest: ${guestGender} ${guestType} (region: ${guestRegion}, age: ${guestAge})
-Duration: ${dur} min | ${numClips} clips × ${sec}s
-
-Generate this exact JSON:
+Return this JSON:
 {
-  "host_prompt": "${charTemplate.replace('[GENDER]',hostGender==='female'?'female':'male')} [Fill CHARACTER DETAILS for a ${hostGender} ${hostType} from ${hostRegion} fitting a ${styleV} ${mode} podcast about '${topic}']",
-  "guest_prompt": "${charTemplate.replace('[GENDER]',guestGender==='female'?'female':'male')} [Fill CHARACTER DETAILS for a ${guestGender} ${guestType} from ${guestRegion}, age ${guestAge}, fitting the topic '${topic}' and style ${styleV}]",
-  "clips": [${clipTemplate}... exactly ${numClips} items, alternating speaker host/guest, telling a coherent escalating story about the topic]
-}
-
-RULES:
-- host_prompt and guest_prompt: 150-200 words each, follow the template exactly, in English
-- Each clip voice_prompt: voice description of the speaker + "says:" + their line IN SPANISH (max 20 words)
-- Clips alternate host/guest naturally, escalating tension toward the topic climax
-- All prompts in English except the spoken dialogue line which is in Spanish`;
+  "host_image_prompt": "Ultra-realistic cinematic portrait transformation. Replace the existing subject from Image A with a completely new ${hostGender==='female'?'female':'male'} character. Character details: [WRITE full description: approximate age, physical appearance, clothing fitting a ${hostType} for a ${styleV} podcast about '${topic}' — NO logos, NO text on clothing]. CRITICAL SCENE PRESERVATION: Maintain 100% of the original podcast studio environment from Image A — same background, same microphone position, same lighting, same camera angle, same framing, same depth of field, same composition, same photography style. ONLY replace the person. Image quality: ultra-realistic, 8K detail, sharp focus, natural skin texture, visible pores, no beauty filters. Format: vertical 9:16, 1024x1792. Keep top black border intact.",
+  "guest_image_prompt": "Ultra-realistic cinematic portrait transformation. Replace the existing subject from Image A with a completely new ${guestGender==='female'?'female':'male'} character. Character details: [WRITE full description: approximate age from range ${guestAge}, physical appearance, clothing fitting a ${guestType} for topic '${topic}' — NO logos, NO text on clothing]. CRITICAL SCENE PRESERVATION: Maintain 100% of the original podcast studio environment from Image A — same background, same microphone position, same lighting, same camera angle, same framing, same depth of field, same composition, same photography style. ONLY replace the person. Image quality: ultra-realistic, 8K detail, sharp focus, natural skin texture, visible pores, no beauty filters. Format: vertical 9:16, 1024x1792. Keep top black border intact.",
+  "host_visual": "[1-2 sentences: age, gender, key visual details — hair, skin, clothing, distinctive features — that must stay identical across all host clips]",
+  "host_voice": "[voice profile in English: age, origin/accent from ${hostRegion}, voice texture, delivery style, temperament. CRITICAL: maintain this EXACT voice profile across all clips]",
+  "guest_visual": "[1-2 sentences: age, gender, key visual details that must stay identical across all guest clips]",
+  "guest_voice": "[voice profile in English: age, origin/accent from ${guestRegion}, voice texture, delivery style, temperament. CRITICAL: maintain this EXACT voice profile across all clips]",
+  "clips": [
+    {"speaker": "host", "dialogue": "[host's line IN SPANISH — max 22 words, impactful, fits clip 1]"},
+    {"speaker": "guest", "dialogue": "[guest's line IN SPANISH — max 22 words]"},
+    ...exactly ${numClips} items alternating host/guest, escalating tension toward revelation]
+  ]
+}`;
 
   try{
     const raw=await _callOR(sys,usr,4000);
     const m=raw.match(/\{[\s\S]*\}/);
-    if(!m) throw new Error(lang==='es'?'No se generó JSON válido':'Invalid JSON');
+    if(!m) throw new Error('JSON inválido');
     const data=JSON.parse(m[0]);
 
+    const hostImageP =data.host_image_prompt||'';
+    const guestImageP=data.guest_image_prompt||'';
+    const hostVisual =data.host_visual||'';
+    const hostVoice  =data.host_voice||'';
+    const guestVisual=data.guest_visual||'';
+    const guestVoice =data.guest_voice||'';
+    const clipsArr   =Array.isArray(data.clips)?data.clips:[];
+
     document.getElementById('config-out').textContent=
-      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${numClips} clips × ${sec}s | MODELO: ${getActiveModel()}\nTEMA: ${topic} | HOST: ${hostType} | GUEST: ${guestType}`;
+      `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${numClips} clips × ${sec}s | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
 
     window._allPrompts=[];
-    const hostP =data.host_prompt||'';
-    const guestP=data.guest_prompt||'';
-    const clipsArr=Array.isArray(data.clips)?data.clips:[];
-
-    if(hostP)  window._allPrompts.push(`=== PROMPT HOST (ChatGPT) ===\n${hostP}`);
-    if(guestP) window._allPrompts.push(`=== PROMPT GUEST (ChatGPT) ===\n${guestP}`);
-    clipsArr.forEach((c,i)=>window._allPrompts.push(
-      `=== CLIP ${i+1}/${clipsArr.length} · ${c.speaker||''} (${sec}s) ===\nVISUAL: ${c.prompt||''}\nVOICE+DIALOG: ${c.voice_prompt||''}`
-    ));
+    if(hostImageP)  window._allPrompts.push(`=== PROMPT HOST (ChatGPT) ===\n${hostImageP}`);
+    if(guestImageP) window._allPrompts.push(`=== PROMPT GUEST (ChatGPT) ===\n${guestImageP}`);
 
     let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
       <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete de producción completo</strong>
       <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
     </div>`;
 
-    // ── PERSONAJE 1: HOST ────────────────────────────────────────────
-    if(hostP){
+    // ── PROMPT HOST (ChatGPT) ─────────────────────────────────────────
+    if(hostImageP){
       html+=`<div class="clip-card" style="border-left:3px solid #7c3aed;">
         <div class="clip-header" style="color:#7c3aed;">📸 PROMPT HOST — ChatGPT (Image A → Host)</div>
-        <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Usa este prompt en ChatGPT con tu foto base de estudio para crear la imagen del <strong>host</strong>.</div>
-        <div class="clip-voice">${hostP}</div>
-        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(hostP)})">📋 Copiar</button>
+        <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Pega en ChatGPT con tu foto base de estudio para generar el <strong>host</strong>.</div>
+        <div class="clip-voice">${hostImageP}</div>
+        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(hostImageP)})">📋 Copiar</button>
       </div>`;
     }
 
-    // ── PERSONAJE 2: GUEST ───────────────────────────────────────────
-    if(guestP){
+    // ── PROMPT GUEST (ChatGPT) ────────────────────────────────────────
+    if(guestImageP){
       html+=`<div class="clip-card" style="border-left:3px solid #e11d48;">
         <div class="clip-header" style="color:#e11d48;">📸 PROMPT GUEST — ChatGPT (Image A → Guest)</div>
-        <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Usa este prompt en ChatGPT con la misma foto base para crear la imagen del <strong>invitado</strong>.</div>
-        <div class="clip-voice">${guestP}</div>
-        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(guestP)})">📋 Copiar</button>
+        <div style="font-size:10.5px;color:#666;margin-bottom:6px;">Pega en ChatGPT con la misma foto base para generar el <strong>invitado</strong>.</div>
+        <div class="clip-voice">${guestImageP}</div>
+        <button class="clip-copy" onclick="copyTxt(${JSON.stringify(guestImageP)})">📋 Copiar</button>
       </div>`;
     }
 
-    // ── CLIPS VEO 3 ──────────────────────────────────────────────────
+    // ── CLIPS VEO 3 ───────────────────────────────────────────────────
     if(clipsArr.length){
       html+=`<div style="font-size:11px;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">📹 ${clipsArr.length} clips · Google Veo 3 / Flow</div>`;
       clipsArr.forEach((c,i)=>{
-        const pt=c.prompt||'';
-        const vt=c.voice_prompt||'';
-        const spk=c.speaker||'';
-        const spkColor=spk==='host'?'#7c3aed':'#e11d48';
-        const spkLabel=spk==='host'?'HOST':'GUEST';
+        const spk=c.speaker||'host';
+        const isHost=spk==='host';
+        const spkColor=isHost?'#7c3aed':'#e11d48';
+        const spkLabel=isHost?'Host':'Guest';
+        const visual  =isHost?hostVisual:guestVisual;
+        const voice   =isHost?hostVoice:guestVoice;
+        const dialogue=c.dialogue||'';
+        const fullPrompt=buildClipPrompt(i+1,clipsArr.length,sec,spk,spkLabel,null,visual,voice,dialogue,setStyle);
+        window._allPrompts.push(fullPrompt);
         html+=`<div class="clip-card">
           <div class="clip-header" style="display:flex;justify-content:space-between;align-items:center;">
             <span>📹 CLIP ${i+1} / ${clipsArr.length} &nbsp;·&nbsp; ${sec}s</span>
-            <span style="font-size:10px;font-weight:700;color:${spkColor};background:${spkColor}18;padding:2px 8px;border-radius:20px;">${spkLabel}</span>
+            <span style="font-size:10px;font-weight:700;color:${spkColor};background:${spkColor}18;padding:2px 8px;border-radius:20px;">${spkLabel.toUpperCase()}</span>
           </div>
           <div class="clip-section">
-            <strong style="font-size:10px;color:#185fa5;">VISUAL PROMPT → Google Veo 3 (English)</strong>
-            <div class="clip-voice">${pt}</div>
-            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(pt)})">📋 Copiar visual</button>
-          </div>
-          <div class="clip-section" style="margin-top:6px;">
-            <strong style="font-size:10px;color:${spkColor};">VOICE + DIÁLOGO → Google Veo 3 (voz + lo que dice)</strong>
-            <div class="clip-voice">${vt}</div>
-            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(vt)})">📋 Copiar voz+diálogo</button>
+            <strong style="font-size:10px;color:#185fa5;">PROMPT COMPLETO → Google Veo 3 / Flow</strong>
+            <div class="clip-voice" style="white-space:pre-wrap;">${fullPrompt}</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(fullPrompt)})">📋 Copiar clip completo</button>
           </div>
         </div>`;
       });
