@@ -650,6 +650,8 @@ function _applyRec(rec){
   if(typeof updateTags==='function') updateTags();
 }
 
+let _lastRecData={}; // Guarda la última recomendación de config para mostrar badges
+
 function t(key){return T[lang][key]||key;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 function gv(id){const el=document.getElementById(id);return el?el.value:'';}
@@ -784,7 +786,7 @@ async function generateWithAI(skipBtnUI=false){
           350
         );
         const rm=rRaw.match(/\{[\s\S]*\}/);
-        if(rm) _applyRec(JSON.parse(rm[0]));
+        if(rm){const pr=JSON.parse(rm[0]);_lastRecData=pr;_applyRec(pr);}
       }
     }catch(er){/* silently skip if fails */}
   }
@@ -1631,8 +1633,64 @@ Rules:
   }
 }
 
+// ── Paso previo: muestra guion + config antes de generar Veo 3 ────────────────
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
+  await _previewStep();
+}
+
+async function _previewStep(){
+  if(!_orKey) return;
+  _lastRecData={};
+  const genBtn=document.getElementById('generate');
+  const area=document.getElementById('ai-output-area');
+  genBtn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Analizando tema...':'Analyzing topic...');
+  genBtn.disabled=true;
+  document.getElementById('output-area').style.display='none';
+  area.innerHTML='';
+
+  try{
+    // Genera guion (vista previa) + aplica recommended_config internamente
+    await generateWithAI(true);
+
+    // Construir badges con la recomendación aplicada
+    const rec=_lastRecData||{};
+    const SET_STYLE_LABELS={oscuro:'🕯️ Oscuro / Edison',moderno:'💡 Moderno / Softbox',natural:'🌿 Natural / Madera',neon:'🎨 Neon / Urbano',biblioteca:'📚 Biblioteca / Clásico',mistico:'🔮 Místico / Velas'};
+    const mkBadge=(bg,color,icon,txt)=>txt?`<span style="background:${bg};color:${color};padding:3px 9px;border-radius:12px;font-size:10.5px;font-weight:600;display:inline-block;">${icon} ${txt}</span>`:'';
+    const badges=[
+      mkBadge('#e8f4ff','#185fa5','🎬',SET_STYLE_LABELS[rec.set_style]||rec.set_style),
+      mkBadge('#f3e8ff','#7c3aed','👤',rec.narrator_type||rec.host_type),
+      mkBadge('#fff7ed','#c2410c','🎤',rec.guest_type),
+      mkBadge('#fef9c3','#854d0e','🏷️',rec.category),
+      mkBadge('#f0fdf4','#166534','✏️',rec.style),
+      mkBadge('#fff1f2','#9f1239','🎭',rec.tone)
+    ].filter(Boolean).join(' ');
+
+    if(badges){
+      area.insertAdjacentHTML('afterbegin',`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">✨ ${lang==='es'?'Config recomendada por la IA para este tema':'AI-recommended config for this topic'}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;line-height:1.8;">${badges}</div>
+        ${rec.reason?`<div style="font-size:11px;color:#555;margin-top:7px;font-style:italic;">${rec.reason}</div>`:''}
+      </div>`);
+    }
+
+    area.insertAdjacentHTML('beforeend',`<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;padding-bottom:8px;">
+      <button onclick="_previewStep()" style="padding:9px 18px;background:#f0ede2;color:#1a1a1a;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔄 ${lang==='es'?'Cambiar':'Regenerate'}</button>
+      <button onclick="_fullGenerate()" style="padding:9px 22px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">✅ ${lang==='es'?'Aceptar y generar':'Accept & generate'}</button>
+    </div>`);
+
+    area.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
+  }finally{
+    genBtn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
+    genBtn.disabled=false;
+  }
+}
+
+async function _fullGenerate(){
+  if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
+  document.getElementById('ai-output-area').innerHTML='';
   if(NARRATOR_MODES.includes(mode)){
     await generateNarratorPackage();
     return;
