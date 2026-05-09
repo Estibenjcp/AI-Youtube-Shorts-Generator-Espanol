@@ -1736,12 +1736,12 @@ Genera un array JSON de exactamente ${imageCount} objetos. Cada objeto tiene EXA
   "texto_principal": "texto overlay principal (máx 12 palabras, impactante, en dialecto del país)",
   "subtexto": "texto secundario o remate (máx 8 palabras, golpe de humor o dato)",
   "descripcion_visual": "qué muestra visualmente la imagen (escena, elementos, composición)",
-  "prompt_imagen": "prompt ultra-detallado en INGLÉS para Midjourney/DALL-E — include: art style, composition, color palette, mood, typography style, lighting, specific visual elements relevant to labor outrage — min 80 words"
+  "prompt_imagen": "prompt ultra-detallado en ESPAÑOL para Midjourney/DALL-E — incluye: estilo artístico, composición, paleta de colores, atmósfera, estilo tipográfico, iluminación, elementos visuales específicos relacionados con indignación laboral — mín 80 palabras"
 }
 
 REGLAS IMPORTANTES:
-- texto_principal y subtexto y slide_title: SIEMPRE en el dialecto del país indicado
-- prompt_imagen: SIEMPRE en inglés (para AI image generators)
+- TODOS los campos en español (dialecto del país indicado)
+- prompt_imagen: en español, ultra-detallado — incluye estilo gráfico, composición, paleta, tipografía, elementos visuales
 - Para "oferta-falsa-chiste": EXPONER la oferta ridícula como denuncia, NO enseñar a crearla
 - Escala la narrativa: slide 1 es gancho, slides intermedios desarrollan, último es cierre/CTA
 - Humor negro sí, pero no discriminatorio — el enemigo es el sistema, no personas
@@ -1760,12 +1760,12 @@ Generate a JSON array of exactly ${imageCount} objects. Each object has EXACTLY 
   "texto_principal": "main overlay text (max 12 words, impactful, in country dialect)",
   "subtexto": "secondary text or punchline (max 8 words, humor hit or data point)",
   "descripcion_visual": "what the image shows visually (scene, elements, composition)",
-  "prompt_imagen": "ultra-detailed prompt in ENGLISH for Midjourney/DALL-E — include: art style, composition, color palette, mood, typography style, lighting, specific visual elements relevant to labor outrage — min 80 words"
+  "prompt_imagen": "ultra-detailed prompt in English for Midjourney/DALL-E — include: art style, composition, color palette, mood, typography style, lighting, specific visual elements relevant to labor outrage — min 80 words"
 }
 
 IMPORTANT RULES:
-- texto_principal, subtexto and slide_title: ALWAYS in the country dialect
-- prompt_imagen: ALWAYS in English (for AI image generators)
+- ALL fields in English (country dialect for texto/subtexto/slide_title)
+- prompt_imagen: ultra-detailed English prompt — include graphic style, composition, palette, typography, visual elements
 - For "oferta-falsa-chiste": EXPOSE the ridiculous offer as a denunciation, do NOT teach how to create one
 - Escalate the narrative: slide 1 is hook, middle slides develop, last is close/CTA
 
