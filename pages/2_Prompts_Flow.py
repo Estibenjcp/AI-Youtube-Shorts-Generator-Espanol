@@ -732,12 +732,11 @@ async function _callOR(sys,user,maxTok=1000){
   return (d.choices[0].message.content||'').trim();
 }
 
-async function generateWithAI(){
+async function generateWithAI(skipBtnUI=false){
   if(!_orKey){alert('Configura tu API key primero.');return;}
   const btn=document.getElementById('generate-ai');
   const area=document.getElementById('ai-output-area');
-  btn.innerHTML='<span class="spinner"></span>Generando...';
-  btn.disabled=true;
+  if(!skipBtnUI){btn.innerHTML='<span class="spinner"></span>Generando...';btn.disabled=true;}
   area.innerHTML='';
 
   const topic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
@@ -862,8 +861,7 @@ async function generateWithAI(){
   }catch(e){
     area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
   }finally{
-    btn.innerHTML='🤖 Generar con IA';
-    btn.disabled=false;
+    if(!skipBtnUI){btn.innerHTML='🤖 Generar con IA';btn.disabled=false;}
   }
 }
 
@@ -1556,7 +1554,7 @@ async function generate(){
     const genBtn=document.getElementById('generate');
     genBtn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Generando...':'Generating...');
     genBtn.disabled=true;
-    try{await generateWithAI();}finally{
+    try{await generateWithAI(true);}finally{
       genBtn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
       genBtn.disabled=false;
     }
