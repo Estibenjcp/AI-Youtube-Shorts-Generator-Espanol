@@ -628,6 +628,7 @@ const LIBRO_SEGMENTS={
 };
 
 let lang='es', mode='ficticio-viral', format='lineal', hlType='rapida', dur=1, setStyle='oscuro', numHosts=1, numGuests=0;
+let _userPinnedSetStyle=false; // true cuando el usuario elige manualmente el estilo de set
 
 function t(key){return T[lang][key]||key;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
@@ -1015,7 +1016,7 @@ function clearFields(){
   document.getElementById('ai-output-area').innerHTML='';
   updateTags();
 }
-function setMode(m){mode=m;numHosts=1;numGuests=0;document.querySelectorAll('.host-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.querySelectorAll('.guest-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
+function setMode(m){mode=m;numHosts=1;numGuests=0;_userPinnedSetStyle=false;document.querySelectorAll('.host-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.querySelectorAll('.guest-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
 
 async function recommendCombo(){
   if(!_orKey){alert('Configura tu API key primero.');return;}
@@ -1466,18 +1467,20 @@ Rules:
     const tagsYT=Array.isArray(data.tags_youtube)?data.tags_youtube:[];
     const thumbP=data.thumbnail_prompt||'';
 
-    // ── Aplicar configuración recomendada por la IA ───────────────────────────
+    // ── Aplicar configuración recomendada por la IA (solo si campo en aleatorio) ─
     const rec=data.recommended_config||{};
     const validSets=['oscuro','moderno','natural','neon','biblioteca','mistico'];
-    if(rec.set_style && validSets.includes(rec.set_style)){
+    // Set style: solo aplica si el usuario NO hizo clic manualmente en un estilo
+    if(rec.set_style && validSets.includes(rec.set_style) && !_userPinnedSetStyle){
       setStyle=rec.set_style;
       document.querySelectorAll('[data-set]').forEach(b=>b.classList.toggle('active',b.dataset.set===rec.set_style));
     }
+    // Dropdowns: solo aplica si el valor actual del selector es 'random'
     ['narrator-type','category','style','tone'].forEach(fid=>{
-      const key=fid.replace('-','_');
+      const key=fid.replace(/-/g,'_');
       const val=rec[key]||rec[fid];
       const el=document.getElementById(fid);
-      if(el&&val&&[...el.options].some(o=>o.value===val)) el.value=val;
+      if(el&&val&&el.value==='random'&&[...el.options].some(o=>o.value===val)) el.value=val;
     });
 
     const SET_STYLE_LABELS={oscuro:'🕯️ Oscuro / Edison',moderno:'💡 Moderno / Softbox',natural:'🌿 Natural / Madera',neon:'🎨 Neon / Urbano',biblioteca:'📚 Biblioteca / Clásico',mistico:'🔮 Místico / Velas'};
@@ -1821,7 +1824,7 @@ function copyAllPrompts(){
 }
 
 document.querySelectorAll('.lang-btn').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
-document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()=>{setStyle=b.dataset.set;document.querySelectorAll('[data-set]').forEach(p=>p.classList.remove('active'));b.classList.add('active');}));
+document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()=>{setStyle=b.dataset.set;_userPinnedSetStyle=true;document.querySelectorAll('[data-set]').forEach(p=>p.classList.remove('active'));b.classList.add('active');}));
 document.querySelectorAll('.fpill[data-format]').forEach(b=>b.addEventListener('click',()=>{format=b.dataset.format;document.querySelectorAll('.fpill[data-format]').forEach(p=>p.classList.remove('active'));b.classList.add('active');renderHighlightSubs();}));
 document.querySelectorAll('.dpill').forEach(b=>b.addEventListener('click',()=>{dur=parseInt(b.dataset.dur);document.querySelectorAll('.dpill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateDurInfo();}));
 document.getElementById('roll-topic').addEventListener('click',()=>{document.getElementById('topic').value=mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]);});
