@@ -653,6 +653,7 @@ const LIBRO_SEGMENTS={
 
 let lang='es', mode='ficticio-viral', format='lineal', hlType='rapida', dur=1, setStyle='oscuro', numHosts=1, numGuests=0;
 let _userPinnedSetStyle=false; // true cuando el usuario elige manualmente el estilo de set
+let _lastPreviewTopic=''; // tema resuelto en _previewStep, reutilizado en _fullGenerate
 
 // ── Aplica recommended_config solo en campos que siguen en 'random' ────────────
 function _applyRec(rec){
@@ -921,15 +922,29 @@ async function generateWithAI(skipBtnUI=false){
   } else if(mode==='indignacion-laboral'){
     const pais=gv('pais')||'universal';
     const contentType=gv('content-type')||'random';
-    const publicoV=gv('publico')||'universal';
+    const publicoRaw=gv('publico')||'universal';
     const paisMap={universal:'español neutro',mexico:'México (mexicanismos, "wey", "chido", "ya valió")',colombia:'Colombia (colombianismos, "bacano", "parcero", "qué chimba")',argentina:'Argentina (rioplatense, "che", "boludo", "re")',espana:'España (peninsular, "tío", "joder", "coño")',peru:'Perú (peruanismos, "causa", "pe", "bacán")',chile:'Chile (chilenismos, "huevón", "cachai", "po")',dominicana:'Rep. Dominicana (dominicanismos, "manin", "vaina", "qué lo qué")',paraguay:'Paraguay (paraguayo, mezcla español-guaraní)',nicaragua:'Nicaragua (nicaragüismos, "mae", "chunche")',puertorico:'Puerto Rico (boricua, "wepa", "ay bendito", "bicho")'};
+    const publicoMap={universal:'todos los trabajadores en general',random:'cualquier tipo de trabajador (elige el más viral para el tema)',
+      'oficina-corporativo':'trabajadores de oficina y entornos corporativos — referencias a reuniones eternas, jefes micromanagers, "sinergia", PowerPoints, open space',
+      'salud-enfermeria':'médicos, enfermeros y personal de salud — turnos de 24h, falta de insumos, pacientes difíciles, salarios miserables vs. responsabilidad',
+      'educacion-docentes':'maestros y docentes — grupos masivos, papás exigentes, burocracia, planificaciones eternas, salario que no alcanza',
+      'servicios-retail':'trabajadores de retail, restaurantes y tiendas — clientes groseros, horarios partidos, domingos obligatorios, comisiones que nunca llegan',
+      'call-center':'agentes de call center — scripts ridículos, clientes furiosos, métricas imposibles, bonos inalcanzables, micrófonos monitoreados',
+      'tecnologia-it':'desarrolladores y trabajadores de tech — sprints interminables, deuda técnica ignorada, "es urgente", cambios de última hora del producto',
+      'freelance-independiente':'freelancers e independientes — clientes que no pagan, "exposición como pago", alcance creep, facturas atrasadas',
+      'obrero-manufactura':'obreros y operarios de manufactura — metas de producción imposibles, EPP deficiente, horas extra sin pago, pausas cronometradas',
+      'recien-graduado':'recién graduados buscando primer empleo — piden 5 años de experiencia para junior, prácticas sin paga, ofertas de "aprendizaje"',
+      'remoto-home-office':'trabajadores remotos — reuniones a las 8am, "¿por qué tu cámara está apagada?", disponibilidad 24/7, límites inexistentes',
+      'hosteleria-turismo':'trabajadores de hostelería, turismo y aerolíneas — sonrisa forzada, propinas inseguras, turistas exigentes, temporada alta sin descanso',
+      'seguridad-vigilancia':'guardias de seguridad y vigilancia —12h de pie, sin silla, responsabilidad máxima con sueldo mínimo, clientes que los ignoran'};
     const dialectHint=paisMap[pais]||'español neutro';
+    const publicoHint=publicoMap[publicoRaw]||publicoMap['universal'];
     sys=lang==='es'
       ?`Eres un creador de contenido viral especializado en indignación laboral para Latinoamérica y España. Tu voz es auténtica, sarcástica y directa. Hablas en ${dialectHint}. Responde SOLO con JSON array de strings.`
       :`You are a viral content creator specialized in labor outrage for Latin America and Spain. Your voice is authentic, sarcastic and direct. You speak in ${dialectHint}. Reply ONLY with a JSON array of strings.`;
     usr=lang==='es'
-      ?`Tema: "${topic}" | Tipo de contenido: ${contentType} | Público objetivo: ${publicoV} | Estilo: ${styleV} | Tono: ${toneV} | País/Dialecto: ${dialectHint}\n\nGenera 8 frases de contenido viral laboral (máx 24 palabras cada una). Usa el dialecto indicado con naturalidad, sé sarcástico/indignado, habla directo al trabajador ("tú") del público especificado. Para "oferta-falsa-chiste" expón y burla la oferta ridícula, NO la enseñes a hacer. Escala la indignación.\n\nJSON:\n["frase1","frase2",...]`
-      :`Topic: "${topic}" | Content type: ${contentType} | Target audience: ${publicoV} | Style: ${styleV} | Tone: ${toneV} | Country/Dialect: ${dialectHint}\n\nGenerate 8 viral labor content lines (max 24 words each). Use the indicated dialect naturally, be sarcastic/outraged, speak directly to the specified audience worker ("you"). For "oferta-falsa-chiste" expose and mock the ridiculous offer, do NOT teach how to make one. Escalate the outrage.\n\nJSON:\n["line1","line2",...]`;
+      ?`Tema: "${topic}" | Tipo de contenido: ${contentType} | Público objetivo: ${publicoHint} | Estilo: ${styleV} | Tono: ${toneV} | País/Dialecto: ${dialectHint}\n\nGenera 8 frases de contenido viral laboral (máx 24 palabras cada una). Usa el dialecto indicado con naturalidad, sé sarcástico/indignado, habla directo al trabajador ("tú") del público especificado — usa referencias concretas a su realidad laboral. Para "oferta-falsa-chiste" expón y burla la oferta ridícula, NO la enseñes a hacer. Escala la indignación.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Content type: ${contentType} | Target audience: ${publicoHint} | Style: ${styleV} | Tone: ${toneV} | Country/Dialect: ${dialectHint}\n\nGenerate 8 viral labor content lines (max 24 words each). Use the indicated dialect naturally, be sarcastic/outraged, speak directly to the specified audience worker ("you") — use concrete references to their work reality. For "oferta-falsa-chiste" expose and mock the ridiculous offer, do NOT teach how to make one. Escalate the outrage.\n\nJSON:\n["line1","line2",...]`;
   }
 
   try{
@@ -1116,7 +1131,7 @@ function clearFields(){
   document.getElementById('ai-output-area').innerHTML='';
   updateTags();
 }
-function setMode(m){mode=m;numHosts=1;numGuests=0;_userPinnedSetStyle=false;document.querySelectorAll('.host-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.querySelectorAll('.guest-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
+function setMode(m){mode=m;numHosts=1;numGuests=0;_userPinnedSetStyle=false;_lastPreviewTopic='';document.querySelectorAll('.host-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.querySelectorAll('.guest-pill').forEach((p,i)=>p.classList.toggle('active',i===0));document.getElementById('topic').value='';document.getElementById('output-area').style.display='none';document.getElementById('ai-output-area').innerHTML='';fullRender();}
 
 async function recommendCombo(){
   if(!_orKey){alert('Configura tu API key primero.');return;}
@@ -1393,7 +1408,7 @@ async function generateNarratorPackage(){
   area.style.display='block';
   blocksEl.innerHTML=`<div style="text-align:center;padding:24px;color:#888;font-size:12px;">🎬 ${lang==='es'?'Generando paquete completo...':'Generating full package...'}</div>`;
 
-  const topic=(gv('topic')||'').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]))||'tema general';
+  const topic=(gv('topic')||'').trim()||_lastPreviewTopic||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]))||'tema general';
   const {clips,sec}=DUR_CLIPS[dur]||{clips:8,sec:8};
   const narratorType=gv('narrator-type')||'random';
   const narratorGender=gv('narrator-gender')||'male';
@@ -1413,7 +1428,8 @@ async function generateNarratorPackage(){
     'mente-masculina':{es:'canal de reflexiones profundas sobre masculinidad consciente, emociones, amor propio y propósito — especialmente dirigido a hombres',en:'deep reflections channel on conscious masculinity, emotions, self-love and purpose — especially aimed at men'},
     'mujer-consciente':{es:'canal de empoderamiento femenino consciente — autoestima, sanación, relaciones, límites y propósito — especialmente dirigido a mujeres',en:'conscious feminine empowerment channel — self-worth, healing, relationships, boundaries and purpose — especially aimed at women'},
     'libro-rapido':{es:'canal de resúmenes virales de libros — un narrador presenta ideas clave de un libro de forma emocionante y directa al espectador',en:'viral book summary channel — a narrator presents key ideas from a book in an exciting, direct-to-viewer style'},
-    'reflexion-biblica':{es:'canal de devocionales bíblicos cortos y profundos — un narrador o pastor presenta reflexiones espirituales con versículos y aplicación práctica',en:'short deep biblical devotional channel — a narrator or pastor shares spiritual reflections with verses and practical application'}
+    'reflexion-biblica':{es:'canal de devocionales bíblicos cortos y profundos — un narrador o pastor presenta reflexiones espirituales con versículos y aplicación práctica',en:'short deep biblical devotional channel — a narrator or pastor shares spiritual reflections with verses and practical application'},
+    'indignacion-laboral':{es:`canal de contenido viral laboral — indignación, red flags, explotación disfrazada y humor negro sobre el trabajo — público: ${(()=>{const p=gv('publico')||'universal';const m={universal:'todos los trabajadores',random:'trabajadores en general','oficina-corporativo':'trabajadores de oficina/corporativos','salud-enfermeria':'personal de salud','educacion-docentes':'maestros y docentes','servicios-retail':'trabajadores de retail y servicios','call-center':'agentes de call center','tecnologia-it':'trabajadores de tecnología/IT','freelance-independiente':'freelancers e independientes','obrero-manufactura':'obreros y operarios','recien-graduado':'recién graduados','remoto-home-office':'trabajadores remotos','hosteleria-turismo':'trabajadores de hostelería/turismo','seguridad-vigilancia':'guardias de seguridad'};return m[p]||'todos los trabajadores';})()}`,en:`viral labor content channel — outrage, red flags, disguised exploitation and dark work humor — audience: ${(()=>{const p=gv('publico')||'universal';const m={universal:'all workers',random:'workers in general','oficina-corporativo':'office/corporate workers','salud-enfermeria':'healthcare workers','educacion-docentes':'teachers','servicios-retail':'retail/service workers','call-center':'call center agents','tecnologia-it':'tech/IT workers','freelance-independiente':'freelancers','obrero-manufactura':'factory workers','recien-graduado':'recent graduates','remoto-home-office':'remote workers','hosteleria-turismo':'hospitality workers','seguridad-vigilancia':'security guards'};return m[p]||'all workers';})()}`}
   };
   const MODE_SETTING={
     'documental-narrado':'Documentary studio or relevant environmental backdrop, dramatic lighting, cinematic atmosphere',
@@ -1427,7 +1443,8 @@ async function generateNarratorPackage(){
     'mente-masculina':'Dark minimal masculine space — leather chair or raw wooden desk, warm amber side light, dramatic shadows, books and a single plant, serious contemplative atmosphere',
     'mujer-consciente':'Warm feminine minimal space — soft cream or blush tones, natural window light, fresh flowers or greenery in background, candles, elegant and intimate healing atmosphere',
     'libro-rapido':'Modern minimal home studio — book shelf with colorful spines in background, warm neutral desk lamp, clean professional setup, intellectual and inviting atmosphere',
-    'reflexion-biblica':'Peaceful warm interior — soft candlelight or window light, open Bible on desk, subtle cross or neutral spiritual decor, calm and reverent atmosphere'
+    'reflexion-biblica':'Peaceful warm interior — soft candlelight or window light, open Bible on desk, subtle cross or neutral spiritual decor, calm and reverent atmosphere',
+    'indignacion-laboral':'Urban workspace environment — dim office lighting, papers and coffee cups everywhere, frustrated or ironic atmosphere, dark sarcastic mood'
   };
 
   const ctx=(MODE_CTX[mode]||{})[lang]||MODE_CTX[mode]?.es||mode;
@@ -1695,17 +1712,31 @@ async function generateImageSequence(){
   btn.disabled=true;
   area.innerHTML='';
 
-  const topic=gv('topic').trim()||(pick(RAND_TOPICS['indignacion-laboral']?.[lang]||[]));
+  const topic=gv('topic').trim()||_lastPreviewTopic||(pick(RAND_TOPICS['indignacion-laboral']?.[lang]||[]));
   const pais=gv('pais')||'universal';
   const contentType=gv('content-type')||'random';
-  const publicoV=gv('publico')||'universal';
+  const publicoRaw=gv('publico')||'universal';
   const imageCount=parseInt(gv('image-count')||'5');
   const imageFormat=gv('image-format')||'carrusel';
   const styleV=gv('style')||'random';
   const toneV=gv('tone')||'random';
 
   const paisMap={universal:'español neutro universal',mexico:'México — usa mexicanismos: "wey", "chido", "ya valió", "chamba", "morralla"',colombia:'Colombia — usa colombianismos: "bacano", "parcero", "qué chimba", "man"',argentina:'Argentina — usa rioplatense: "che", "boludo", "re", "laburar", "pibe"',espana:'España — usa peninsular: "tío", "joder", "coño", "curro", "molar"',peru:'Perú — usa peruanismos: "causa", "pe", "bacán", "jato"',chile:'Chile — usa chilenismos: "huevón", "cachai", "po", "pega", "fome"',dominicana:'Rep. Dominicana — usa dominicanismos: "manin", "vaina", "tigre", "diache"',paraguay:'Paraguay — español paraguayo, puede mezclar guaraní: "che", "mbojé"',nicaragua:'Nicaragua — usa nicaragüismos: "mae", "chunche", "paja"',puertorico:'Puerto Rico — usa boricua: "wepa", "ay bendito", "bregar", "bicho"'};
+  const publicoMap={universal:'todos los trabajadores en general',random:'cualquier tipo de trabajador (elige el más viral para el tema)',
+    'oficina-corporativo':'trabajadores de oficina y corporativos — reuniones eternas, jefes micromanagers, "sinergia", open space, PowerPoints',
+    'salud-enfermeria':'médicos, enfermeros y personal de salud — turnos de 24h, falta de insumos, salarios miserables vs. alta responsabilidad',
+    'educacion-docentes':'maestros y docentes — grupos masivos, papás exigentes, burocracia, planificaciones eternas, salario que no alcanza',
+    'servicios-retail':'trabajadores de retail, restaurantes y tiendas — clientes groseros, horarios partidos, domingos obligatorios, comisiones que nunca llegan',
+    'call-center':'agentes de call center — scripts ridículos, clientes furiosos, métricas imposibles, bonos inalcanzables, micrófonos monitoreados',
+    'tecnologia-it':'desarrolladores y trabajadores tech — sprints interminables, deuda técnica ignorada, "es urgente", cambios de último momento del producto',
+    'freelance-independiente':'freelancers e independientes — clientes que no pagan, "exposición como pago", alcance creep, facturas atrasadas meses',
+    'obrero-manufactura':'obreros y operarios — metas de producción imposibles, EPP deficiente, horas extra sin pago, pausas cronometradas al segundo',
+    'recien-graduado':'recién graduados buscando primer empleo — piden 5 años de experiencia para junior, prácticas sin paga, "oportunidad de aprender"',
+    'remoto-home-office':'trabajadores remotos — reuniones a las 8am, "¿cámara apagada?", disponibilidad 24/7, límites inexistentes entre trabajo y vida',
+    'hosteleria-turismo':'hostelería, turismo y aerolíneas — sonrisa forzada obligatoria, propinas inseguras, turistas exigentes, temporada alta sin descanso',
+    'seguridad-vigilancia':'guardias de seguridad — 12h de pie sin silla, máxima responsabilidad con sueldo mínimo, invisibles para todos'};
   const dialectHint=paisMap[pais]||'español neutro universal';
+  const publicoHint=publicoMap[publicoRaw]||publicoMap['universal'];
 
   const formatHint=imageFormat==='carrusel'
     ?(lang==='es'?'Carrusel de Instagram/LinkedIn — slides horizontales, formato 4:5 o cuadrado, texto corto e impactante':'Instagram/LinkedIn carousel — horizontal slides, 4:5 or square format, short impactful text')
@@ -1729,7 +1760,7 @@ async function generateImageSequence(){
     ?`Tema: "${topic}"
 País/Dialecto: ${dialectHint}
 Tipo de contenido: ${ctHint}
-Público objetivo: ${publicoV}
+Público objetivo: ${publicoHint}
 Formato: ${formatHint}
 Estilo: ${styleV} | Tono: ${toneV}
 Número de imágenes: ${imageCount}
@@ -1754,7 +1785,7 @@ JSON:`
     :`Topic: "${topic}"
 Country/Dialect: ${dialectHint}
 Content type: ${ctHint}
-Target audience: ${publicoV}
+Target audience: ${publicoHint}
 Format: ${formatHint}
 Style: ${styleV} | Tone: ${toneV}
 Number of images: ${imageCount}
@@ -1856,6 +1887,7 @@ async function _previewStep(){
   try{
     // Resolver el tema antes de llamar generateWithAI (igual que en generateWithAI línea 765)
     const _pvTopic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
+    _lastPreviewTopic=_pvTopic; // guardar para que _fullGenerate use el mismo tema
 
     // Para modo imagen: no hay guion — ir directo a config + botones
     if(mode==='indignacion-laboral' && gv('system-type')==='imagenes'){
