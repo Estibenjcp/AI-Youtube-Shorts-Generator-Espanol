@@ -204,6 +204,8 @@ button.btn-ai:disabled{background:#93c5fd;border-color:#93c5fd;cursor:not-allowe
   <div class="mode-selector" id="mode-selector-podcast"></div>
   <div class="mode-cat-label" style="margin-top:8px;" data-i18n="narratorCat">📺 Narrador / Canal</div>
   <div class="mode-selector" id="mode-selector-narrator"></div>
+  <div class="mode-cat-label" style="margin-top:8px;">💼 Laboral / Empleo</div>
+  <div class="mode-selector" id="mode-selector-laboral"></div>
 </div>
 
 <div class="format-row" style="grid-template-columns:1fr 1fr 1fr;">
@@ -339,7 +341,8 @@ const MODES={
   'historia-epica':{icon:'⚔️',title:{es:'Historia épica',en:'Epic history'},desc:{es:'Batallas, imperios, héroes — narración cinematográfica épica',en:'Battles, empires, heroes — epic cinematic narration'}},
   'psicologia-positiva':{icon:'🌸',title:{es:'Psicología positiva',en:'Positive psychology'},desc:{es:'Autoestima, sanación emocional, límites, apego — contenido que sana',en:'Self-esteem, healing, boundaries, attachment — content that heals'}},
   'mente-masculina':{icon:'💎',title:{es:'Mente masculina',en:'Masculine mindset'},desc:{es:'Reflexiones profundas para hombres — emociones, amor propio, relaciones, propósito',en:'Deep reflections for men — emotions, self-love, relationships, purpose'}},
-  'mujer-consciente':{icon:'🌺',title:{es:'Mujer consciente',en:'Conscious woman'},desc:{es:'Empoderamiento femenino — autoestima, sanación, relaciones, propósito y esencia propia',en:'Feminine empowerment — self-worth, healing, relationships, purpose and true self'}}
+  'mujer-consciente':{icon:'🌺',title:{es:'Mujer consciente',en:'Conscious woman'},desc:{es:'Empoderamiento femenino — autoestima, sanación, relaciones, propósito y esencia propia',en:'Feminine empowerment — self-worth, healing, relationships, purpose and true self'}},
+  'indignacion-laboral':{icon:'😤',title:{es:'Indignación Laboral',en:'Labor Outrage'},desc:{es:'Contenido viral sobre red flags laborales, explotación disfrazada y humor negro del trabajo',en:'Viral content on workplace red flags, disguised exploitation and dark work humor'}}
 };
 
 const MODE_SELECTS={
@@ -473,6 +476,16 @@ const MODE_SELECTS={
   'style':{es:[['random','🎲 Aleatorio'],['reflexivo-profundo','Reflexivo / profundo'],['directo-al-alma','Directo al alma'],['poetico-cinematografico','Poético / cinematográfico'],['confesional','Confesional / íntimo'],['empoderador','Empoderador / que activa']],en:[['random','🎲 Random'],['reflexivo-profundo','Reflective / deep'],['directo-al-alma','Direct to the soul'],['poetico-cinematografico','Poetic / cinematic'],['confesional','Confessional / intimate'],['empoderador','Empowering / activating']]},
   'tone':{es:[['random','🎲 Aleatorio'],['calido-poderoso','Cálido pero poderoso'],['vulnerable-honesto','Vulnerable y honesto'],['empoderador-firme','Empoderador y firme'],['poetico-suave','Poético / suave'],['directo-amoroso','Directo y amoroso']],en:[['random','🎲 Random'],['calido-poderoso','Warm but powerful'],['vulnerable-honesto','Vulnerable and honest'],['empoderador-firme','Empowering and firm'],['poetico-suave','Poetic / gentle'],['directo-amoroso','Direct and loving']]}
 }
+,'indignacion-laboral':{
+  'system-type':{es:[['flow','🎬 Flow / Veo 3 (video)'],['imagenes','🖼️ Secuencia de imágenes']],en:[['flow','🎬 Flow / Veo 3 (video)'],['imagenes','🖼️ Image sequence']]},
+  'pais':{es:[['universal','🌎 Universal (Español neutro)'],['mexico','🇲🇽 México'],['colombia','🇨🇴 Colombia'],['argentina','🇦🇷 Argentina'],['espana','🇪🇸 España'],['peru','🇵🇪 Perú'],['chile','🇨🇱 Chile'],['dominicana','🇩🇴 Rep. Dominicana'],['paraguay','🇵🇾 Paraguay'],['nicaragua','🇳🇮 Nicaragua'],['puertorico','🇵🇷 Puerto Rico']],en:[['universal','🌎 Universal (Neutral Spanish)'],['mexico','🇲🇽 Mexico'],['colombia','🇨🇴 Colombia'],['argentina','🇦🇷 Argentina'],['espana','🇪🇸 Spain'],['peru','🇵🇪 Peru'],['chile','🇨🇱 Chile'],['dominicana','🇩🇴 Dominican Rep.'],['paraguay','🇵🇾 Paraguay'],['nicaragua','🇳🇮 Nicaragua'],['puertorico','🇵🇷 Puerto Rico']]},
+  'content-type':{es:[['random','🎲 Aleatorio (IA elige)'],['red-flags','🚩 Red flags laborales'],['explotacion-disfrazada','💀 Explotación disfrazada'],['humor-negro-trabajo','😂 Humor negro laboral'],['oferta-falsa-chiste','🎭 Oferta falsa (en chiste)'],['indignacion-pura','😤 Indignación pura'],['salario-toxico','💸 Salario "competitivo" en chiste']],en:[['random','🎲 Random (AI chooses)'],['red-flags','🚩 Workplace red flags'],['explotacion-disfrazada','💀 Disguised exploitation'],['humor-negro-trabajo','😂 Dark work humor'],['oferta-falsa-chiste','🎭 Fake offer (as a joke)'],['indignacion-pura','😤 Pure outrage'],['salario-toxico','💸 "Competitive" salary joke']]},
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['trabajador-indignado','😤 Trabajador indignado'],['ex-empleado-anonimo','👤 Ex empleado anónimo'],['coach-laboral-sarcastico','🧠 Coach laboral sarcástico'],['voz-sistema','🏢 La voz del sistema (villano)'],['periodista-laboral','📰 Periodista laboral']],en:[['random','🎲 Random'],['trabajador-indignado','😤 Outraged worker'],['ex-empleado-anonimo','👤 Anonymous ex-employee'],['coach-laboral-sarcastico','🧠 Sarcastic labor coach'],['voz-sistema','🏢 The system voice (villain)'],['periodista-laboral','📰 Labor journalist']]},
+  'style':{es:[['random','🎲 Aleatorio'],['sarcastico','Sarcástico / irónico'],['documental-laboral','Documental / denuncia'],['humor-negro','Humor negro laboral'],['indignacion-directa','Indignación directa'],['comedia-realidad','Comedia de la realidad']],en:[['random','🎲 Random'],['sarcastico','Sarcastic / ironic'],['documental-laboral','Documentary / expose'],['humor-negro','Dark work humor'],['indignacion-directa','Direct outrage'],['comedia-realidad','Reality comedy']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['indignado-sarcastico','Indignado pero sarcástico'],['cansado-resignado','Cansado y resignado'],['explosivo','Explosivo / sin filtro'],['ironico-seco','Irónico / seco'],['triste-comico','Triste pero cómico']],en:[['random','🎲 Random'],['indignado-sarcastico','Outraged but sarcastic'],['cansado-resignado','Tired and resigned'],['explosivo','Explosive / unfiltered'],['ironico-seco','Ironic / dry'],['triste-comico','Sad but comedic']]},
+  'image-count':{es:[['5','5 imágenes'],['3','3 imágenes'],['7','7 imágenes'],['10','10 imágenes']],en:[['5','5 images'],['3','3 images'],['7','7 images'],['10','10 images']]},
+  'image-format':{es:[['carrusel','📱 Carrusel (Instagram / LinkedIn)'],['historia','📸 Historia (Stories / Reels vertical)']],en:[['carrusel','📱 Carousel (Instagram / LinkedIn)'],['historia','📸 Story (Stories / Reels vertical)']]}
+}
 };
 
 const MODE_BLOCKS={
@@ -540,6 +553,12 @@ const MODE_BLOCKS={
   {id:'mc-narrator-block',title:{es:'Narradora / Mentora',en:'Narrator / Mentor'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
   {id:'mc-theme-block',title:{es:'Temática femenina',en:'Feminine theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
 ]
+,'indignacion-laboral':[
+  {id:'il-sistema-block',title:{es:'Sistema de producción',en:'Production system'},fields:[{id:'system-type',label:{es:'Sistema',en:'System'}},{id:'pais',label:{es:'País / Dialecto',en:'Country / Dialect'}}]},
+  {id:'il-content-block',title:{es:'Tipo de contenido',en:'Content type'},fields:[{id:'content-type',label:{es:'Categoría',en:'Category'}},{id:'narrator-type',label:{es:'Voz / Narrador',en:'Voice / Narrator'}}]},
+  {id:'il-style-block',title:{es:'Estilo y tono',en:'Style & tone'},fields:[{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]},
+  {id:'il-image-block',title:{es:'Configuración de imágenes',en:'Image configuration'},fields:[{id:'image-count',label:{es:'Cantidad de imágenes',en:'Number of images'}},{id:'image-format',label:{es:'Formato de secuencia',en:'Sequence format'}}]}
+]
 };
 
 const RAND_TOPICS={
@@ -603,6 +622,10 @@ const RAND_TOPICS={
     es:['Nadie te enseñó a amarte — te enseñaron a necesitar que te amaran','El día que dejé de pedir perdón por ser demasiado fue el día que empecé a vivir','No eres difícil de amar — estuviste rodeada de personas que no sabían amar','Seguiste dando amor a quien nunca supo recibirlo y lo llamaste tu culpa','La mujer que más te costará soltar eres tú misma de hace 5 años','Poner límites no te hace cruel — te hace honesta contigo misma','Una mujer que sana su relación consigo misma cambia todo lo que toca'],
     en:['Nobody taught you to love yourself — they taught you to need to be loved','The day I stopped apologizing for being too much was the day I started living','You\'re not hard to love — you were surrounded by people who didn\'t know how to love','You kept giving love to someone who couldn\'t receive it and called it your fault','The woman who will be hardest to let go of is who you were 5 years ago','Setting boundaries doesn\'t make you cruel — it makes you honest with yourself','A woman who heals her relationship with herself changes everything she touches']
   }
+,'indignacion-laboral':{
+  es:['Oferta de trabajo: "ambiente joven y dinámico" — traducción: sin sindicato y te explotan sonriendo','Te dijeron que el sueldo era competitivo... con el salario mínimo de 1975','Beneficios de la empresa: cumpleaños con pastel en la oficina + 12 horas extra sin pago','Vacantes que piden 10 años de experiencia, maestría y 3 idiomas — sueldo: básico'],
+  en:['Job offer: "young dynamic environment" — translation: no union and they exploit you with a smile','They said the salary was competitive... with 1975 minimum wage','Company benefits: birthday cake at the office + 12 unpaid overtime hours','Job postings requiring 10 years experience, master degree and 3 languages — salary: minimum wage']
+}
 };
 
 const RAND_TOPICS_LIBRO={
@@ -894,6 +917,17 @@ async function generateWithAI(skipBtnUI=false){
     usr=lang==='es'
       ?`Tema: "${topic}" | Tipo: ${gv('narrator-type')||'random'} | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de empoderamiento femenino (máx 24 palabras cada una). Habla directo a la mujer ("tú"), inicia con algo que resuene emocionalmente, valida su experiencia y empodera con un paso claro.\n\nJSON:\n["frase1","frase2",...]`
       :`Topic: "${topic}" | Type: ${gv('narrator-type')||'random'} | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 feminine empowerment lines (max 24 words each). Speak directly to the woman ("you"), start with something emotionally resonant, validate her experience and empower with a clear step.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='indignacion-laboral'){
+    const pais=gv('pais')||'universal';
+    const contentType=gv('content-type')||'random';
+    const paisMap={universal:'español neutro',mexico:'México (mexicanismos, "wey", "chido", "ya valió")',colombia:'Colombia (colombianismos, "bacano", "parcero", "qué chimba")',argentina:'Argentina (rioplatense, "che", "boludo", "re")',espana:'España (peninsular, "tío", "joder", "coño")',peru:'Perú (peruanismos, "causa", "pe", "bacán")',chile:'Chile (chilenismos, "huevón", "cachai", "po")',dominicana:'Rep. Dominicana (dominicanismos, "manin", "vaina", "qué lo qué")',paraguay:'Paraguay (paraguayo, mezcla español-guaraní)',nicaragua:'Nicaragua (nicaragüismos, "mae", "chunche")',puertorico:'Puerto Rico (boricua, "wepa", "ay bendito", "bicho")'};
+    const dialectHint=paisMap[pais]||'español neutro';
+    sys=lang==='es'
+      ?`Eres un creador de contenido viral especializado en indignación laboral para Latinoamérica y España. Tu voz es auténtica, sarcástica y directa. Hablas en ${dialectHint}. Responde SOLO con JSON array de strings.`
+      :`You are a viral content creator specialized in labor outrage for Latin America and Spain. Your voice is authentic, sarcastic and direct. You speak in ${dialectHint}. Reply ONLY with a JSON array of strings.`;
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Tipo de contenido: ${contentType} | Estilo: ${styleV} | Tono: ${toneV} | País/Dialecto: ${dialectHint}\n\nGenera 8 frases de contenido viral laboral (máx 24 palabras cada una). Usa el dialecto indicado con naturalidad, sé sarcástico/indignado, habla directo al trabajador ("tú"). Para "oferta-falsa-chiste" expón y burla la oferta ridícula, NO la enseñes a hacer. Escala la indignación.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Content type: ${contentType} | Style: ${styleV} | Tone: ${toneV} | Country/Dialect: ${dialectHint}\n\nGenerate 8 viral labor content lines (max 24 words each). Use the indicated dialect naturally, be sarcastic/outraged, speak directly to the worker ("you"). For "oferta-falsa-chiste" expose and mock the ridiculous offer, do NOT teach how to make one. Escalate the outrage.\n\nJSON:\n["line1","line2",...]`;
   }
 
   try{
@@ -980,16 +1014,19 @@ function copyAI(){
 function renderModes(){
   const cPod=document.getElementById('mode-selector-podcast');
   const cNar=document.getElementById('mode-selector-narrator');
+  const cLab=document.getElementById('mode-selector-laboral');
   if(cPod) cPod.innerHTML='';
   if(cNar) cNar.innerHTML='';
+  if(cLab) cLab.innerHTML='';
   const podcastSet=new Set(['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna']);
+  const laboralSet=new Set(['indignacion-laboral']);
   Object.entries(MODES).forEach(([id,m])=>{
     const p=document.createElement('div');
     p.className='mode-pill'+(id===mode?' active':'');
     p.title=m.desc[lang];
     p.innerHTML=`<span class="mode-icon">${m.icon}</span><span class="mode-title">${m.title[lang]}</span>`;
     p.onclick=()=>setMode(id);
-    const target=podcastSet.has(id)?cPod:cNar;
+    const target=podcastSet.has(id)?cPod:laboralSet.has(id)?cLab:cNar;
     if(target) target.appendChild(p);
   });
 }
@@ -1106,6 +1143,7 @@ async function recommendCombo(){
     'mujer-consciente':['narrator-type','narrator-gender','category','style','tone'],
     'misterio-biblico':['narrator-type','narrator-gender','narrator-lang','scene-type','subtopic','style','tone'],
     'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
+    'indignacion-laboral':['content-type','narrator-type','style','tone','pais'],
   };
   const fields=modeFields[mode]||['style','tone'];
   const allFields=[...fields,'set-style'];
@@ -1280,7 +1318,7 @@ ${VEO3_CAMERA}`;
 }
 
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
-const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente','libro-rapido','reflexion-biblica'];
+const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente','libro-rapido','reflexion-biblica','indignacion-laboral'];
 
 function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host',charLabel=''){
   const sc=getScene();
@@ -1647,6 +1685,153 @@ Rules:
   }
 }
 
+async function generateImageSequence(){
+  if(!_orKey) return;
+  const btn=document.getElementById('generate');
+  const area=document.getElementById('ai-output-area');
+  btn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Generando imágenes...':'Generating images...');
+  btn.disabled=true;
+  area.innerHTML='';
+
+  const topic=gv('topic').trim()||(pick(RAND_TOPICS['indignacion-laboral']?.[lang]||[]));
+  const pais=gv('pais')||'universal';
+  const contentType=gv('content-type')||'random';
+  const imageCount=parseInt(gv('image-count')||'5');
+  const imageFormat=gv('image-format')||'carrusel';
+  const styleV=gv('style')||'random';
+  const toneV=gv('tone')||'random';
+
+  const paisMap={universal:'español neutro universal',mexico:'México — usa mexicanismos: "wey", "chido", "ya valió", "chamba", "morralla"',colombia:'Colombia — usa colombianismos: "bacano", "parcero", "qué chimba", "man"',argentina:'Argentina — usa rioplatense: "che", "boludo", "re", "laburar", "pibe"',espana:'España — usa peninsular: "tío", "joder", "coño", "curro", "molar"',peru:'Perú — usa peruanismos: "causa", "pe", "bacán", "jato"',chile:'Chile — usa chilenismos: "huevón", "cachai", "po", "pega", "fome"',dominicana:'Rep. Dominicana — usa dominicanismos: "manin", "vaina", "tigre", "diache"',paraguay:'Paraguay — español paraguayo, puede mezclar guaraní: "che", "mbojé"',nicaragua:'Nicaragua — usa nicaragüismos: "mae", "chunche", "paja"',puertorico:'Puerto Rico — usa boricua: "wepa", "ay bendito", "bregar", "bicho"'};
+  const dialectHint=paisMap[pais]||'español neutro universal';
+
+  const formatHint=imageFormat==='carrusel'
+    ?(lang==='es'?'Carrusel de Instagram/LinkedIn — slides horizontales, formato 4:5 o cuadrado, texto corto e impactante':'Instagram/LinkedIn carousel — horizontal slides, 4:5 or square format, short impactful text')
+    :(lang==='es'?'Historia/Story vertical — 9:16, texto dramático, gran impacto visual':'Vertical story — 9:16, dramatic text, high visual impact');
+
+  const contentTypeHints={
+    'red-flags':'señales de alerta en ofertas o empresas (horarios imposibles, "ambiente familiar", sin prestaciones)',
+    'explotacion-disfrazada':'explotación laboral presentada como "oportunidad" o "beneficio" (horas extra "voluntarias", "crecer juntos")',
+    'humor-negro':'humor oscuro sobre la realidad laboral cotidiana',
+    'oferta-falsa-chiste':'EXPONER y BURLARSE de una oferta ridícula real, NO enseñar a hacerla — denunciarla con humor',
+    'indignacion-pura':'indignación directa ante situaciones laborales injustas',
+    'salario-toxico':'burla y denuncia del salario "competitivo" que en realidad es miseria'
+  };
+  const ctHint=contentTypeHints[contentType]||'contenido viral sobre indignación laboral';
+
+  const sys=lang==='es'
+    ?`Eres un experto en contenido viral laboral para redes sociales. Creas secuencias de imágenes que generan indignación, identificación y viralidad. Hablas en ${dialectHint}. Responde SOLO con JSON array, sin texto extra.`
+    :`You are a viral labor content expert for social media. You create image sequences that generate outrage, identification and virality. You speak in ${dialectHint}. Reply ONLY with JSON array, no extra text.`;
+
+  const usr=lang==='es'
+    ?`Tema: "${topic}"
+País/Dialecto: ${dialectHint}
+Tipo de contenido: ${ctHint}
+Formato: ${formatHint}
+Estilo: ${styleV} | Tono: ${toneV}
+Número de imágenes: ${imageCount}
+
+Genera un array JSON de exactamente ${imageCount} objetos. Cada objeto tiene EXACTAMENTE estas claves:
+{
+  "slide_title": "título corto del slide (máx 6 palabras, en el dialecto del país)",
+  "texto_principal": "texto overlay principal (máx 12 palabras, impactante, en dialecto del país)",
+  "subtexto": "texto secundario o remate (máx 8 palabras, golpe de humor o dato)",
+  "descripcion_visual": "qué muestra visualmente la imagen (escena, elementos, composición)",
+  "prompt_imagen": "prompt ultra-detallado en INGLÉS para Midjourney/DALL-E — include: art style, composition, color palette, mood, typography style, lighting, specific visual elements relevant to labor outrage — min 80 words"
+}
+
+REGLAS IMPORTANTES:
+- texto_principal y subtexto y slide_title: SIEMPRE en el dialecto del país indicado
+- prompt_imagen: SIEMPRE en inglés (para AI image generators)
+- Para "oferta-falsa-chiste": EXPONER la oferta ridícula como denuncia, NO enseñar a crearla
+- Escala la narrativa: slide 1 es gancho, slides intermedios desarrollan, último es cierre/CTA
+- Humor negro sí, pero no discriminatorio — el enemigo es el sistema, no personas
+
+JSON:`
+    :`Topic: "${topic}"
+Country/Dialect: ${dialectHint}
+Content type: ${ctHint}
+Format: ${formatHint}
+Style: ${styleV} | Tone: ${toneV}
+Number of images: ${imageCount}
+
+Generate a JSON array of exactly ${imageCount} objects. Each object has EXACTLY these keys:
+{
+  "slide_title": "short slide title (max 6 words, in country dialect)",
+  "texto_principal": "main overlay text (max 12 words, impactful, in country dialect)",
+  "subtexto": "secondary text or punchline (max 8 words, humor hit or data point)",
+  "descripcion_visual": "what the image shows visually (scene, elements, composition)",
+  "prompt_imagen": "ultra-detailed prompt in ENGLISH for Midjourney/DALL-E — include: art style, composition, color palette, mood, typography style, lighting, specific visual elements relevant to labor outrage — min 80 words"
+}
+
+IMPORTANT RULES:
+- texto_principal, subtexto and slide_title: ALWAYS in the country dialect
+- prompt_imagen: ALWAYS in English (for AI image generators)
+- For "oferta-falsa-chiste": EXPOSE the ridiculous offer as a denunciation, do NOT teach how to create one
+- Escalate the narrative: slide 1 is hook, middle slides develop, last is close/CTA
+
+JSON:`;
+
+  try{
+    const raw=await _callOR(sys,usr,3500);
+    const m=raw.match(/\[[\s\S]*\]/);
+    if(!m) throw new Error(lang==='es'?'La IA no devolvió JSON válido':'AI did not return valid JSON');
+    const slides=JSON.parse(m[0]);
+
+    const model=_orModel.split('/').pop();
+    const formatLabel=imageFormat==='carrusel'?(lang==='es'?'Carrusel':'Carousel'):(lang==='es'?'Historia':'Story');
+    const dimLabel=imageFormat==='carrusel'?'1080×1350px (4:5)':'1080×1920px (9:16)';
+
+    let html=`<div class="ai-out">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
+        <strong style="font-size:13px;color:#b45309;">🖼️ ${lang==='es'?'Secuencia de imágenes generada':'Image sequence generated'} · ${model}</strong>
+        <div style="display:flex;gap:5px;"><button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:26px;padding:0 8px;font-size:11px;background:#f0ede2;border:none;border-radius:5px;cursor:pointer;">⬆️</button></div>
+      </div>
+      <div style="font-size:11px;color:#666;margin-bottom:12px;">
+        📌 ${lang==='es'?'Tema':'Topic'}: <strong>${topic}</strong> &nbsp;|&nbsp; 🌍 ${lang==='es'?'País':'Country'}: <strong>${pais}</strong> &nbsp;|&nbsp; 📐 ${formatLabel} · ${dimLabel}
+      </div>`;
+
+    slides.forEach((sl,i)=>{
+      const num=i+1;
+      html+=`<div style="background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="background:#1a1a1a;color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${lang==='es'?'Imagen':'Image'} ${num}/${slides.length}</span>
+          <strong style="font-size:12px;color:#b45309;">${sl.slide_title||''}</strong>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div style="background:#fef3c7;border-radius:7px;padding:8px;">
+            <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">📝 Texto principal</div>
+            <div style="font-size:13px;font-weight:700;color:#1a1a1a;line-height:1.3;">"${sl.texto_principal||''}"</div>
+          </div>
+          <div style="background:#f0fdf4;border-radius:7px;padding:8px;">
+            <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">💬 Subtexto / Remate</div>
+            <div style="font-size:12px;color:#166534;font-style:italic;line-height:1.3;">"${sl.subtexto||''}"</div>
+          </div>
+        </div>
+        <div style="background:#f8f5e8;border-radius:7px;padding:8px;margin-bottom:8px;">
+          <div style="font-size:9px;font-weight:700;color:#78350f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎨 Descripción visual</div>
+          <div style="font-size:11px;color:#44403c;line-height:1.5;">${sl.descripcion_visual||''}</div>
+        </div>
+        <div style="background:#f0f9ff;border-radius:7px;padding:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 Prompt para IA (Midjourney / DALL-E / Stable Diffusion)</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(sl.prompt_imagen||'')})">📋</button>
+          </div>
+          <div class="clip-voice" style="font-size:10.5px;">${sl.prompt_imagen||''}</div>
+        </div>
+      </div>`;
+    });
+
+    html+=`</div>`;
+    area.innerHTML=html;
+    area.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
+  }finally{
+    btn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
+    btn.disabled=false;
+  }
+}
+
 // ── Paso previo: muestra guion + config antes de generar Veo 3 ────────────────
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
@@ -1666,6 +1851,21 @@ async function _previewStep(){
   try{
     // Resolver el tema antes de llamar generateWithAI (igual que en generateWithAI línea 765)
     const _pvTopic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
+
+    // Para modo imagen: no hay guion — ir directo a config + botones
+    if(mode==='indignacion-laboral' && gv('system-type')==='imagenes'){
+      // mostrar config recomendada directamente (pre-call ya se hará en _fullGenerate)
+      area.innerHTML=`<div style="background:#fef9c3;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#854d0e;">
+        📌 ${lang==='es'?'Tema':'Topic'}: <strong>${_pvTopic}</strong><br>
+        <span style="font-size:11px;color:#92400e;margin-top:4px;display:block;">🖼️ ${lang==='es'?'Se generarán los prompts de imagen al aceptar':'Image prompts will be generated on accept'}</span>
+      </div>`;
+      area.insertAdjacentHTML('beforeend',`<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;padding-bottom:8px;">
+        <button onclick="_previewStep()" style="padding:9px 18px;background:#f0ede2;color:#1a1a1a;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔄 ${lang==='es'?'Cambiar':'Regenerate'}</button>
+        <button onclick="_fullGenerate()" style="padding:9px 22px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">✅ ${lang==='es'?'Generar imágenes':'Generate images'}</button>
+      </div>`);
+      area.scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
 
     // Genera guion (vista previa) + aplica recommended_config internamente
     await generateWithAI(true);
@@ -1710,6 +1910,10 @@ async function _fullGenerate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
   document.getElementById('ai-output-area').innerHTML='';
   if(NARRATOR_MODES.includes(mode)){
+    if(mode==='indignacion-laboral' && gv('system-type')==='imagenes'){
+      await generateImageSequence();
+      return;
+    }
     await generateNarratorPackage();
     return;
   }
