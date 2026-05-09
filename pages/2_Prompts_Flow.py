@@ -1218,7 +1218,7 @@ ${VEO3_CAMERA}`;
 }
 
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
-const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente'];
+const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente','libro-rapido','reflexion-biblica'];
 
 function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host',charLabel=''){
   const sc=getScene();
@@ -1291,7 +1291,7 @@ async function generateNarratorPackage(){
   area.style.display='block';
   blocksEl.innerHTML=`<div style="text-align:center;padding:24px;color:#888;font-size:12px;">🎬 ${lang==='es'?'Generando paquete completo...':'Generating full package...'}</div>`;
 
-  const topic=(gv('topic')||'').trim()||pick(RAND_TOPICS[mode]?.[lang]||[])||'tema general';
+  const topic=(gv('topic')||'').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]))||'tema general';
   const {clips,sec}=DUR_CLIPS[dur]||{clips:8,sec:8};
   const narratorType=gv('narrator-type')||'random';
   const narratorGender=gv('narrator-gender')||'male';
@@ -1309,7 +1309,9 @@ async function generateNarratorPackage(){
     'testimonio-real':{es:'canal de testimonios reales en primera persona, confesional',en:'real first-person confessional testimony channel'},
     'misterio-biblico':{es:'canal de misterios bíblicos y textos apócrifos',en:'biblical mysteries and apocryphal texts channel'},
     'mente-masculina':{es:'canal de reflexiones profundas sobre masculinidad consciente, emociones, amor propio y propósito — especialmente dirigido a hombres',en:'deep reflections channel on conscious masculinity, emotions, self-love and purpose — especially aimed at men'},
-    'mujer-consciente':{es:'canal de empoderamiento femenino consciente — autoestima, sanación, relaciones, límites y propósito — especialmente dirigido a mujeres',en:'conscious feminine empowerment channel — self-worth, healing, relationships, boundaries and purpose — especially aimed at women'}
+    'mujer-consciente':{es:'canal de empoderamiento femenino consciente — autoestima, sanación, relaciones, límites y propósito — especialmente dirigido a mujeres',en:'conscious feminine empowerment channel — self-worth, healing, relationships, boundaries and purpose — especially aimed at women'},
+    'libro-rapido':{es:'canal de resúmenes virales de libros — un narrador presenta ideas clave de un libro de forma emocionante y directa al espectador',en:'viral book summary channel — a narrator presents key ideas from a book in an exciting, direct-to-viewer style'},
+    'reflexion-biblica':{es:'canal de devocionales bíblicos cortos y profundos — un narrador o pastor presenta reflexiones espirituales con versículos y aplicación práctica',en:'short deep biblical devotional channel — a narrator or pastor shares spiritual reflections with verses and practical application'}
   };
   const MODE_SETTING={
     'documental-narrado':'Documentary studio or relevant environmental backdrop, dramatic lighting, cinematic atmosphere',
@@ -1321,7 +1323,9 @@ async function generateNarratorPackage(){
     'testimonio-real':'Dimly lit intimate room, single warm practical light source from one side, raw confessional atmosphere',
     'misterio-biblico':'Candlelit stone room, ancient scrolls or artifacts on table, mysterious dramatic shadows, mystical atmosphere',
     'mente-masculina':'Dark minimal masculine space — leather chair or raw wooden desk, warm amber side light, dramatic shadows, books and a single plant, serious contemplative atmosphere',
-    'mujer-consciente':'Warm feminine minimal space — soft cream or blush tones, natural window light, fresh flowers or greenery in background, candles, elegant and intimate healing atmosphere'
+    'mujer-consciente':'Warm feminine minimal space — soft cream or blush tones, natural window light, fresh flowers or greenery in background, candles, elegant and intimate healing atmosphere',
+    'libro-rapido':'Modern minimal home studio — book shelf with colorful spines in background, warm neutral desk lamp, clean professional setup, intellectual and inviting atmosphere',
+    'reflexion-biblica':'Peaceful warm interior — soft candlelight or window light, open Bible on desk, subtle cross or neutral spiritual decor, calm and reverent atmosphere'
   };
 
   const ctx=(MODE_CTX[mode]||{})[lang]||MODE_CTX[mode]?.es||mode;
@@ -1362,7 +1366,9 @@ async function generateNarratorPackage(){
     'misterio-biblico':'Round table ancient study — participants seated around a stone circular table, candlelit mystical atmosphere, ancient scrolls visible',
     'psicologia-positiva':'Round table wellness panel — participants seated around a light circular table, soft golden natural light, plants and flowers in background',
     'mente-masculina':'Round table masculine panel — participants seated around a dark minimal circular table, warm amber dramatic side lighting, leather chairs, raw honest contemplative atmosphere',
-    'mujer-consciente':'Round table feminine panel — participants seated around a light circular table with fresh flowers, soft warm natural light, cream and blush tones, intimate empowering atmosphere'
+    'mujer-consciente':'Round table feminine panel — participants seated around a light circular table with fresh flowers, soft warm natural light, cream and blush tones, intimate empowering atmosphere',
+    'libro-rapido':'Round table book club — participants seated around a modern circular table with books visible, warm professional lighting, intellectual discussion atmosphere',
+    'reflexion-biblica':'Round table spiritual discussion — participants seated around a calm circular table, soft candlelit atmosphere, open Bibles or spiritual texts visible, peaceful and reverent'
   };
   const STYLE_ATMOSPHERE={
     oscuro:'Dark moody atmosphere — single warm Edison rim light, deep dramatic shadows, very dark walls, intimate',
