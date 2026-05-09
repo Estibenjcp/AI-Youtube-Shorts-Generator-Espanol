@@ -880,6 +880,20 @@ async function generateWithAI(skipBtnUI=false){
     usr=lang==='es'
       ?`Tema: "${topic}" | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de narración épica histórica (máx 28 palabras cada una). Inicia con un hecho impactante, escala la tensión dramática, termina con una frase legendaria.\n\nJSON:\n["frase1","frase2",...]`
       :`Topic: "${topic}" | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 epic historical narration lines (max 28 words each). Start with a shocking fact, escalate dramatic tension, end with a legendary line.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='mente-masculina'){
+    sys=lang==='es'
+      ?'Eres un coach de masculinidad consciente. Hablas con claridad, profundidad y sin toxicidad. Responde SOLO con JSON array de strings.'
+      :'You are a conscious masculinity coach. Speak with clarity, depth and without toxicity. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Tipo: ${gv('narrator-type')||'random'} | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de reflexión masculina (máx 24 palabras cada una). Habla directo al hombre ("tú"), inicia con una verdad que lo sacude, da perspectiva y un paso de acción concreto.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Type: ${gv('narrator-type')||'random'} | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 masculine reflection lines (max 24 words each). Speak directly to the man ("you"), start with a truth that shakes them, give perspective and one concrete action step.\n\nJSON:\n["line1","line2",...]`;
+  } else if(mode==='mujer-consciente'){
+    sys=lang==='es'
+      ?'Eres una mentora de empoderamiento femenino consciente. Hablas con calidez, sabiduría y amor propio. Responde SOLO con JSON array de strings.'
+      :'You are a conscious feminine empowerment mentor. Speak with warmth, wisdom and self-love. Reply ONLY with a JSON array of strings.';
+    usr=lang==='es'
+      ?`Tema: "${topic}" | Tipo: ${gv('narrator-type')||'random'} | Categoría: ${gv('category')||'random'} | Estilo: ${styleV} | Tono: ${toneV}\n\nGenera 8 frases de empoderamiento femenino (máx 24 palabras cada una). Habla directo a la mujer ("tú"), inicia con algo que resuene emocionalmente, valida su experiencia y empodera con un paso claro.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Type: ${gv('narrator-type')||'random'} | Category: ${gv('category')||'random'} | Style: ${styleV} | Tone: ${toneV}\n\nGenerate 8 feminine empowerment lines (max 24 words each). Speak directly to the woman ("you"), start with something emotionally resonant, validate her experience and empower with a clear step.\n\nJSON:\n["line1","line2",...]`;
   }
 
   try{
@@ -1650,6 +1664,9 @@ async function _previewStep(){
   area.innerHTML='';
 
   try{
+    // Resolver el tema antes de llamar generateWithAI (igual que en generateWithAI línea 765)
+    const _pvTopic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
+
     // Genera guion (vista previa) + aplica recommended_config internamente
     await generateWithAI(true);
 
@@ -1668,7 +1685,8 @@ async function _previewStep(){
 
     if(badges){
       area.insertAdjacentHTML('afterbegin',`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:10px 14px;margin-bottom:14px;">
-        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">✨ ${lang==='es'?'Config recomendada por la IA para este tema':'AI-recommended config for this topic'}</div>
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">✨ ${lang==='es'?'Config recomendada por la IA para este tema':'AI-recommended config for this topic'}</div>
+        <div style="font-size:11px;color:#444;margin-bottom:8px;">📌 ${lang==='es'?'Tema':'Topic'}: <strong>${_pvTopic}</strong></div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;line-height:1.8;">${badges}</div>
         ${rec.reason?`<div style="font-size:11px;color:#555;margin-top:7px;font-style:italic;">${rec.reason}</div>`:''}
       </div>`);
