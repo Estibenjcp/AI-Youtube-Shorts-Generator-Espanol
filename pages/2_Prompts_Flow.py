@@ -484,7 +484,8 @@ const MODE_SELECTS={
   'style':{es:[['random','🎲 Aleatorio'],['sarcastico','Sarcástico / irónico'],['documental-laboral','Documental / denuncia'],['humor-negro','Humor negro laboral'],['indignacion-directa','Indignación directa'],['comedia-realidad','Comedia de la realidad']],en:[['random','🎲 Random'],['sarcastico','Sarcastic / ironic'],['documental-laboral','Documentary / expose'],['humor-negro','Dark work humor'],['indignacion-directa','Direct outrage'],['comedia-realidad','Reality comedy']]},
   'tone':{es:[['random','🎲 Aleatorio'],['indignado-sarcastico','Indignado pero sarcástico'],['cansado-resignado','Cansado y resignado'],['explosivo','Explosivo / sin filtro'],['ironico-seco','Irónico / seco'],['triste-comico','Triste pero cómico']],en:[['random','🎲 Random'],['indignado-sarcastico','Outraged but sarcastic'],['cansado-resignado','Tired and resigned'],['explosivo','Explosive / unfiltered'],['ironico-seco','Ironic / dry'],['triste-comico','Sad but comedic']]},
   'image-count':{es:[['1','1 imagen'],['3','3 imágenes'],['5','5 imágenes'],['7','7 imágenes'],['10','10 imágenes']],en:[['1','1 image'],['3','3 images'],['5','5 images'],['7','7 images'],['10','10 images']]},
-  'image-format':{es:[['carrusel','📱 Carrusel (Instagram / LinkedIn)'],['historia','📸 Historia (Stories / Reels vertical)']],en:[['carrusel','📱 Carousel (Instagram / LinkedIn)'],['historia','📸 Story (Stories / Reels vertical)']]}
+  'image-format':{es:[['carrusel','📱 Carrusel (Instagram / LinkedIn)'],['historia','📸 Historia (Stories / Reels vertical)']],en:[['carrusel','📱 Carousel (Instagram / LinkedIn)'],['historia','📸 Story (Stories / Reels vertical)']]},
+  'publico':{es:[['universal','🌎 Universal (todos los trabajadores)'],['random','🎲 Aleatorio (IA elige)'],['oficina-corporativo','🏢 Oficina / Corporativo'],['salud-enfermeria','🏥 Salud — médicos, enfermeros, auxiliares'],['educacion-docentes','📚 Educación — maestros y docentes'],['servicios-retail','🛒 Servicios — retail, restaurantes, tiendas'],['call-center','📞 Call center / atención al cliente'],['tecnologia-it','💻 Tecnología / IT / desarrolladores'],['freelance-independiente','🧑‍💻 Freelancers / trabajadores independientes'],['obrero-manufactura','🏭 Obreros / manufactura / operarios'],['recien-graduado','🎓 Recién graduados / primer empleo'],['remoto-home-office','🏠 Trabajadores remotos / home office'],['hosteleria-turismo','✈️ Hostelería / turismo / aerolíneas'],['seguridad-vigilancia','🔒 Seguridad / vigilancia / guardia']],en:[['universal','🌎 Universal (all workers)'],['random','🎲 Random (AI chooses)'],['oficina-corporativo','🏢 Office / Corporate'],['salud-enfermeria','🏥 Health — doctors, nurses, assistants'],['educacion-docentes','📚 Education — teachers'],['servicios-retail','🛒 Services — retail, restaurants, stores'],['call-center','📞 Call center / customer service'],['tecnologia-it','💻 Tech / IT / developers'],['freelance-independiente','🧑‍💻 Freelancers / independent workers'],['obrero-manufactura','🏭 Factory workers / manufacturing'],['recien-graduado','🎓 Recent graduates / first job'],['remoto-home-office','🏠 Remote / home office workers'],['hosteleria-turismo','✈️ Hospitality / tourism / airlines'],['seguridad-vigilancia','🔒 Security / guards']]}
 }
 };
 
@@ -555,7 +556,7 @@ const MODE_BLOCKS={
 ]
 ,'indignacion-laboral':[
   {id:'il-sistema-block',title:{es:'Sistema de producción',en:'Production system'},fields:[{id:'system-type',label:{es:'Sistema',en:'System'}},{id:'pais',label:{es:'País / Dialecto',en:'Country / Dialect'}}]},
-  {id:'il-content-block',title:{es:'Tipo de contenido',en:'Content type'},fields:[{id:'content-type',label:{es:'Categoría',en:'Category'}},{id:'narrator-type',label:{es:'Voz / Narrador',en:'Voice / Narrator'}}]},
+  {id:'il-content-block',title:{es:'Tipo de contenido',en:'Content type'},fields:[{id:'content-type',label:{es:'Categoría',en:'Category'}},{id:'narrator-type',label:{es:'Voz / Narrador',en:'Voice / Narrator'}},{id:'publico',label:{es:'Público objetivo',en:'Target audience'}}]},
   {id:'il-style-block',title:{es:'Estilo y tono',en:'Style & tone'},fields:[{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]},
   {id:'il-image-block',title:{es:'Configuración de imágenes',en:'Image configuration'},fields:[{id:'image-count',label:{es:'Cantidad de imágenes',en:'Number of images'}},{id:'image-format',label:{es:'Formato de secuencia',en:'Sequence format'}}]}
 ]
@@ -920,14 +921,15 @@ async function generateWithAI(skipBtnUI=false){
   } else if(mode==='indignacion-laboral'){
     const pais=gv('pais')||'universal';
     const contentType=gv('content-type')||'random';
+    const publicoV=gv('publico')||'universal';
     const paisMap={universal:'español neutro',mexico:'México (mexicanismos, "wey", "chido", "ya valió")',colombia:'Colombia (colombianismos, "bacano", "parcero", "qué chimba")',argentina:'Argentina (rioplatense, "che", "boludo", "re")',espana:'España (peninsular, "tío", "joder", "coño")',peru:'Perú (peruanismos, "causa", "pe", "bacán")',chile:'Chile (chilenismos, "huevón", "cachai", "po")',dominicana:'Rep. Dominicana (dominicanismos, "manin", "vaina", "qué lo qué")',paraguay:'Paraguay (paraguayo, mezcla español-guaraní)',nicaragua:'Nicaragua (nicaragüismos, "mae", "chunche")',puertorico:'Puerto Rico (boricua, "wepa", "ay bendito", "bicho")'};
     const dialectHint=paisMap[pais]||'español neutro';
     sys=lang==='es'
       ?`Eres un creador de contenido viral especializado en indignación laboral para Latinoamérica y España. Tu voz es auténtica, sarcástica y directa. Hablas en ${dialectHint}. Responde SOLO con JSON array de strings.`
       :`You are a viral content creator specialized in labor outrage for Latin America and Spain. Your voice is authentic, sarcastic and direct. You speak in ${dialectHint}. Reply ONLY with a JSON array of strings.`;
     usr=lang==='es'
-      ?`Tema: "${topic}" | Tipo de contenido: ${contentType} | Estilo: ${styleV} | Tono: ${toneV} | País/Dialecto: ${dialectHint}\n\nGenera 8 frases de contenido viral laboral (máx 24 palabras cada una). Usa el dialecto indicado con naturalidad, sé sarcástico/indignado, habla directo al trabajador ("tú"). Para "oferta-falsa-chiste" expón y burla la oferta ridícula, NO la enseñes a hacer. Escala la indignación.\n\nJSON:\n["frase1","frase2",...]`
-      :`Topic: "${topic}" | Content type: ${contentType} | Style: ${styleV} | Tone: ${toneV} | Country/Dialect: ${dialectHint}\n\nGenerate 8 viral labor content lines (max 24 words each). Use the indicated dialect naturally, be sarcastic/outraged, speak directly to the worker ("you"). For "oferta-falsa-chiste" expose and mock the ridiculous offer, do NOT teach how to make one. Escalate the outrage.\n\nJSON:\n["line1","line2",...]`;
+      ?`Tema: "${topic}" | Tipo de contenido: ${contentType} | Público objetivo: ${publicoV} | Estilo: ${styleV} | Tono: ${toneV} | País/Dialecto: ${dialectHint}\n\nGenera 8 frases de contenido viral laboral (máx 24 palabras cada una). Usa el dialecto indicado con naturalidad, sé sarcástico/indignado, habla directo al trabajador ("tú") del público especificado. Para "oferta-falsa-chiste" expón y burla la oferta ridícula, NO la enseñes a hacer. Escala la indignación.\n\nJSON:\n["frase1","frase2",...]`
+      :`Topic: "${topic}" | Content type: ${contentType} | Target audience: ${publicoV} | Style: ${styleV} | Tone: ${toneV} | Country/Dialect: ${dialectHint}\n\nGenerate 8 viral labor content lines (max 24 words each). Use the indicated dialect naturally, be sarcastic/outraged, speak directly to the specified audience worker ("you"). For "oferta-falsa-chiste" expose and mock the ridiculous offer, do NOT teach how to make one. Escalate the outrage.\n\nJSON:\n["line1","line2",...]`;
   }
 
   try{
@@ -1143,7 +1145,7 @@ async function recommendCombo(){
     'mujer-consciente':['narrator-type','narrator-gender','category','style','tone'],
     'misterio-biblico':['narrator-type','narrator-gender','narrator-lang','scene-type','subtopic','style','tone'],
     'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
-    'indignacion-laboral':['content-type','narrator-type','style','tone','pais'],
+    'indignacion-laboral':['content-type','narrator-type','publico','style','tone','pais'],
   };
   const fields=modeFields[mode]||['style','tone'];
   const allFields=[...fields,'set-style'];
@@ -1696,6 +1698,7 @@ async function generateImageSequence(){
   const topic=gv('topic').trim()||(pick(RAND_TOPICS['indignacion-laboral']?.[lang]||[]));
   const pais=gv('pais')||'universal';
   const contentType=gv('content-type')||'random';
+  const publicoV=gv('publico')||'universal';
   const imageCount=parseInt(gv('image-count')||'5');
   const imageFormat=gv('image-format')||'carrusel';
   const styleV=gv('style')||'random';
@@ -1726,6 +1729,7 @@ async function generateImageSequence(){
     ?`Tema: "${topic}"
 País/Dialecto: ${dialectHint}
 Tipo de contenido: ${ctHint}
+Público objetivo: ${publicoV}
 Formato: ${formatHint}
 Estilo: ${styleV} | Tono: ${toneV}
 Número de imágenes: ${imageCount}
@@ -1750,6 +1754,7 @@ JSON:`
     :`Topic: "${topic}"
 Country/Dialect: ${dialectHint}
 Content type: ${ctHint}
+Target audience: ${publicoV}
 Format: ${formatHint}
 Style: ${styleV} | Tone: ${toneV}
 Number of images: ${imageCount}
