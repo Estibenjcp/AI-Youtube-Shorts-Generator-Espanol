@@ -1889,12 +1889,32 @@ async function _previewStep(){
     const _pvTopic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
     _lastPreviewTopic=_pvTopic; // guardar para que _fullGenerate use el mismo tema
 
-    // Para modo imagen: no hay guion — ir directo a config + botones
+    // Para modo imagen: no hay guion — mostrar resumen de config + botones
     if(mode==='indignacion-laboral' && gv('system-type')==='imagenes'){
-      // mostrar config recomendada directamente (pre-call ya se hará en _fullGenerate)
-      area.innerHTML=`<div style="background:#fef9c3;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#854d0e;">
-        📌 ${lang==='es'?'Tema':'Topic'}: <strong>${_pvTopic}</strong><br>
-        <span style="font-size:11px;color:#92400e;margin-top:4px;display:block;">🖼️ ${lang==='es'?'Se generarán los prompts de imagen al aceptar':'Image prompts will be generated on accept'}</span>
+      const mkB=(bg,col,icon,txt)=>txt&&txt!=='random'&&txt!=='universal'?`<span style="background:${bg};color:${col};padding:3px 9px;border-radius:12px;font-size:10.5px;font-weight:600;display:inline-block;margin:2px;">${icon} ${txt}</span>`:'';
+      const contentTypeLabels={es:{'red-flags':'Red flags laborales','explotacion-disfrazada':'Explotación disfrazada','humor-negro':'Humor negro laboral','oferta-falsa-chiste':'Oferta falsa (chiste)','indignacion-pura':'Indignación pura','salario-toxico':'Salario "competitivo"'},en:{'red-flags':'Workplace red flags','explotacion-disfrazada':'Disguised exploitation','humor-negro':'Dark work humor','oferta-falsa-chiste':'Fake offer (joke)','indignacion-pura':'Pure outrage','salario-toxico':'"Competitive" salary'}};
+      const publicoLabels={es:{'universal':'Universal','oficina-corporativo':'Oficina / Corporativo','salud-enfermeria':'Salud / Enfermería','educacion-docentes':'Docentes','servicios-retail':'Retail / Servicios','call-center':'Call center','tecnologia-it':'Tecnología / IT','freelance-independiente':'Freelancers','obrero-manufactura':'Obreros / Manufactura','recien-graduado':'Recién graduados','remoto-home-office':'Remoto / Home office','hosteleria-turismo':'Hostelería / Turismo','seguridad-vigilancia':'Seguridad'},en:{'universal':'Universal','oficina-corporativo':'Office / Corporate','salud-enfermeria':'Healthcare','educacion-docentes':'Teachers','servicios-retail':'Retail / Services','call-center':'Call center','tecnologia-it':'Tech / IT','freelance-independiente':'Freelancers','obrero-manufactura':'Factory workers','recien-graduado':'Recent graduates','remoto-home-office':'Remote workers','hosteleria-turismo':'Hospitality','seguridad-vigilancia':'Security'}};
+      const paisLabels={'universal':'🌎 Universal','mexico':'🇲🇽 México','colombia':'🇨🇴 Colombia','argentina':'🇦🇷 Argentina','espana':'🇪🇸 España','peru':'🇵🇪 Perú','chile':'🇨🇱 Chile','dominicana':'🇩🇴 Dominicana','paraguay':'🇵🇾 Paraguay','nicaragua':'🇳🇮 Nicaragua','puertorico':'🇵🇷 Puerto Rico'};
+      const formatLabels={es:{carrusel:'📱 Carrusel',historia:'📸 Historia'},en:{carrusel:'📱 Carousel',historia:'📸 Story'}};
+      const ct=gv('content-type')||'random';
+      const pub=gv('publico')||'universal';
+      const pais=gv('pais')||'universal';
+      const imgFmt=gv('image-format')||'carrusel';
+      const imgCnt=gv('image-count')||'5';
+      const stV=gv('style')||'random';
+      const tnV=gv('tone')||'random';
+      const badges=[
+        mkB('#fef3c7','#92400e','🎭',(contentTypeLabels[lang]||contentTypeLabels.es)[ct]),
+        mkB('#f3e8ff','#7c3aed','👥',(publicoLabels[lang]||publicoLabels.es)[pub]),
+        mkB('#e8f4ff','#185fa5','🌍',paisLabels[pais]),
+        mkB('#f0fdf4','#166534','📐',(formatLabels[lang]||formatLabels.es)[imgFmt]+' · '+imgCnt+(lang==='es'?' img':' img')),
+        mkB('#fff1f2','#9f1239','✏️',stV!=='random'?stV:''),
+        mkB('#fef9c3','#854d0e','🎭',tnV!=='random'?tnV:'')
+      ].filter(Boolean).join('');
+      area.innerHTML=`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🖼️ ${lang==='es'?'Configuración de imágenes':'Image configuration'}</div>
+        <div style="font-size:12px;color:#444;margin-bottom:8px;">📌 ${lang==='es'?'Tema':'Topic'}: <strong>${_pvTopic}</strong></div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;line-height:2;">${badges||'<span style="font-size:11px;color:#888;">'+( lang==='es'?'Configuración en aleatorio':'All settings on random')+'</span>'}</div>
       </div>`;
       area.insertAdjacentHTML('beforeend',`<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;padding-bottom:8px;">
         <button onclick="_previewStep()" style="padding:9px 18px;background:#f0ede2;color:#1a1a1a;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔄 ${lang==='es'?'Cambiar':'Regenerate'}</button>
