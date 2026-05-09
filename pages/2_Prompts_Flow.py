@@ -1401,12 +1401,28 @@ async function generateNarratorPackage(){
     ?`{"narrator_id":[1-${n} rotating],"dialogue":"[max 26 words]"}`
     :`{"dialogue":"[max 28 words]"}`;
 
+  // Opciones exactas por campo para recomendación del AI
+  const SET_STYLE_OPTIONS='oscuro|moderno|natural|neon|biblioteca|mistico';
+  const ms=MODE_SELECTS[mode]||{};
+  const ntOpts=(ms['narrator-type']?.[lang]||[]).filter(o=>o[0]!=='random').map(o=>o[0]).join('|')||'random';
+  const catOpts=(ms['category']?.[lang]||[]).filter(o=>o[0]!=='random').map(o=>o[0]).join('|')||'random';
+  const styleOpts=(ms['style']?.[lang]||[]).filter(o=>o[0]!=='random').map(o=>o[0]).join('|')||'random';
+  const toneOpts=(ms['tone']?.[lang]||[]).filter(o=>o[0]!=='random').map(o=>o[0]).join('|')||'random';
+
   const usr=`Topic: "${topic}" | Mode: ${mode} | Category: ${category} | Style: ${styleV} | Tone: ${toneV}
 Narrators: ${n} (${numH} host${numH>1?'s':''} + ${numG} guest${numG>1?'s':''}) | Primary gender: ${narratorGender}, type: ${narratorType}
 Clips: ${clips} × ${sec}s | Setting hint: ${effectiveSettingHint}
 
 Return ONLY this JSON (no markdown):
 {
+  "recommended_config": {
+    "set_style": "[best fit from: ${SET_STYLE_OPTIONS}]",
+    "narrator_type": "[best fit from: ${ntOpts}]",
+    "category": "[best fit from: ${catOpts}]",
+    "style": "[best fit from: ${styleOpts}]",
+    "tone": "[best fit from: ${toneOpts}]",
+    "reason": "[1 sentence in ${lang==='es'?'Spanish':'English'} explaining why this config fits the topic]"
+  },
   "narrators": [
 ${narratorEntries}
   ],
@@ -1422,6 +1438,7 @@ ${narratorEntries}
   "thumbnail_prompt": "Vertical 9:16 ChatGPT/DALL-E thumbnail — dramatic, high contrast, text space top 20%"
 }
 Rules:
+- recommended_config: pick EXACT values from the options listed — no invented values
 - narrators: exactly ${n} objects with unique distinct appearances and assigned roles (host/guest)
 - clips: exactly ${clips} items${isMulti?`, rotate narrator_id 1-${n} evenly across all ${n} characters, escalate tension progressively`:', escalate progressively'}
 - All dialogue in ${lang==='es'?'Spanish':'English'}
@@ -1449,6 +1466,29 @@ Rules:
     const tagsYT=Array.isArray(data.tags_youtube)?data.tags_youtube:[];
     const thumbP=data.thumbnail_prompt||'';
 
+    // ── Aplicar configuración recomendada por la IA ───────────────────────────
+    const rec=data.recommended_config||{};
+    const validSets=['oscuro','moderno','natural','neon','biblioteca','mistico'];
+    if(rec.set_style && validSets.includes(rec.set_style)){
+      setStyle=rec.set_style;
+      document.querySelectorAll('[data-set]').forEach(b=>b.classList.toggle('active',b.dataset.set===rec.set_style));
+    }
+    ['narrator-type','category','style','tone'].forEach(fid=>{
+      const key=fid.replace('-','_');
+      const val=rec[key]||rec[fid];
+      const el=document.getElementById(fid);
+      if(el&&val&&[...el.options].some(o=>o.value===val)) el.value=val;
+    });
+
+    const SET_STYLE_LABELS={oscuro:'🕯️ Oscuro / Edison',moderno:'💡 Moderno / Softbox',natural:'🌿 Natural / Madera',neon:'🎨 Neon / Urbano',biblioteca:'📚 Biblioteca / Clásico',mistico:'🔮 Místico / Velas'};
+    const recBadges=[
+      rec.set_style?`<span style="background:#e8f4ff;color:#185fa5;padding:3px 8px;border-radius:12px;font-size:10.5px;font-weight:600;">${SET_STYLE_LABELS[rec.set_style]||rec.set_style}</span>`:'',
+      rec.narrator_type?`<span style="background:#f3e8ff;color:#7c3aed;padding:3px 8px;border-radius:12px;font-size:10.5px;font-weight:600;">👤 ${rec.narrator_type}</span>`:'',
+      rec.category?`<span style="background:#fef9c3;color:#854d0e;padding:3px 8px;border-radius:12px;font-size:10.5px;font-weight:600;">🏷️ ${rec.category}</span>`:'',
+      rec.style?`<span style="background:#f0fdf4;color:#166534;padding:3px 8px;border-radius:12px;font-size:10.5px;font-weight:600;">✏️ ${rec.style}</span>`:'',
+      rec.tone?`<span style="background:#fff1f2;color:#9f1239;padding:3px 8px;border-radius:12px;font-size:10.5px;font-weight:600;">🎭 ${rec.tone}</span>`:''
+    ].filter(Boolean).join(' ');
+
     const castDesc=numG===0?(lang==='es'?`${numH} narrador${numH>1?'es':''}`:`${numH} narrator${numH>1?'s':''}`): (lang==='es'?`${numH} host${numH>1?'s':''} + ${numG} invitado${numG>1?'s':''}`:`${numH} host${numH>1?'s':''} + ${numG} guest${numG>1?'s':''}`);
     document.getElementById('config-out').textContent=
       `MODO: ${MODES[mode].title[lang].toUpperCase()} | ${dur} min · ${clips} clips × ${sec}s | ${castDesc} | MODELO: ${getActiveModel()}\nTEMA: ${topic}`;
@@ -1456,13 +1496,18 @@ Rules:
     window._allPrompts=[];
 
     // ── Header ────────────────────────────────────────────────────────────────
-    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px;flex-wrap:wrap;">
+    let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
       <strong style="font-size:13px;color:#1a1a1a;">🎬 Paquete completo · ${castDesc}</strong>
       <div style="display:flex;gap:6px;">
-        <button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:28px;padding:0 10px;font-size:11px;background:#f0ede2;color:#1a1a1a;border:none;border-radius:6px;cursor:pointer;" data-i18n="backToTop">⬆️ Volver arriba</button>
+        <button onclick="window.scrollTo({top:0,behavior:'smooth'})" style="height:28px;padding:0 10px;font-size:11px;background:#f0ede2;color:#1a1a1a;border:none;border-radius:6px;cursor:pointer;">⬆️ Volver arriba</button>
         <button onclick="copyAllPrompts()" style="height:28px;padding:0 12px;font-size:11px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;cursor:pointer;">📋 Copiar todo</button>
       </div>
-    </div>`;
+    </div>
+    ${recBadges?`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">✨ ${lang==='es'?'Config recomendada por la IA para este tema':'AI-recommended config for this topic'}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">${recBadges}</div>
+      ${rec.reason?`<div style="font-size:11px;color:#555;margin-top:7px;font-style:italic;">${rec.reason}</div>`:''}
+    </div>`:''}`);
 
     // ── Prompts de imagen por narrador ────────────────────────────────────────
     const imgSceneType=isPanel?'panel':isMulti?'duo':'solo';
