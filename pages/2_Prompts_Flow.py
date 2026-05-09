@@ -1891,30 +1891,66 @@ async function _previewStep(){
 
     // Para modo imagen: no hay guion — mostrar resumen de config + botones
     if(mode==='indignacion-laboral' && gv('system-type')==='imagenes'){
-      const mkB=(bg,col,icon,txt)=>txt&&txt!=='random'&&txt!=='universal'?`<span style="background:${bg};color:${col};padding:3px 9px;border-radius:12px;font-size:10.5px;font-weight:600;display:inline-block;margin:2px;">${icon} ${txt}</span>`:'';
-      const contentTypeLabels={es:{'red-flags':'Red flags laborales','explotacion-disfrazada':'Explotación disfrazada','humor-negro':'Humor negro laboral','oferta-falsa-chiste':'Oferta falsa (chiste)','indignacion-pura':'Indignación pura','salario-toxico':'Salario "competitivo"'},en:{'red-flags':'Workplace red flags','explotacion-disfrazada':'Disguised exploitation','humor-negro':'Dark work humor','oferta-falsa-chiste':'Fake offer (joke)','indignacion-pura':'Pure outrage','salario-toxico':'"Competitive" salary'}};
-      const publicoLabels={es:{'universal':'Universal','oficina-corporativo':'Oficina / Corporativo','salud-enfermeria':'Salud / Enfermería','educacion-docentes':'Docentes','servicios-retail':'Retail / Servicios','call-center':'Call center','tecnologia-it':'Tecnología / IT','freelance-independiente':'Freelancers','obrero-manufactura':'Obreros / Manufactura','recien-graduado':'Recién graduados','remoto-home-office':'Remoto / Home office','hosteleria-turismo':'Hostelería / Turismo','seguridad-vigilancia':'Seguridad'},en:{'universal':'Universal','oficina-corporativo':'Office / Corporate','salud-enfermeria':'Healthcare','educacion-docentes':'Teachers','servicios-retail':'Retail / Services','call-center':'Call center','tecnologia-it':'Tech / IT','freelance-independiente':'Freelancers','obrero-manufactura':'Factory workers','recien-graduado':'Recent graduates','remoto-home-office':'Remote workers','hosteleria-turismo':'Hospitality','seguridad-vigilancia':'Security'}};
+      // ── Pre-llamada IA: resolver campos en random ──────────────────────────────
+      if(_orKey){
+        try{
+          const ms0=MODE_SELECTS[mode]||{};
+          const recLines=[];
+          ['content-type','publico','style','tone'].forEach(fid=>{
+            const val=gv(fid);
+            if(val==='random'||!val){
+              const opts=(ms0[fid]?.[lang]||[]).filter(o=>o[0]!=='random'&&o[0]!=='universal').map(o=>o[0]).join('|');
+              if(opts) recLines.push(`  "${fid.replace(/-/g,'_')}": "one of: ${opts}"`);
+            }
+          });
+          if(recLines.length){
+            const rRaw=await _callOR(
+              'You are a viral labor content expert. Pick the BEST matching values for the given topic. Reply ONLY with compact JSON, no extra text.',
+              `Topic: "${_pvTopic}" | Mode: indignacion-laboral | Language: ${lang==='es'?'Spanish':'English'}\nReturn ONLY this JSON:\n{\n${recLines.join(',\n')}\n}`,
+              200
+            );
+            const rm=rRaw.match(/\{[\s\S]*\}/);
+            if(rm){const pr=JSON.parse(rm[0]);_lastRecData=pr;_applyRec(pr);}
+          }
+        }catch(er){/* silently skip */}
+      }
+      // ── Construir badges con valores resueltos (manual o IA) ──────────────────
+      const mkB=(bg,col,icon,lbl,aiPicked)=>{
+        if(!lbl) return '';
+        const aiTag=aiPicked?`<span style="font-size:9px;background:rgba(0,0,0,0.12);border-radius:4px;padding:1px 4px;margin-left:3px;">IA</span>`:'';
+        return `<span style="background:${bg};color:${col};padding:3px 9px;border-radius:12px;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;gap:2px;margin:2px;">${icon} ${lbl}${aiTag}</span>`;
+      };
+      const ctLabels={es:{'red-flags':'🚩 Red flags laborales','explotacion-disfrazada':'💀 Explotación disfrazada','humor-negro':'😂 Humor negro','oferta-falsa-chiste':'🎭 Oferta falsa (chiste)','indignacion-pura':'😤 Indignación pura','salario-toxico':'💸 Salario "competitivo"'},en:{'red-flags':'🚩 Red flags','explotacion-disfrazada':'💀 Exploitation','humor-negro':'😂 Dark humor','oferta-falsa-chiste':'🎭 Fake offer','indignacion-pura':'😤 Pure outrage','salario-toxico':'💸 "Competitive" salary'}};
+      const pubLabels={es:{'universal':'🌎 Universal','oficina-corporativo':'🏢 Oficina / Corp.','salud-enfermeria':'🏥 Salud','educacion-docentes':'📚 Docentes','servicios-retail':'🛒 Retail / Servicios','call-center':'📞 Call center','tecnologia-it':'💻 Tecnología / IT','freelance-independiente':'🧑‍💻 Freelancers','obrero-manufactura':'🏭 Obreros','recien-graduado':'🎓 Recién graduados','remoto-home-office':'🏠 Remoto','hosteleria-turismo':'✈️ Hostelería','seguridad-vigilancia':'🔒 Seguridad'},en:{'universal':'🌎 Universal','oficina-corporativo':'🏢 Office/Corp','salud-enfermeria':'🏥 Healthcare','educacion-docentes':'📚 Teachers','servicios-retail':'🛒 Retail','call-center':'📞 Call center','tecnologia-it':'💻 Tech/IT','freelance-independiente':'🧑‍💻 Freelancers','obrero-manufactura':'🏭 Factory','recien-graduado':'🎓 Graduates','remoto-home-office':'🏠 Remote','hosteleria-turismo':'✈️ Hospitality','seguridad-vigilancia':'🔒 Security'}};
       const paisLabels={'universal':'🌎 Universal','mexico':'🇲🇽 México','colombia':'🇨🇴 Colombia','argentina':'🇦🇷 Argentina','espana':'🇪🇸 España','peru':'🇵🇪 Perú','chile':'🇨🇱 Chile','dominicana':'🇩🇴 Dominicana','paraguay':'🇵🇾 Paraguay','nicaragua':'🇳🇮 Nicaragua','puertorico':'🇵🇷 Puerto Rico'};
-      const formatLabels={es:{carrusel:'📱 Carrusel',historia:'📸 Historia'},en:{carrusel:'📱 Carousel',historia:'📸 Story'}};
-      const ct=gv('content-type')||'random';
-      const pub=gv('publico')||'universal';
+      const fmtLabels={es:{carrusel:'📱 Carrusel',historia:'📸 Historia'},en:{carrusel:'📱 Carousel',historia:'📸 Story'}};
+      const stLabels={es:{'sarcastico':'Sarcástico','documental-laboral':'Documental','humor-negro':'Humor negro','indignacion-directa':'Indignación directa','comedia-realidad':'Comedia real'},en:{'sarcastico':'Sarcastic','documental-laboral':'Documentary','humor-negro':'Dark humor','indignacion-directa':'Direct outrage','comedia-realidad':'Reality comedy'}};
+      const tnLabels={es:{'indignado-sarcastico':'Indignado / sarcástico','cansado-resignado':'Cansado','explosivo':'Explosivo','ironico-seco':'Irónico / seco','triste-comico':'Triste / cómico'},en:{'indignado-sarcastico':'Outraged / sarcastic','cansado-resignado':'Tired','explosivo':'Explosive','ironico-seco':'Ironic / dry','triste-comico':'Sad / comedic'}};
+      const rec=_lastRecData||{};
+      const ctRaw=gv('content-type'); const ctAI=ctRaw==='random'&&rec.content_type;
+      const ctVal=ctAI?rec.content_type:ctRaw;
+      const pubRaw=gv('publico'); const pubAI=pubRaw==='random'&&rec.publico;
+      const pubVal=pubAI?rec.publico:pubRaw;
+      const stRaw=gv('style'); const stAI=stRaw==='random'&&rec.style;
+      const stVal=stAI?rec.style:stRaw;
+      const tnRaw=gv('tone'); const tnAI=tnRaw==='random'&&rec.tone;
+      const tnVal=tnAI?rec.tone:tnRaw;
       const pais=gv('pais')||'universal';
       const imgFmt=gv('image-format')||'carrusel';
       const imgCnt=gv('image-count')||'5';
-      const stV=gv('style')||'random';
-      const tnV=gv('tone')||'random';
       const badges=[
-        mkB('#fef3c7','#92400e','🎭',(contentTypeLabels[lang]||contentTypeLabels.es)[ct]),
-        mkB('#f3e8ff','#7c3aed','👥',(publicoLabels[lang]||publicoLabels.es)[pub]),
-        mkB('#e8f4ff','#185fa5','🌍',paisLabels[pais]),
-        mkB('#f0fdf4','#166534','📐',(formatLabels[lang]||formatLabels.es)[imgFmt]+' · '+imgCnt+(lang==='es'?' img':' img')),
-        mkB('#fff1f2','#9f1239','✏️',stV!=='random'?stV:''),
-        mkB('#fef9c3','#854d0e','🎭',tnV!=='random'?tnV:'')
+        mkB('#fef3c7','#92400e','',(ctLabels[lang]||ctLabels.es)[ctVal],ctAI),
+        mkB('#f3e8ff','#7c3aed','',(pubLabels[lang]||pubLabels.es)[pubVal],pubAI),
+        mkB('#e8f4ff','#185fa5','',paisLabels[pais],false),
+        mkB('#f0fdf4','#166534','',(fmtLabels[lang]||fmtLabels.es)[imgFmt]+' · '+imgCnt+(lang==='es'?' img':' img'),false),
+        mkB('#fff1f2','#9f1239','',(stLabels[lang]||stLabels.es)[stVal]||stVal,stAI),
+        mkB('#fef9c3','#854d0e','',(tnLabels[lang]||tnLabels.es)[tnVal]||tnVal,tnAI)
       ].filter(Boolean).join('');
       area.innerHTML=`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
         <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🖼️ ${lang==='es'?'Configuración de imágenes':'Image configuration'}</div>
         <div style="font-size:12px;color:#444;margin-bottom:8px;">📌 ${lang==='es'?'Tema':'Topic'}: <strong>${_pvTopic}</strong></div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;line-height:2;">${badges||'<span style="font-size:11px;color:#888;">'+( lang==='es'?'Configuración en aleatorio':'All settings on random')+'</span>'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;line-height:2;">${badges}</div>
+        ${Object.keys(rec).length?`<div style="font-size:10px;color:#888;margin-top:6px;">🤖 ${lang==='es'?'Campos con etiqueta IA fueron elegidos automáticamente':'Fields tagged IA were auto-selected'}</div>`:''}
       </div>`;
       area.insertAdjacentHTML('beforeend',`<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;padding-bottom:8px;">
         <button onclick="_previewStep()" style="padding:9px 18px;background:#f0ede2;color:#1a1a1a;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔄 ${lang==='es'?'Cambiar':'Regenerate'}</button>
