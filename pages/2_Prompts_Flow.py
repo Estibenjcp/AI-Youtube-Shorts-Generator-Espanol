@@ -1929,30 +1929,36 @@ async function _previewStep(){
       const stLabels={es:{'sarcastico':'Sarcástico','documental-laboral':'Documental','humor-negro':'Humor negro','indignacion-directa':'Indignación directa','comedia-realidad':'Comedia real'},en:{'sarcastico':'Sarcastic','documental-laboral':'Documentary','humor-negro':'Dark humor','indignacion-directa':'Direct outrage','comedia-realidad':'Reality comedy'}};
       const tnLabels={es:{'indignado-sarcastico':'Indignado / sarcástico','cansado-resignado':'Cansado','explosivo':'Explosivo','ironico-seco':'Irónico / seco','triste-comico':'Triste / cómico'},en:{'indignado-sarcastico':'Outraged / sarcastic','cansado-resignado':'Tired','explosivo':'Explosive','ironico-seco':'Ironic / dry','triste-comico':'Sad / comedic'}};
       const rec=_lastRecData||{};
-      const ctRaw=gv('content-type'); const ctAI=ctRaw==='random'&&rec.content_type;
-      const ctVal=ctAI?rec.content_type:ctRaw;
-      const pubRaw=gv('publico'); const pubAI=(pubRaw==='random'||pubRaw==='universal')&&rec.publico;
-      const pubVal=pubAI?rec.publico:pubRaw;
-      const stRaw=gv('style'); const stAI=stRaw==='random'&&rec.style;
-      const stVal=stAI?rec.style:stRaw;
-      const tnRaw=gv('tone'); const tnAI=tnRaw==='random'&&rec.tone;
-      const tnVal=tnAI?rec.tone:tnRaw;
+      // leer valores DESPUÉS de _applyRec — el select ya tiene el valor que la IA eligió
+      const ctFinal=gv('content-type')||rec.content_type||'random';
+      const ctWasAuto=(gv('content-type')===(rec.content_type||'__x__'))||false;
+      const pubFinal=gv('publico')||rec.publico||'universal';
+      const stFinal=gv('style')||rec.style||'random';
+      const tnFinal=gv('tone')||rec.tone||'random';
       const pais=gv('pais')||'universal';
       const imgFmt=gv('image-format')||'carrusel';
       const imgCnt=gv('image-count')||'5';
-      const badges=[
-        mkB('#fef3c7','#92400e','',(ctLabels[lang]||ctLabels.es)[ctVal],ctAI),
-        mkB('#f3e8ff','#7c3aed','',(pubLabels[lang]||pubLabels.es)[pubVal],pubAI),
-        mkB('#e8f4ff','#185fa5','',paisLabels[pais],false),
-        mkB('#f0fdf4','#166534','',(fmtLabels[lang]||fmtLabels.es)[imgFmt]+' · '+imgCnt+(lang==='es'?' img':' img'),false),
-        mkB('#fff1f2','#9f1239','',(stLabels[lang]||stLabels.es)[stVal]||stVal,stAI),
-        mkB('#fef9c3','#854d0e','',(tnLabels[lang]||tnLabels.es)[tnVal]||tnVal,tnAI)
-      ].filter(Boolean).join('');
+      // etiquetas legibles
+      const ctNombre=(ctLabels[lang]||ctLabels.es)[ctFinal]||(ctFinal!=='random'?ctFinal:'—');
+      const pubNombre=(pubLabels[lang]||pubLabels.es)[pubFinal]||pubFinal;
+      const stNombre=(stLabels[lang]||stLabels.es)[stFinal]||stFinal;
+      const tnNombre=(tnLabels[lang]||tnLabels.es)[tnFinal]||tnFinal;
+      const aiTag=`<span style="font-size:9px;background:#e0e7ff;color:#3730a3;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;">IA</span>`;
+      const row=(label,value,isAI,bg,col)=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:0.5px solid rgba(0,0,0,0.06);">
+        <span style="font-size:10px;color:#888;font-weight:600;width:90px;flex-shrink:0;">${label}</span>
+        <span style="background:${bg};color:${col};padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;">${value}</span>
+        ${isAI?aiTag:''}
+      </div>`;
       area.innerHTML=`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
-        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🖼️ ${lang==='es'?'Configuración de imágenes':'Image configuration'}</div>
-        <div style="font-size:12px;color:#444;margin-bottom:8px;">📌 ${lang==='es'?'Tema':'Topic'}: <strong>${_pvTopic}</strong></div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;line-height:2;">${badges}</div>
-        ${Object.keys(rec).length?`<div style="font-size:10px;color:#888;margin-top:6px;">🤖 ${lang==='es'?'Campos con etiqueta IA fueron elegidos automáticamente':'Fields tagged IA were auto-selected'}</div>`:''}
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">🖼️ ${lang==='es'?'Resumen antes de generar':'Summary before generating'}</div>
+        <div style="font-size:12px;color:#1a1a1a;font-weight:600;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,0.1);">📌 ${lang==='es'?'Tema':'Topic'}: ${_pvTopic}</div>
+        ${row(lang==='es'?'Categoría:':'Category:', ctNombre, Object.keys(rec).includes('content_type'), '#fef3c7','#92400e')}
+        ${row(lang==='es'?'Público:':'Audience:', pubNombre, Object.keys(rec).includes('publico'), '#f3e8ff','#7c3aed')}
+        ${row(lang==='es'?'País:':'Country:', paisLabels[pais]||pais, false, '#e8f4ff','#185fa5')}
+        ${row(lang==='es'?'Formato:':'Format:', (fmtLabels[lang]||fmtLabels.es)[imgFmt]+' · '+imgCnt+(lang==='es'?' imágenes':' images'), false, '#f0fdf4','#166534')}
+        ${stFinal!=='random'?row(lang==='es'?'Estilo:':'Style:', stNombre, Object.keys(rec).includes('style'), '#fff1f2','#9f1239'):''}
+        ${tnFinal!=='random'?row(lang==='es'?'Tono:':'Tone:', tnNombre, Object.keys(rec).includes('tone'), '#fef9c3','#854d0e'):''}
+        ${Object.keys(rec).length?`<div style="font-size:10px;color:#6366f1;margin-top:8px;">🤖 ${lang==='es'?'Campos marcados IA fueron elegidos automáticamente según el tema':'Fields marked IA were auto-selected based on the topic'}</div>`:''}
       </div>`;
       area.insertAdjacentHTML('beforeend',`<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;padding-bottom:8px;">
         <button onclick="_previewStep()" style="padding:9px 18px;background:#f0ede2;color:#1a1a1a;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔄 ${lang==='es'?'Cambiar':'Regenerate'}</button>
