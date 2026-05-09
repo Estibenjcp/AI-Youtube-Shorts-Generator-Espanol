@@ -337,7 +337,8 @@ const MODES={
   'finanzas-libertad':{icon:'💰',title:{es:'Finanzas & libertad',en:'Finance & freedom'},desc:{es:'Educación financiera viral, mentalidad de riqueza, libertad',en:'Viral financial education, wealth mindset, freedom'}},
   'mentalidad-disciplina':{icon:'💪',title:{es:'Mentalidad & disciplina',en:'Mindset & discipline'},desc:{es:'Motivación, hábitos, resiliencia — voz directa al espectador',en:'Motivation, habits, resilience — direct voice to viewer'}},
   'historia-epica':{icon:'⚔️',title:{es:'Historia épica',en:'Epic history'},desc:{es:'Batallas, imperios, héroes — narración cinematográfica épica',en:'Battles, empires, heroes — epic cinematic narration'}},
-  'psicologia-positiva':{icon:'🌸',title:{es:'Psicología positiva',en:'Positive psychology'},desc:{es:'Autoestima, sanación emocional, límites, apego — contenido que sana',en:'Self-esteem, healing, boundaries, attachment — content that heals'}}
+  'psicologia-positiva':{icon:'🌸',title:{es:'Psicología positiva',en:'Positive psychology'},desc:{es:'Autoestima, sanación emocional, límites, apego — contenido que sana',en:'Self-esteem, healing, boundaries, attachment — content that heals'}},
+  'mente-masculina':{icon:'💎',title:{es:'Mente masculina',en:'Masculine mindset'},desc:{es:'Reflexiones profundas para hombres — emociones, amor propio, relaciones, propósito',en:'Deep reflections for men — emotions, self-love, relationships, purpose'}}
 };
 
 const MODE_SELECTS={
@@ -456,6 +457,13 @@ const MODE_SELECTS={
   'category':{es:[['random','🎲 Aleatorio'],['autoestima','Autoestima y amor propio'],['sanacion-emocional','Sanación emocional'],['limites','Límites y autorespeto'],['apego','Estilos de apego y relaciones'],['ansiedad','Ansiedad y regulación emocional'],['duelo','Duelo y cierre emocional'],['autocuidado','Autocuidado y bienestar']],en:[['random','🎲 Random'],['autoestima','Self-esteem and self-love'],['sanacion-emocional','Emotional healing'],['limites','Boundaries and self-respect'],['apego','Attachment styles and relationships'],['ansiedad','Anxiety and emotional regulation'],['duelo','Grief and emotional closure'],['autocuidado','Self-care and well-being']]},
   'style':{es:[['random','🎲 Aleatorio'],['reconfortante','Reconfortante / sanador'],['revelador','Revelador / que abre los ojos'],['practico','Práctico / con pasos concretos'],['narrativo','Narrativo / historia personal']],en:[['random','🎲 Random'],['reconfortante','Comforting / healing'],['revelador','Eye-opening / revealing'],['practico','Practical / with concrete steps'],['narrativo','Narrative / personal story']]},
   'tone':{es:[['random','🎲 Aleatorio'],['calido-cercano','Cálido / cercano'],['suave-poderoso','Suave pero poderoso'],['esperanzador','Esperanzador / luminoso'],['directo-amoroso','Directo y amoroso']],en:[['random','🎲 Random'],['calido-cercano','Warm / close'],['suave-poderoso','Soft but powerful'],['esperanzador','Hopeful / luminous'],['directo-amoroso','Direct and loving']]}
+},
+'mente-masculina':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['coach-masculino','Coach de vida masculino'],['mentor-emocional','Mentor emocional'],['psicologo-masculino','Psicólogo / terapeuta'],['hombre-vivencia','Hombre con vivencia propia'],['voz-reflexiva','Voz reflexiva anónima']],en:[['random','🎲 Random'],['coach-masculino','Masculine life coach'],['mentor-emocional','Emotional mentor'],['psicologo-masculino','Psychologist / therapist'],['hombre-vivencia','Man sharing personal experience'],['voz-reflexiva','Anonymous reflective voice']]},
+  'narrator-gender':{es:[['male','Masculino'],['random','🎲 Aleatorio'],['female','Femenino']],en:[['male','Male'],['random','🎲 Random'],['female','Female']]},
+  'category':{es:[['random','🎲 Aleatorio'],['emociones-masculinas','Emociones & vulnerabilidad masculina'],['amor-propio','Amor propio & autoestima'],['relaciones','Relaciones & pareja'],['proposito-identidad','Propósito & identidad'],['sanacion','Sanación & heridas del pasado'],['soledad','Soledad & conexión'],['fuerza-interior','Fuerza interior & resiliencia']],en:[['random','🎲 Random'],['emociones-masculinas','Emotions & male vulnerability'],['amor-propio','Self-love & self-esteem'],['relaciones','Relationships & romantic life'],['proposito-identidad','Purpose & identity'],['sanacion','Healing & past wounds'],['soledad','Loneliness & connection'],['fuerza-interior','Inner strength & resilience']]},
+  'style':{es:[['random','🎲 Aleatorio'],['reflexivo-profundo','Reflexivo / profundo'],['directo-al-alma','Directo al alma'],['cinematografico','Cinematográfico / poético'],['confesional','Confesional / íntimo'],['motivacional','Motivacional / que activa']],en:[['random','🎲 Random'],['reflexivo-profundo','Reflective / deep'],['directo-al-alma','Direct to the soul'],['cinematografico','Cinematic / poetic'],['confesional','Confessional / intimate'],['motivacional','Motivational / activating']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['sereno-poderoso','Sereno pero poderoso'],['vulnerable-honesto','Vulnerable y honesto'],['directo-firme','Directo y firme'],['epico-profundo','Épico / profundo'],['calido-masculino','Cálido / masculino']],en:[['random','🎲 Random'],['sereno-poderoso','Calm but powerful'],['vulnerable-honesto','Vulnerable and honest'],['directo-firme','Direct and firm'],['epico-profundo','Epic / deep'],['calido-masculino','Warm / masculine']]}
 }
 };
 
@@ -515,6 +523,10 @@ const MODE_BLOCKS={
 'psicologia-positiva':[
   {id:'pp-narrator-block',title:{es:'Narrador / Terapeuta',en:'Narrator / Therapist'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
   {id:'pp-theme-block',title:{es:'Temática',en:'Theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'mente-masculina':[
+  {id:'mm-narrator-block',title:{es:'Narrador / Mentor',en:'Narrator / Mentor'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'mm-theme-block',title:{es:'Temática masculina',en:'Masculine theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
 ]
 };
 
@@ -570,6 +582,10 @@ const RAND_TOPICS={
   'psicologia-positiva':{
     es:['La razón por la que no puedes parar de pensar en esa persona y cómo sanar de verdad','Cuando alguien te dice "estás exagerando" — eso se llama invalidación emocional y tiene consecuencias','El tipo de apego que tienes determina cómo amas — y cómo te lastimas','Poner límites no es ser egoísta — es respetarte y enseñar a otros cómo tratarte'],
     en:['The reason you can\'t stop thinking about that person and how to truly heal','When someone tells you "you\'re overreacting" — that\'s called emotional invalidation and it has consequences','Your attachment style determines how you love — and how you get hurt','Setting boundaries isn\'t being selfish — it\'s respecting yourself and teaching others how to treat you']
+  },
+  'mente-masculina':{
+    es:['Nadie te enseñó a ser hombre — te enseñaron a no sentir','El hombre que más te hará daño eres tú cuando nadie te ve','La soledad masculina: por qué los hombres mueren solos y el mundo calla','Amar sin perder tu identidad — la trampa más silenciosa de las relaciones','No es debilidad llorar — es que te enseñaron a llamarle debilidad a tu humanidad','El día que dejé de buscar su aprobación fue el día que me encontré a mí mismo','Un hombre que no conoce sus heridas, las convierte en armas contra los que ama'],
+    en:['Nobody taught you to be a man — they taught you not to feel','The man who will hurt you most is who you are when no one is watching','Male loneliness: why men die alone and the world stays silent','Loving without losing your identity — the most silent trap in relationships','It\'s not weakness to cry — they just taught you to call your humanity weakness','The day I stopped seeking her approval was the day I found myself','A man who doesn\'t know his wounds turns them into weapons against those he loves']
   }
 };
 
@@ -1010,6 +1026,7 @@ async function recommendCombo(){
     'mentalidad-disciplina':['narrator-type','narrator-gender','category','style','tone'],
     'historia-epica':['narrator-type','narrator-gender','category','style','tone'],
     'psicologia-positiva':['narrator-type','narrator-gender','category','style','tone'],
+    'mente-masculina':['narrator-type','narrator-gender','category','style','tone'],
     'misterio-biblico':['narrator-type','narrator-gender','narrator-lang','scene-type','subtopic','style','tone'],
     'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
   };
@@ -1186,7 +1203,7 @@ ${VEO3_CAMERA}`;
 }
 
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
-const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico'];
+const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina'];
 
 function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host',charLabel=''){
   const sc=getScene();
@@ -1275,7 +1292,8 @@ async function generateNarratorPackage(){
     'historia-epica':{es:'canal de historia épica cinematográfica — batallas, imperios, héroes',en:'cinematic epic history channel — battles, empires, heroes'},
     'psicologia-positiva':{es:'canal de psicología positiva y bienestar emocional',en:'positive psychology and emotional wellness channel'},
     'testimonio-real':{es:'canal de testimonios reales en primera persona, confesional',en:'real first-person confessional testimony channel'},
-    'misterio-biblico':{es:'canal de misterios bíblicos y textos apócrifos',en:'biblical mysteries and apocryphal texts channel'}
+    'misterio-biblico':{es:'canal de misterios bíblicos y textos apócrifos',en:'biblical mysteries and apocryphal texts channel'},
+    'mente-masculina':{es:'canal de reflexiones profundas sobre masculinidad consciente, emociones, amor propio y propósito — especialmente dirigido a hombres',en:'deep reflections channel on conscious masculinity, emotions, self-love and purpose — especially aimed at men'}
   };
   const MODE_SETTING={
     'documental-narrado':'Documentary studio or relevant environmental backdrop, dramatic lighting, cinematic atmosphere',
@@ -1285,7 +1303,8 @@ async function generateNarratorPackage(){
     'historia-epica':'Ancient stone architecture or dramatic cinematic landscape, warm torch-like amber lighting, epic atmosphere',
     'psicologia-positiva':'Warm cozy interior, soft golden natural light, plants or flowers in background, calm healing atmosphere',
     'testimonio-real':'Dimly lit intimate room, single warm practical light source from one side, raw confessional atmosphere',
-    'misterio-biblico':'Candlelit stone room, ancient scrolls or artifacts on table, mysterious dramatic shadows, mystical atmosphere'
+    'misterio-biblico':'Candlelit stone room, ancient scrolls or artifacts on table, mysterious dramatic shadows, mystical atmosphere',
+    'mente-masculina':'Dark minimal masculine space — leather chair or raw wooden desk, warm amber side light, dramatic shadows, books and a single plant, serious contemplative atmosphere'
   };
 
   const ctx=(MODE_CTX[mode]||{})[lang]||MODE_CTX[mode]?.es||mode;
@@ -1324,7 +1343,8 @@ async function generateNarratorPackage(){
     'documental-narrado':'Round table documentary studio — participants seated around a modern circular broadcast table, dramatic cinematic lighting',
     'testimonio-real':'Round table intimate discussion — participants seated around a dim circular table, single warm practical light, raw confessional atmosphere',
     'misterio-biblico':'Round table ancient study — participants seated around a stone circular table, candlelit mystical atmosphere, ancient scrolls visible',
-    'psicologia-positiva':'Round table wellness panel — participants seated around a light circular table, soft golden natural light, plants and flowers in background'
+    'psicologia-positiva':'Round table wellness panel — participants seated around a light circular table, soft golden natural light, plants and flowers in background',
+    'mente-masculina':'Round table masculine panel — participants seated around a dark minimal circular table, warm amber dramatic side lighting, leather chairs, raw honest contemplative atmosphere'
   };
   const STYLE_ATMOSPHERE={
     oscuro:'Dark moody atmosphere — single warm Edison rim light, deep dramatic shadows, very dark walls, intimate',
