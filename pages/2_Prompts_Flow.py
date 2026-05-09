@@ -1510,7 +1510,7 @@ Rules:
       <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;">✨ ${lang==='es'?'Config recomendada por la IA para este tema':'AI-recommended config for this topic'}</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;">${recBadges}</div>
       ${rec.reason?`<div style="font-size:11px;color:#555;margin-top:7px;font-style:italic;">${rec.reason}</div>`:''}
-    </div>`:''}`);
+    </div>`:''}`;
 
     // ── Prompts de imagen por narrador ────────────────────────────────────────
     const imgSceneType=isPanel?'panel':isMulti?'duo':'solo';
