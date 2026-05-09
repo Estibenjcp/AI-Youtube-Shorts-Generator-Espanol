@@ -1885,20 +1885,22 @@ async function _previewStep(){
   area.innerHTML='';
 
   try{
-    // Resolver el tema antes de llamar generateWithAI (igual que en generateWithAI línea 765)
+    // Resolver el tema — limpiar _lastPreviewTopic para que "Cambiar" genere uno nuevo
+    _lastPreviewTopic='';
     const _pvTopic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
     _lastPreviewTopic=_pvTopic; // guardar para que _fullGenerate use el mismo tema
 
     // Para modo imagen: no hay guion — mostrar resumen de config + botones
     if(mode==='indignacion-laboral' && gv('system-type')==='imagenes'){
-      // ── Pre-llamada IA: resolver campos en random ──────────────────────────────
+      // ── Pre-llamada IA: resolver campos en random o universal ──────────────────
       if(_orKey){
         try{
           const ms0=MODE_SELECTS[mode]||{};
           const recLines=[];
           ['content-type','publico','style','tone'].forEach(fid=>{
             const val=gv(fid);
-            if(val==='random'||!val){
+            // incluir si está en random O si publico está en 'universal' (queremos que la IA elija uno específico)
+            if(val==='random'||!val||(fid==='publico'&&val==='universal')){
               const opts=(ms0[fid]?.[lang]||[]).filter(o=>o[0]!=='random'&&o[0]!=='universal').map(o=>o[0]).join('|');
               if(opts) recLines.push(`  "${fid.replace(/-/g,'_')}": "one of: ${opts}"`);
             }
@@ -1929,7 +1931,7 @@ async function _previewStep(){
       const rec=_lastRecData||{};
       const ctRaw=gv('content-type'); const ctAI=ctRaw==='random'&&rec.content_type;
       const ctVal=ctAI?rec.content_type:ctRaw;
-      const pubRaw=gv('publico'); const pubAI=pubRaw==='random'&&rec.publico;
+      const pubRaw=gv('publico'); const pubAI=(pubRaw==='random'||pubRaw==='universal')&&rec.publico;
       const pubVal=pubAI?rec.publico:pubRaw;
       const stRaw=gv('style'); const stAI=stRaw==='random'&&rec.style;
       const stVal=stAI?rec.style:stRaw;
