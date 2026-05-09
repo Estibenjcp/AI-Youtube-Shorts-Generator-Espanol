@@ -630,6 +630,26 @@ const LIBRO_SEGMENTS={
 let lang='es', mode='ficticio-viral', format='lineal', hlType='rapida', dur=1, setStyle='oscuro', numHosts=1, numGuests=0;
 let _userPinnedSetStyle=false; // true cuando el usuario elige manualmente el estilo de set
 
+// ── Aplica recommended_config solo en campos que siguen en 'random' ────────────
+function _applyRec(rec){
+  if(!rec||typeof rec!=='object') return;
+  const validSets=['oscuro','moderno','natural','neon','biblioteca','mistico'];
+  if(rec.set_style && validSets.includes(rec.set_style) && !_userPinnedSetStyle){
+    setStyle=rec.set_style;
+    document.querySelectorAll('[data-set]').forEach(b=>b.classList.toggle('active',b.dataset.set===rec.set_style));
+  }
+  // Prueba ambos formatos de clave: host_type → 'host-type', y directo
+  Object.entries(rec).forEach(([raw,val])=>{
+    if(!val||raw==='set_style'||raw==='reason') return;
+    const ids=[raw, raw.replace(/_/g,'-')];
+    ids.forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&el.value==='random'&&[...el.options].some(o=>o.value===val)){el.value=val;}
+    });
+  });
+  if(typeof updateTags==='function') updateTags();
+}
+
 function t(key){return T[lang][key]||key;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 function gv(id){const el=document.getElementById(id);return el?el.value:'';}
@@ -743,6 +763,31 @@ async function generateWithAI(skipBtnUI=false){
   const topic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
   const styleV=gv('style')||'random';
   const toneV=gv('tone')||'random';
+
+  // ── Pre-call: recomendar config para campos en aleatorio ──────────────────
+  if(_orKey){
+    try{
+      const ms0=MODE_SELECTS[mode]||{};
+      const getOpts0=(f)=>(ms0[f]?.[lang]||[]).filter(o=>o[0]!=='random').map(o=>o[0]).join('|');
+      const recLines=[];
+      if(!_userPinnedSetStyle) recLines.push(`  "set_style": "one of: oscuro|moderno|natural|neon|biblioteca|mistico"`);
+      Object.keys(ms0).forEach(fid=>{
+        if(gv(fid)==='random'){
+          const opts=getOpts0(fid);
+          if(opts) recLines.push(`  "${fid.replace(/-/g,'_')}": "one of: ${opts}"`);
+        }
+      });
+      if(recLines.length){
+        const rRaw=await _callOR(
+          'You are a content style expert. Pick the BEST matching values for the given topic. Reply ONLY with compact JSON, no extra text.',
+          `Mode: ${mode} | Topic: "${topic}" | Language: ${lang==='es'?'Spanish':'English'}\n\nReturn ONLY this JSON (use EXACT option values):\n{\n${recLines.join(',\n')}\n}`,
+          350
+        );
+        const rm=rRaw.match(/\{[\s\S]*\}/);
+        if(rm) _applyRec(JSON.parse(rm[0]));
+      }
+    }catch(er){/* silently skip if fails */}
+  }
 
   let sys='', usr='';
 
@@ -1469,19 +1514,7 @@ Rules:
 
     // ── Aplicar configuración recomendada por la IA (solo si campo en aleatorio) ─
     const rec=data.recommended_config||{};
-    const validSets=['oscuro','moderno','natural','neon','biblioteca','mistico'];
-    // Set style: solo aplica si el usuario NO hizo clic manualmente en un estilo
-    if(rec.set_style && validSets.includes(rec.set_style) && !_userPinnedSetStyle){
-      setStyle=rec.set_style;
-      document.querySelectorAll('[data-set]').forEach(b=>b.classList.toggle('active',b.dataset.set===rec.set_style));
-    }
-    // Dropdowns: solo aplica si el valor actual del selector es 'random'
-    ['narrator-type','category','style','tone'].forEach(fid=>{
-      const key=fid.replace(/-/g,'_');
-      const val=rec[key]||rec[fid];
-      const el=document.getElementById(fid);
-      if(el&&val&&el.value==='random'&&[...el.options].some(o=>o.value===val)) el.value=val;
-    });
+    _applyRec(rec);
 
     const SET_STYLE_LABELS={oscuro:'🕯️ Oscuro / Edison',moderno:'💡 Moderno / Softbox',natural:'🌿 Natural / Madera',neon:'🎨 Neon / Urbano',biblioteca:'📚 Biblioteca / Clásico',mistico:'🔮 Místico / Velas'};
     const recBadges=[
