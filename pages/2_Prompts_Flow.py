@@ -338,7 +338,8 @@ const MODES={
   'mentalidad-disciplina':{icon:'💪',title:{es:'Mentalidad & disciplina',en:'Mindset & discipline'},desc:{es:'Motivación, hábitos, resiliencia — voz directa al espectador',en:'Motivation, habits, resilience — direct voice to viewer'}},
   'historia-epica':{icon:'⚔️',title:{es:'Historia épica',en:'Epic history'},desc:{es:'Batallas, imperios, héroes — narración cinematográfica épica',en:'Battles, empires, heroes — epic cinematic narration'}},
   'psicologia-positiva':{icon:'🌸',title:{es:'Psicología positiva',en:'Positive psychology'},desc:{es:'Autoestima, sanación emocional, límites, apego — contenido que sana',en:'Self-esteem, healing, boundaries, attachment — content that heals'}},
-  'mente-masculina':{icon:'💎',title:{es:'Mente masculina',en:'Masculine mindset'},desc:{es:'Reflexiones profundas para hombres — emociones, amor propio, relaciones, propósito',en:'Deep reflections for men — emotions, self-love, relationships, purpose'}}
+  'mente-masculina':{icon:'💎',title:{es:'Mente masculina',en:'Masculine mindset'},desc:{es:'Reflexiones profundas para hombres — emociones, amor propio, relaciones, propósito',en:'Deep reflections for men — emotions, self-love, relationships, purpose'}},
+  'mujer-consciente':{icon:'🌺',title:{es:'Mujer consciente',en:'Conscious woman'},desc:{es:'Empoderamiento femenino — autoestima, sanación, relaciones, propósito y esencia propia',en:'Feminine empowerment — self-worth, healing, relationships, purpose and true self'}}
 };
 
 const MODE_SELECTS={
@@ -464,6 +465,13 @@ const MODE_SELECTS={
   'category':{es:[['random','🎲 Aleatorio'],['emociones-masculinas','Emociones & vulnerabilidad masculina'],['amor-propio','Amor propio & autoestima'],['relaciones','Relaciones & pareja'],['proposito-identidad','Propósito & identidad'],['sanacion','Sanación & heridas del pasado'],['soledad','Soledad & conexión'],['fuerza-interior','Fuerza interior & resiliencia']],en:[['random','🎲 Random'],['emociones-masculinas','Emotions & male vulnerability'],['amor-propio','Self-love & self-esteem'],['relaciones','Relationships & romantic life'],['proposito-identidad','Purpose & identity'],['sanacion','Healing & past wounds'],['soledad','Loneliness & connection'],['fuerza-interior','Inner strength & resilience']]},
   'style':{es:[['random','🎲 Aleatorio'],['reflexivo-profundo','Reflexivo / profundo'],['directo-al-alma','Directo al alma'],['cinematografico','Cinematográfico / poético'],['confesional','Confesional / íntimo'],['motivacional','Motivacional / que activa']],en:[['random','🎲 Random'],['reflexivo-profundo','Reflective / deep'],['directo-al-alma','Direct to the soul'],['cinematografico','Cinematic / poetic'],['confesional','Confessional / intimate'],['motivacional','Motivational / activating']]},
   'tone':{es:[['random','🎲 Aleatorio'],['sereno-poderoso','Sereno pero poderoso'],['vulnerable-honesto','Vulnerable y honesto'],['directo-firme','Directo y firme'],['epico-profundo','Épico / profundo'],['calido-masculino','Cálido / masculino']],en:[['random','🎲 Random'],['sereno-poderoso','Calm but powerful'],['vulnerable-honesto','Vulnerable and honest'],['directo-firme','Direct and firm'],['epico-profundo','Epic / deep'],['calido-masculino','Warm / masculine']]}
+},
+'mujer-consciente':{
+  'narrator-type':{es:[['random','🎲 Aleatorio'],['coach-femenina','Coach de vida femenina'],['mentora-emocional','Mentora emocional'],['psicologa','Psicóloga / terapeuta'],['mujer-vivencia','Mujer con vivencia propia'],['voz-reflexiva','Voz reflexiva anónima']],en:[['random','🎲 Random'],['coach-femenina','Feminine life coach'],['mentora-emocional','Emotional mentor'],['psicologa','Psychologist / therapist'],['mujer-vivencia','Woman sharing personal experience'],['voz-reflexiva','Anonymous reflective voice']]},
+  'narrator-gender':{es:[['female','Femenino'],['random','🎲 Aleatorio'],['male','Masculino']],en:[['female','Female'],['random','🎲 Random'],['male','Male']]},
+  'category':{es:[['random','🎲 Aleatorio'],['empoderamiento','Empoderamiento & fuerza femenina'],['amor-propio','Amor propio & autoestima'],['relaciones','Relaciones & pareja'],['sanacion','Sanación & heridas del pasado'],['limites','Límites & independencia'],['maternidad-identidad','Maternidad & identidad'],['proposito','Propósito & esencia propia']],en:[['random','🎲 Random'],['empoderamiento','Empowerment & feminine strength'],['amor-propio','Self-love & self-worth'],['relaciones','Relationships & romantic life'],['sanacion','Healing & past wounds'],['limites','Boundaries & independence'],['maternidad-identidad','Motherhood & identity'],['proposito','Purpose & true self']]},
+  'style':{es:[['random','🎲 Aleatorio'],['reflexivo-profundo','Reflexivo / profundo'],['directo-al-alma','Directo al alma'],['poetico-cinematografico','Poético / cinematográfico'],['confesional','Confesional / íntimo'],['empoderador','Empoderador / que activa']],en:[['random','🎲 Random'],['reflexivo-profundo','Reflective / deep'],['directo-al-alma','Direct to the soul'],['poetico-cinematografico','Poetic / cinematic'],['confesional','Confessional / intimate'],['empoderador','Empowering / activating']]},
+  'tone':{es:[['random','🎲 Aleatorio'],['calido-poderoso','Cálido pero poderoso'],['vulnerable-honesto','Vulnerable y honesto'],['empoderador-firme','Empoderador y firme'],['poetico-suave','Poético / suave'],['directo-amoroso','Directo y amoroso']],en:[['random','🎲 Random'],['calido-poderoso','Warm but powerful'],['vulnerable-honesto','Vulnerable and honest'],['empoderador-firme','Empowering and firm'],['poetico-suave','Poetic / gentle'],['directo-amoroso','Direct and loving']]}
 }
 };
 
@@ -527,6 +535,10 @@ const MODE_BLOCKS={
 'mente-masculina':[
   {id:'mm-narrator-block',title:{es:'Narrador / Mentor',en:'Narrator / Mentor'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
   {id:'mm-theme-block',title:{es:'Temática masculina',en:'Masculine theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
+],
+'mujer-consciente':[
+  {id:'mc-narrator-block',title:{es:'Narradora / Mentora',en:'Narrator / Mentor'},fields:[{id:'narrator-type',label:{es:'Perfil',en:'Profile'}},{id:'narrator-gender',label:{es:'Género',en:'Gender'}}]},
+  {id:'mc-theme-block',title:{es:'Temática femenina',en:'Feminine theme'},fields:[{id:'category',label:{es:'Categoría',en:'Category'}},{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]}
 ]
 };
 
@@ -586,6 +598,10 @@ const RAND_TOPICS={
   'mente-masculina':{
     es:['Nadie te enseñó a ser hombre — te enseñaron a no sentir','El hombre que más te hará daño eres tú cuando nadie te ve','La soledad masculina: por qué los hombres mueren solos y el mundo calla','Amar sin perder tu identidad — la trampa más silenciosa de las relaciones','No es debilidad llorar — es que te enseñaron a llamarle debilidad a tu humanidad','El día que dejé de buscar su aprobación fue el día que me encontré a mí mismo','Un hombre que no conoce sus heridas, las convierte en armas contra los que ama'],
     en:['Nobody taught you to be a man — they taught you not to feel','The man who will hurt you most is who you are when no one is watching','Male loneliness: why men die alone and the world stays silent','Loving without losing your identity — the most silent trap in relationships','It\'s not weakness to cry — they just taught you to call your humanity weakness','The day I stopped seeking her approval was the day I found myself','A man who doesn\'t know his wounds turns them into weapons against those he loves']
+  },
+  'mujer-consciente':{
+    es:['Nadie te enseñó a amarte — te enseñaron a necesitar que te amaran','El día que dejé de pedir perdón por ser demasiado fue el día que empecé a vivir','No eres difícil de amar — estuviste rodeada de personas que no sabían amar','Seguiste dando amor a quien nunca supo recibirlo y lo llamaste tu culpa','La mujer que más te costará soltar eres tú misma de hace 5 años','Poner límites no te hace cruel — te hace honesta contigo misma','Una mujer que sana su relación consigo misma cambia todo lo que toca'],
+    en:['Nobody taught you to love yourself — they taught you to need to be loved','The day I stopped apologizing for being too much was the day I started living','You\'re not hard to love — you were surrounded by people who didn\'t know how to love','You kept giving love to someone who couldn\'t receive it and called it your fault','The woman who will be hardest to let go of is who you were 5 years ago','Setting boundaries doesn\'t make you cruel — it makes you honest with yourself','A woman who heals her relationship with herself changes everything she touches']
   }
 };
 
@@ -1027,6 +1043,7 @@ async function recommendCombo(){
     'historia-epica':['narrator-type','narrator-gender','category','style','tone'],
     'psicologia-positiva':['narrator-type','narrator-gender','category','style','tone'],
     'mente-masculina':['narrator-type','narrator-gender','category','style','tone'],
+    'mujer-consciente':['narrator-type','narrator-gender','category','style','tone'],
     'misterio-biblico':['narrator-type','narrator-gender','narrator-lang','scene-type','subtopic','style','tone'],
     'libro-rapido':['narrator-type','narrator-gender','book-genre','style','tone'],
   };
@@ -1203,7 +1220,7 @@ ${VEO3_CAMERA}`;
 }
 
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
-const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina'];
+const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente'];
 
 function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host',charLabel=''){
   const sc=getScene();
@@ -1293,7 +1310,8 @@ async function generateNarratorPackage(){
     'psicologia-positiva':{es:'canal de psicología positiva y bienestar emocional',en:'positive psychology and emotional wellness channel'},
     'testimonio-real':{es:'canal de testimonios reales en primera persona, confesional',en:'real first-person confessional testimony channel'},
     'misterio-biblico':{es:'canal de misterios bíblicos y textos apócrifos',en:'biblical mysteries and apocryphal texts channel'},
-    'mente-masculina':{es:'canal de reflexiones profundas sobre masculinidad consciente, emociones, amor propio y propósito — especialmente dirigido a hombres',en:'deep reflections channel on conscious masculinity, emotions, self-love and purpose — especially aimed at men'}
+    'mente-masculina':{es:'canal de reflexiones profundas sobre masculinidad consciente, emociones, amor propio y propósito — especialmente dirigido a hombres',en:'deep reflections channel on conscious masculinity, emotions, self-love and purpose — especially aimed at men'},
+    'mujer-consciente':{es:'canal de empoderamiento femenino consciente — autoestima, sanación, relaciones, límites y propósito — especialmente dirigido a mujeres',en:'conscious feminine empowerment channel — self-worth, healing, relationships, boundaries and purpose — especially aimed at women'}
   };
   const MODE_SETTING={
     'documental-narrado':'Documentary studio or relevant environmental backdrop, dramatic lighting, cinematic atmosphere',
@@ -1304,7 +1322,8 @@ async function generateNarratorPackage(){
     'psicologia-positiva':'Warm cozy interior, soft golden natural light, plants or flowers in background, calm healing atmosphere',
     'testimonio-real':'Dimly lit intimate room, single warm practical light source from one side, raw confessional atmosphere',
     'misterio-biblico':'Candlelit stone room, ancient scrolls or artifacts on table, mysterious dramatic shadows, mystical atmosphere',
-    'mente-masculina':'Dark minimal masculine space — leather chair or raw wooden desk, warm amber side light, dramatic shadows, books and a single plant, serious contemplative atmosphere'
+    'mente-masculina':'Dark minimal masculine space — leather chair or raw wooden desk, warm amber side light, dramatic shadows, books and a single plant, serious contemplative atmosphere',
+    'mujer-consciente':'Warm feminine minimal space — soft cream or blush tones, natural window light, fresh flowers or greenery in background, candles, elegant and intimate healing atmosphere'
   };
 
   const ctx=(MODE_CTX[mode]||{})[lang]||MODE_CTX[mode]?.es||mode;
@@ -1344,7 +1363,8 @@ async function generateNarratorPackage(){
     'testimonio-real':'Round table intimate discussion — participants seated around a dim circular table, single warm practical light, raw confessional atmosphere',
     'misterio-biblico':'Round table ancient study — participants seated around a stone circular table, candlelit mystical atmosphere, ancient scrolls visible',
     'psicologia-positiva':'Round table wellness panel — participants seated around a light circular table, soft golden natural light, plants and flowers in background',
-    'mente-masculina':'Round table masculine panel — participants seated around a dark minimal circular table, warm amber dramatic side lighting, leather chairs, raw honest contemplative atmosphere'
+    'mente-masculina':'Round table masculine panel — participants seated around a dark minimal circular table, warm amber dramatic side lighting, leather chairs, raw honest contemplative atmosphere',
+    'mujer-consciente':'Round table feminine panel — participants seated around a light circular table with fresh flowers, soft warm natural light, cream and blush tones, intimate empowering atmosphere'
   };
   const STYLE_ATMOSPHERE={
     oscuro:'Dark moody atmosphere — single warm Edison rim light, deep dramatic shadows, very dark walls, intimate',
