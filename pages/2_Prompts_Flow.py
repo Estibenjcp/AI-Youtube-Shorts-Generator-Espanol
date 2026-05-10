@@ -1891,7 +1891,9 @@ JSON:`;
     const raw=await _callOR(sys,usr,3500);
     const m=raw.match(/\[[\s\S]*\]/);
     if(!m) throw new Error(lang==='es'?'La IA no devolvió JSON válido':'AI did not return valid JSON');
-    const slides=JSON.parse(m[0]);
+    // Sanear saltos de línea literales dentro de valores string (copy_redes puede tener múltiples líneas)
+    const jsonClean=m[0].replace(/"((?:[^"\\]|\\.)*)"/gs,(match,inner)=>'"'+inner.replace(/\n/g,'\\n').replace(/\r/g,'').replace(/\t/g,'\\t')+'"');
+    const slides=JSON.parse(jsonClean);
 
     const model=_orModel.split('/').pop();
     const formatLabel=imageFormat==='carrusel'?(lang==='es'?'Carrusel':'Carousel'):(lang==='es'?'Historia':'Story');
