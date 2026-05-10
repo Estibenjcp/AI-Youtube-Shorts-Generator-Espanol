@@ -1838,7 +1838,7 @@ El secreto es SIMPLICIDAD BRUTAL. El contenido que viraliza no es el más explic
 Genera un array JSON de exactamente ${imageCount} objetos. Cada objeto tiene EXACTAMENTE estas claves:
 {
   "frase": "LA frase del slide — máx 7 palabras, brutal, que duela o haga reír con rabia, en dialecto del país",
-  "copy_redes": "caption para publicar en Instagram/TikTok/Facebook junto con la imagen — 2-4 líneas: 1) pregunta o afirmación que genere identificación ('¿A quién le ha pasado...?'), 2) remate o dato que indigna, 3) CTA para comentar/etiquetar/guardar — usa emojis estratégicos, en dialecto del país",
+  "copy_redes": "caption para Instagram/TikTok — usa \\n para saltos de línea, NUNCA comillas dobles dentro del texto (usa comillas simples), máx 4 líneas: pregunta de identificación + remate + CTA con emojis, en dialecto del país",
   "descripcion_visual": "descripción de la escena visual — qué situación laboral muestra, qué metáfora usa, cómo transmite la emoción sin texto",
   "prompt_imagen": "prompt ultra-detallado en ESPAÑOL para Midjourney/DALL-E. ASPECTO VISUAL OBLIGATORIO: el personaje principal debe verse como: ${publicoVisual}. La imagen tiene UN SOLO texto visible que es exactamente la frase del campo 'frase', tipografía grande y limpia. PROHIBIDO: listas, múltiples carteles, sticky notes con texto, bullet points, más de una línea de texto en la imagen. Incluye: estilo artístico (ilustración dramática / fotografía editorial / arte conceptual), composición, paleta de colores emocional, iluminación cinematográfica, metáfora visual específica, atmósfera — mín 80 palabras"
 }
@@ -1872,7 +1872,7 @@ The secret is BRUTAL SIMPLICITY. Content that goes viral isn't the most explaine
 Generate a JSON array of exactly ${imageCount} objects. Each object has EXACTLY these keys:
 {
   "frase": "THE slide phrase — max 7 words, brutal, hits hard or makes you laugh with rage, in country dialect",
-  "copy_redes": "caption to post on Instagram/TikTok/Facebook with the image — 2-4 lines: 1) question or statement that generates identification ('Who has experienced...?'), 2) punchline or fact that outrages, 3) CTA to comment/tag/save — use strategic emojis, in country dialect",
+  "copy_redes": "caption for Instagram/TikTok — use \\n for line breaks, NEVER double quotes inside the text (use single quotes), max 4 lines: identification question + punchline + CTA with emojis, in country dialect",
   "descripcion_visual": "description of the visual scene — what work situation it shows, what metaphor it uses, how it conveys emotion without text",
   "prompt_imagen": "ultra-detailed prompt in English for Midjourney/DALL-E. MANDATORY VISUAL APPEARANCE: the main character must look like: ${publicoVisual}. The image has ONLY ONE visible text which is exactly the phrase from the 'frase' field, large clean typography. FORBIDDEN: lists, multiple signs, sticky notes with text, bullet points, more than one line of text in the image. Include: art style (dramatic illustration / editorial photography / conceptual art), composition, emotional color palette, cinematic lighting, specific visual metaphor, atmosphere — min 80 words"
 }
@@ -1891,9 +1891,35 @@ JSON:`;
     const raw=await _callOR(sys,usr,3500);
     const m=raw.match(/\[[\s\S]*\]/);
     if(!m) throw new Error(lang==='es'?'La IA no devolvió JSON válido':'AI did not return valid JSON');
-    // Sanear saltos de línea literales dentro de valores string (copy_redes puede tener múltiples líneas)
-    const jsonClean=m[0].replace(/"((?:[^"\\]|\\.)*)"/gs,(match,inner)=>'"'+inner.replace(/\n/g,'\\n').replace(/\r/g,'').replace(/\t/g,'\\t')+'"');
-    const slides=JSON.parse(jsonClean);
+    // Parser robusto: recorre char-por-char para escapar control chars dentro de strings
+    // También maneja comillas dobles sin escapar dentro de valores (las escapa)
+    function fixJsonStr(s){
+      let r='',inStr=false,esc=false,prevWasColon=false;
+      for(let i=0;i<s.length;i++){
+        const c=s[i];
+        if(esc){r+=c;esc=false;continue;}
+        if(c==='\\'&&inStr){r+=c;esc=true;continue;}
+        if(c==='"'){
+          if(!inStr){r+=c;inStr=true;}
+          else{
+            // ¿es cierre legítimo? — mira hacia adelante para ver si sigue : , } ]
+            let j=i+1;while(j<s.length&&(s[j]===' '||s[j]==='\t'||s[j]==='\n'||s[j]==='\r'))j++;
+            const nc=s[j];
+            if(nc===':'||nc===','||nc==='}'||nc===']'||j>=s.length){r+=c;inStr=false;}
+            else{r+='\\"';} // comilla dentro del valor — escapar
+          }
+          continue;
+        }
+        if(inStr){
+          if(c==='\n'){r+='\\n';}
+          else if(c==='\r'){}
+          else if(c==='\t'){r+='\\t';}
+          else{r+=c;}
+        }else{r+=c;}
+      }
+      return r;
+    }
+    const slides=JSON.parse(fixJsonStr(m[0]));
 
     const model=_orModel.split('/').pop();
     const formatLabel=imageFormat==='carrusel'?(lang==='es'?'Carrusel':'Carousel'):(lang==='es'?'Historia':'Story');
