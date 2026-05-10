@@ -1778,8 +1778,26 @@ async function generateImageSequence(){
     'remoto-home-office':'trabajadores remotos — reuniones a las 8am, "¿cámara apagada?", disponibilidad 24/7, límites inexistentes entre trabajo y vida',
     'hosteleria-turismo':'hostelería, turismo y aerolíneas — sonrisa forzada obligatoria, propinas inseguras, turistas exigentes, temporada alta sin descanso',
     'seguridad-vigilancia':'guardias de seguridad — 12h de pie sin silla, máxima responsabilidad con sueldo mínimo, invisibles para todos'};
+  // Mapa visual: cómo se VE el personaje/ambiente según el público (para image prompts)
+  const publicoVisualMap={
+    universal:'worker, generic work clothes, neutral office or urban environment',
+    random:'worker in appropriate attire for the situation',
+    'oficina-corporativo':'office worker in business casual attire, open office environment, fluorescent lighting, cubicles, computer screens, coffee cups, sticky notes',
+    'salud-enfermeria':'nurse or doctor in scrubs / white coat, hospital corridor, medical equipment, tired face, under fluorescent hospital lights',
+    'educacion-docentes':'teacher in casual professional clothes, messy classroom full of papers, blackboard or whiteboard, stacks of homework to grade',
+    'servicios-retail':'retail worker in store uniform or apron, supermarket or restaurant setting, name badge, cash register, service counter',
+    'call-center':'call center agent with headset, rows of identical cubicles, multiple screens, harsh artificial lighting, small cramped workspace',
+    'tecnologia-it':'software developer in casual hoodie or t-shirt, multiple monitors, dark office environment, energy drinks, code on screens',
+    'freelance-independiente':'freelancer working from home in casual clothes, laptop on kitchen table or couch, home environment, isolated, invoices and notes around',
+    'obrero-manufactura':'factory worker or operator in blue work uniform / coveralls, hard hat, safety vest, industrial factory floor with heavy machinery, assembly line, dim industrial lighting, grease-stained hands, tired expression',
+    'recien-graduado':'young graduate in semi-formal clothes, holding a portfolio/resume, outside an office building or in a waiting room, hopeful but anxious face',
+    'remoto-home-office':'remote worker in casual clothes, working from home, laptop on desk with home background visible, pajama pants, blurred home background on video call',
+    'hosteleria-turismo':'hotel or restaurant worker in uniform / apron, busy hotel lobby or restaurant floor, customer service forced smile, serving trays or luggage',
+    'seguridad-vigilancia':'security guard in uniform, standing at entrance post or empty corridor, bored or exhausted expression, 12-hour shift, small security booth'
+  };
   const dialectHint=paisMap[pais]||'español neutro universal';
   const publicoHint=publicoMap[publicoRaw]||publicoMap['universal'];
+  const publicoVisual=publicoVisualMap[publicoRaw]||publicoVisualMap['universal'];
 
   const formatHint=imageFormat==='carrusel'
     ?(lang==='es'?'Carrusel de Instagram/LinkedIn — slides horizontales, formato 4:5 o cuadrado, texto corto e impactante':'Instagram/LinkedIn carousel — horizontal slides, 4:5 or square format, short impactful text')
@@ -1804,6 +1822,7 @@ async function generateImageSequence(){
 País/Dialecto: ${dialectHint}
 Tipo de contenido: ${ctHint}
 Público objetivo: ${publicoHint}
+Aspecto visual del personaje/ambiente: ${publicoVisual}
 Formato: ${formatHint}
 Estilo: ${styleV} | Tono: ${toneV}
 Número de imágenes: ${imageCount}
@@ -1814,17 +1833,20 @@ El secreto es SIMPLICIDAD BRUTAL. El contenido que viraliza no es el más explic
 - La imagen comunica visualmente la situación laboral (metáfora visual, escena cotidiana reconocible)
 - La frase es el remate que explota lo que ya se ve — corta, hiriente, reconocible
 - CERO texto decorativo dentro de la imagen: sin sticky notes con listas, sin múltiples letreros, sin bullet points, sin párrafos
+- El copy de redes sociales es lo que hace que la gente COMENTE — pregunta o afirmación que haga decir "yo también"
 
 Genera un array JSON de exactamente ${imageCount} objetos. Cada objeto tiene EXACTAMENTE estas claves:
 {
   "frase": "LA frase del slide — máx 7 palabras, brutal, que duela o haga reír con rabia, en dialecto del país",
+  "copy_redes": "caption para publicar en Instagram/TikTok/Facebook junto con la imagen — 2-4 líneas: 1) pregunta o afirmación que genere identificación ('¿A quién le ha pasado...?'), 2) remate o dato que indigna, 3) CTA para comentar/etiquetar/guardar — usa emojis estratégicos, en dialecto del país",
   "descripcion_visual": "descripción de la escena visual — qué situación laboral muestra, qué metáfora usa, cómo transmite la emoción sin texto",
-  "prompt_imagen": "prompt ultra-detallado en ESPAÑOL para Midjourney/DALL-E. OBLIGATORIO: la imagen tiene UN SOLO texto visible que es exactamente la frase del campo 'frase', tipografía grande y limpia. PROHIBIDO: listas, múltiples carteles, sticky notes con texto, bullet points, más de una línea de texto en la imagen. Incluye: estilo artístico (ilustración dramática / fotografía editorial / arte conceptual), composición, paleta de colores emocional, iluminación cinematográfica, metáfora visual específica, atmósfera — mín 80 palabras"
+  "prompt_imagen": "prompt ultra-detallado en ESPAÑOL para Midjourney/DALL-E. ASPECTO VISUAL OBLIGATORIO: el personaje principal debe verse como: ${publicoVisual}. La imagen tiene UN SOLO texto visible que es exactamente la frase del campo 'frase', tipografía grande y limpia. PROHIBIDO: listas, múltiples carteles, sticky notes con texto, bullet points, más de una línea de texto en la imagen. Incluye: estilo artístico (ilustración dramática / fotografía editorial / arte conceptual), composición, paleta de colores emocional, iluminación cinematográfica, metáfora visual específica, atmósfera — mín 80 palabras"
 }
 
 REGLAS:
 - frase: en dialecto del país, máx 7 palabras — que golpee en el pecho o dé risa amarga
-- prompt_imagen: SOLO 1 texto en la imagen (la frase), el resto es visual puro
+- copy_redes: el arma para viralizar — que la gente comente, etiquete a su compañero de trabajo, o guarde
+- prompt_imagen: personaje DEBE verse como el público objetivo indicado (ropa, ambiente, contexto), SOLO 1 texto en la imagen
 - Para "oferta-falsa-chiste": denunciar con humor, NO enseñar a crear ofertas falsas
 - Escala emocional: slide 1 gancho (indignación), intermedios ejemplos concretos, último cierre/reflexión
 - El enemigo es el sistema laboral, no personas específicas
@@ -1834,6 +1856,7 @@ JSON:`
 Country/Dialect: ${dialectHint}
 Content type: ${ctHint}
 Target audience: ${publicoHint}
+Visual appearance of character/environment: ${publicoVisual}
 Format: ${formatHint}
 Style: ${styleV} | Tone: ${toneV}
 Number of images: ${imageCount}
@@ -1844,17 +1867,20 @@ The secret is BRUTAL SIMPLICITY. Content that goes viral isn't the most explaine
 - The image communicates the work situation visually (visual metaphor, recognizable everyday scene)
 - The phrase is the punchline that explodes what's already seen — short, cutting, relatable
 - ZERO decorative text inside the image: no sticky notes with lists, no multiple signs, no bullet points, no paragraphs
+- The social media copy is what makes people COMMENT — question or statement that makes them say "same here"
 
 Generate a JSON array of exactly ${imageCount} objects. Each object has EXACTLY these keys:
 {
   "frase": "THE slide phrase — max 7 words, brutal, hits hard or makes you laugh with rage, in country dialect",
+  "copy_redes": "caption to post on Instagram/TikTok/Facebook with the image — 2-4 lines: 1) question or statement that generates identification ('Who has experienced...?'), 2) punchline or fact that outrages, 3) CTA to comment/tag/save — use strategic emojis, in country dialect",
   "descripcion_visual": "description of the visual scene — what work situation it shows, what metaphor it uses, how it conveys emotion without text",
-  "prompt_imagen": "ultra-detailed prompt in English for Midjourney/DALL-E. MANDATORY: the image has ONLY ONE visible text which is exactly the phrase from the 'frase' field, large clean typography. FORBIDDEN: lists, multiple signs, sticky notes with text, bullet points, more than one line of text in the image. Include: art style (dramatic illustration / editorial photography / conceptual art), composition, emotional color palette, cinematic lighting, specific visual metaphor, atmosphere — min 80 words"
+  "prompt_imagen": "ultra-detailed prompt in English for Midjourney/DALL-E. MANDATORY VISUAL APPEARANCE: the main character must look like: ${publicoVisual}. The image has ONLY ONE visible text which is exactly the phrase from the 'frase' field, large clean typography. FORBIDDEN: lists, multiple signs, sticky notes with text, bullet points, more than one line of text in the image. Include: art style (dramatic illustration / editorial photography / conceptual art), composition, emotional color palette, cinematic lighting, specific visual metaphor, atmosphere — min 80 words"
 }
 
 RULES:
 - frase: in country dialect, max 7 words — must hit hard or cause bitter laughter
-- prompt_imagen: ONLY 1 text in the image (the phrase), everything else is pure visual
+- copy_redes: the virality weapon — make people comment, tag their coworker, or save
+- prompt_imagen: character MUST look like the target audience (clothes, environment, context), ONLY 1 text in the image
 - For "oferta-falsa-chiste": expose with humor, do NOT teach how to create fake offers
 - Emotional escalation: slide 1 hook (outrage), middle concrete examples, last close/reflection
 - The enemy is the work system, not specific people
@@ -1883,6 +1909,7 @@ JSON:`;
     slides.forEach((sl,i)=>{
       const num=i+1;
       const frase=sl.frase||sl.texto_principal||'';
+      const copyRedes=sl.copy_redes||'';
       html+=`<div style="background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="background:#1a1a1a;color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${lang==='es'?'Imagen':'Image'} ${num}/${slides.length}</span>
@@ -1891,6 +1918,13 @@ JSON:`;
           <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">${lang==='es'?'✍️ FRASE (texto en la imagen)':'✍️ PHRASE (text in image)'}</div>
           <div style="font-size:18px;font-weight:900;color:#f5f0e0;line-height:1.3;letter-spacing:0.3px;">"${frase}"</div>
         </div>
+        ${copyRedes?`<div style="background:#fdf4ff;border:0.5px solid #e9d5ff;border-radius:9px;padding:10px 12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:9px;font-weight:700;color:#7e22ce;text-transform:uppercase;letter-spacing:0.5px;">📲 ${lang==='es'?'Copy para redes sociales':'Social media copy'}</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(copyRedes)})">📋</button>
+          </div>
+          <div style="font-size:12px;color:#3b0764;line-height:1.6;white-space:pre-wrap;">${copyRedes}</div>
+        </div>`:''}
         <div style="background:#f8f5e8;border-radius:7px;padding:8px;margin-bottom:8px;">
           <div style="font-size:9px;font-weight:700;color:#78350f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎨 ${lang==='es'?'Escena visual':'Visual scene'}</div>
           <div style="font-size:11px;color:#44403c;line-height:1.5;">${sl.descripcion_visual||''}</div>
