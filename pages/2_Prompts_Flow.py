@@ -624,8 +624,50 @@ const RAND_TOPICS={
     en:['Nobody taught you to love yourself — they taught you to need to be loved','The day I stopped apologizing for being too much was the day I started living','You\'re not hard to love — you were surrounded by people who didn\'t know how to love','You kept giving love to someone who couldn\'t receive it and called it your fault','The woman who will be hardest to let go of is who you were 5 years ago','Setting boundaries doesn\'t make you cruel — it makes you honest with yourself','A woman who heals her relationship with herself changes everything she touches']
   }
 ,'indignacion-laboral':{
-  es:['Oferta de trabajo: "ambiente joven y dinámico" — traducción: sin sindicato y te explotan sonriendo','Te dijeron que el sueldo era competitivo... con el salario mínimo de 1975','Beneficios de la empresa: cumpleaños con pastel en la oficina + 12 horas extra sin pago','Vacantes que piden 10 años de experiencia, maestría y 3 idiomas — sueldo: básico'],
-  en:['Job offer: "young dynamic environment" — translation: no union and they exploit you with a smile','They said the salary was competitive... with 1975 minimum wage','Company benefits: birthday cake at the office + 12 unpaid overtime hours','Job postings requiring 10 years experience, master degree and 3 languages — salary: minimum wage']
+  es:[
+    'Oferta de trabajo: "ambiente joven y dinámico" — traducción: sin sindicato y te explotan sonriendo',
+    'Te dijeron que el sueldo era competitivo... con el salario mínimo de 1975',
+    'Beneficios de la empresa: cumpleaños con pastel en la oficina + 12 horas extra sin pago',
+    'Vacantes que piden 10 años de experiencia, maestría y 3 idiomas — sueldo: básico',
+    '"Somos una familia" — traducción: trabajas fines de semana sin pago extra y sonriendo',
+    'Plan de carrera prometido hace 3 años: el ascenso que nunca llega pero las tareas sí',
+    'Prueba técnica de 4 horas para un puesto de $300 al mes — y ni te contestan',
+    'Home office "voluntario" — si no contestas el chat a las 11pm eres "poco comprometido"',
+    'El jefe llega 2 horas tarde todos los días. Tú llegas 5 minutos tarde y te llaman la atención',
+    'Bono anual "garantizado" que siempre se pospone por "condiciones del mercado"',
+    'Capacitación de 3 semanas sin pago. Te contratan y al mes te dicen que "no encajaste"',
+    'Carta de reconocimiento por 5 años en la empresa: firmada por el jefe, sin aumento',
+    'Entrevista: 4 rondas, examen psicométrico, presentación y prueba técnica — puesto ya estaba ocupado',
+    'El compañero nuevo gana más que tú que llevas 6 años. Y tú lo tienes que capacitar',
+    'Vacaciones aprobadas desde enero. En julio llega la "crisis" y las cancelan sin aviso',
+    'Jefe que delega todo el trabajo pero en la reunión se lleva todo el crédito',
+    'Oferta: "crecimiento exponencial" — llevas 2 años y el único que creció fue el trabajo',
+    '"Habrá bonos si llegamos a la meta" — llegan a la meta, los bonos desaparecen misteriosamente',
+    'Descripción del puesto: 5 tareas. Realidad: 18 tareas y el sueldo de una sola',
+    'El WhatsApp del trabajo a las 10pm: "oye, ¿puedes entregar esto para mañana temprano?"'
+  ],
+  en:[
+    'Job offer: "young dynamic environment" — translation: no union and they exploit you with a smile',
+    'They said the salary was competitive... with 1975 minimum wage',
+    'Company benefits: birthday cake at the office + 12 unpaid overtime hours',
+    'Job postings requiring 10 years experience, master degree and 3 languages — salary: minimum wage',
+    '"We are a family" — translation: work weekends for free and keep smiling',
+    'Career path promised 3 years ago — the promotion never came but the workload did',
+    '4-hour technical test for a $300/month position — and they never even reply',
+    'Remote work "optional" — if you don\'t answer chat at 11pm you\'re "not a team player"',
+    'Boss arrives 2 hours late every day. You arrive 5 minutes late and get a warning',
+    '"Guaranteed" annual bonus that always gets delayed due to "market conditions"',
+    '3-week unpaid training. They hire you and fire you a month later for "not fitting in"',
+    'Recognition letter for 5 years at the company — signed by the boss, no raise included',
+    'Interview: 4 rounds, psychometric test, presentation, technical test — position was already filled',
+    'The new colleague earns more than you after 6 years. And you have to train them',
+    'Vacation approved in January. In July a "crisis" arrives and it\'s cancelled with no notice',
+    'Boss delegates all the work but takes all the credit in the meeting',
+    '"Exponential growth" in the offer — two years later the only thing that grew was your workload',
+    '"Bonuses if we hit the target" — they hit the target, the bonuses mysteriously vanish',
+    'Job description: 5 tasks. Reality: 18 tasks and the salary of just one',
+    'Work WhatsApp at 10pm: "hey, can you deliver this by tomorrow morning?"'
+  ]
 }
 };
 
@@ -679,6 +721,7 @@ let _lastRecData={}; // Guarda la última recomendación de config para mostrar 
 
 function t(key){return T[lang][key]||key;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function pickNew(arr,exclude){const f=arr.filter(t=>t!==exclude);return f.length?f[Math.floor(Math.random()*f.length)]:pick(arr);}
 function gv(id){const el=document.getElementById(id);return el?el.value:'';}
 function res(id,opts){const v=gv(id);return v==='random'?pick(opts):v;}
 
@@ -1885,9 +1928,10 @@ async function _previewStep(){
   area.innerHTML='';
 
   try{
-    // Resolver el tema — limpiar _lastPreviewTopic para que "Cambiar" genere uno nuevo
+    // Resolver el tema — guardar anterior para anti-repetición, luego limpiar
+    const _prevTopic=_lastPreviewTopic;
     _lastPreviewTopic='';
-    const _pvTopic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]));
+    const _pvTopic=gv('topic').trim()||(mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pickNew(RAND_TOPICS[mode]?.[lang]||[],_prevTopic));
     _lastPreviewTopic=_pvTopic; // guardar para que _fullGenerate use el mismo tema
 
     // Para modo imagen: no hay guion — mostrar resumen de config + botones
@@ -2241,7 +2285,7 @@ document.querySelectorAll('.lang-btn').forEach(b=>b.addEventListener('click',()=
 document.querySelectorAll('[data-set]').forEach(b=>b.addEventListener('click',()=>{setStyle=b.dataset.set;_userPinnedSetStyle=true;document.querySelectorAll('[data-set]').forEach(p=>p.classList.remove('active'));b.classList.add('active');}));
 document.querySelectorAll('.fpill[data-format]').forEach(b=>b.addEventListener('click',()=>{format=b.dataset.format;document.querySelectorAll('.fpill[data-format]').forEach(p=>p.classList.remove('active'));b.classList.add('active');renderHighlightSubs();}));
 document.querySelectorAll('.dpill').forEach(b=>b.addEventListener('click',()=>{dur=parseInt(b.dataset.dur);document.querySelectorAll('.dpill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateDurInfo();}));
-document.getElementById('roll-topic').addEventListener('click',()=>{document.getElementById('topic').value=mode==='libro-rapido'?pick(RAND_TOPICS_LIBRO[lang]):pick(RAND_TOPICS[mode]?.[lang]||[]);});
+document.getElementById('roll-topic').addEventListener('click',()=>{const cur=document.getElementById('topic').value.trim();document.getElementById('topic').value=mode==='libro-rapido'?pickNew(RAND_TOPICS_LIBRO[lang],cur):pickNew(RAND_TOPICS[mode]?.[lang]||[],cur);});
 document.addEventListener('change',e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')updateTags();});
 document.querySelectorAll('.host-pill').forEach(b=>b.addEventListener('click',()=>{numHosts=parseInt(b.dataset.n);document.querySelectorAll('.host-pill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateNarratorCountInfo();}));
 document.querySelectorAll('.guest-pill').forEach(b=>b.addEventListener('click',()=>{numGuests=parseInt(b.dataset.n);document.querySelectorAll('.guest-pill').forEach(p=>p.classList.remove('active'));b.classList.add('active');updateNarratorCountInfo();}));
