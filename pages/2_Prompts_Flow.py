@@ -1796,8 +1796,8 @@ async function generateImageSequence(){
   const ctHint=contentTypeHints[contentType]||'contenido viral sobre indignación laboral';
 
   const sys=lang==='es'
-    ?`Eres un experto en contenido viral laboral para redes sociales. Creas secuencias de imágenes que generan indignación, identificación y viralidad. Hablas en ${dialectHint}. Responde SOLO con JSON array, sin texto extra.`
-    :`You are a viral labor content expert for social media. You create image sequences that generate outrage, identification and virality. You speak in ${dialectHint}. Reply ONLY with JSON array, no extra text.`;
+    ?`Eres un experto en contenido visual viral para redes sociales, especializado en indignación laboral. Conoces la fórmula del post que rompe el algoritmo: UNA imagen impactante + UNA frase que duele. No listas, no párrafos, no muros de texto. El trabajador debe ver la imagen y pensar "exactamente eso me pasa a mí". Hablas en ${dialectHint}. Responde SOLO con JSON array, sin texto extra.`
+    :`You are a viral visual content expert for social media, specialized in labor outrage. You know the formula for posts that break the algorithm: ONE impactful image + ONE phrase that hits hard. No lists, no paragraphs, no walls of text. Workers should see the image and think "that's exactly what happens to me". You speak in ${dialectHint}. Reply ONLY with JSON array, no extra text.`;
 
   const usr=lang==='es'
     ?`Tema: "${topic}"
@@ -1808,21 +1808,26 @@ Formato: ${formatHint}
 Estilo: ${styleV} | Tono: ${toneV}
 Número de imágenes: ${imageCount}
 
+FILOSOFÍA DEL POST VIRAL LABORAL:
+El secreto es SIMPLICIDAD BRUTAL. El contenido que viraliza no es el más explicado, es el más sentido.
+- 1 imagen = 1 emoción = 1 frase. Eso es todo.
+- La imagen comunica visualmente la situación laboral (metáfora visual, escena cotidiana reconocible)
+- La frase es el remate que explota lo que ya se ve — corta, hiriente, reconocible
+- CERO texto decorativo dentro de la imagen: sin sticky notes con listas, sin múltiples letreros, sin bullet points, sin párrafos
+
 Genera un array JSON de exactamente ${imageCount} objetos. Cada objeto tiene EXACTAMENTE estas claves:
 {
-  "slide_title": "título corto del slide (máx 6 palabras, en el dialecto del país)",
-  "texto_principal": "texto overlay principal (máx 12 palabras, impactante, en dialecto del país)",
-  "subtexto": "texto secundario o remate (máx 8 palabras, golpe de humor o dato)",
-  "descripcion_visual": "qué muestra visualmente la imagen (escena, elementos, composición)",
-  "prompt_imagen": "prompt ultra-detallado en ESPAÑOL para Midjourney/DALL-E — incluye: estilo artístico, composición, paleta de colores, atmósfera, estilo tipográfico, iluminación, elementos visuales específicos relacionados con indignación laboral — mín 80 palabras"
+  "frase": "LA frase del slide — máx 7 palabras, brutal, que duela o haga reír con rabia, en dialecto del país",
+  "descripcion_visual": "descripción de la escena visual — qué situación laboral muestra, qué metáfora usa, cómo transmite la emoción sin texto",
+  "prompt_imagen": "prompt ultra-detallado en ESPAÑOL para Midjourney/DALL-E. OBLIGATORIO: la imagen tiene UN SOLO texto visible que es exactamente la frase del campo 'frase', tipografía grande y limpia. PROHIBIDO: listas, múltiples carteles, sticky notes con texto, bullet points, más de una línea de texto en la imagen. Incluye: estilo artístico (ilustración dramática / fotografía editorial / arte conceptual), composición, paleta de colores emocional, iluminación cinematográfica, metáfora visual específica, atmósfera — mín 80 palabras"
 }
 
-REGLAS IMPORTANTES:
-- TODOS los campos en español (dialecto del país indicado)
-- prompt_imagen: en español, ultra-detallado — incluye estilo gráfico, composición, paleta, tipografía, elementos visuales
-- Para "oferta-falsa-chiste": EXPONER la oferta ridícula como denuncia, NO enseñar a crearla
-- Escala la narrativa: slide 1 es gancho, slides intermedios desarrollan, último es cierre/CTA
-- Humor negro sí, pero no discriminatorio — el enemigo es el sistema, no personas
+REGLAS:
+- frase: en dialecto del país, máx 7 palabras — que golpee en el pecho o dé risa amarga
+- prompt_imagen: SOLO 1 texto en la imagen (la frase), el resto es visual puro
+- Para "oferta-falsa-chiste": denunciar con humor, NO enseñar a crear ofertas falsas
+- Escala emocional: slide 1 gancho (indignación), intermedios ejemplos concretos, último cierre/reflexión
+- El enemigo es el sistema laboral, no personas específicas
 
 JSON:`
     :`Topic: "${topic}"
@@ -1833,20 +1838,26 @@ Format: ${formatHint}
 Style: ${styleV} | Tone: ${toneV}
 Number of images: ${imageCount}
 
+VIRAL LABOR POST PHILOSOPHY:
+The secret is BRUTAL SIMPLICITY. Content that goes viral isn't the most explained, it's the most felt.
+- 1 image = 1 emotion = 1 phrase. That's it.
+- The image communicates the work situation visually (visual metaphor, recognizable everyday scene)
+- The phrase is the punchline that explodes what's already seen — short, cutting, relatable
+- ZERO decorative text inside the image: no sticky notes with lists, no multiple signs, no bullet points, no paragraphs
+
 Generate a JSON array of exactly ${imageCount} objects. Each object has EXACTLY these keys:
 {
-  "slide_title": "short slide title (max 6 words, in country dialect)",
-  "texto_principal": "main overlay text (max 12 words, impactful, in country dialect)",
-  "subtexto": "secondary text or punchline (max 8 words, humor hit or data point)",
-  "descripcion_visual": "what the image shows visually (scene, elements, composition)",
-  "prompt_imagen": "ultra-detailed prompt in English for Midjourney/DALL-E — include: art style, composition, color palette, mood, typography style, lighting, specific visual elements relevant to labor outrage — min 80 words"
+  "frase": "THE slide phrase — max 7 words, brutal, hits hard or makes you laugh with rage, in country dialect",
+  "descripcion_visual": "description of the visual scene — what work situation it shows, what metaphor it uses, how it conveys emotion without text",
+  "prompt_imagen": "ultra-detailed prompt in English for Midjourney/DALL-E. MANDATORY: the image has ONLY ONE visible text which is exactly the phrase from the 'frase' field, large clean typography. FORBIDDEN: lists, multiple signs, sticky notes with text, bullet points, more than one line of text in the image. Include: art style (dramatic illustration / editorial photography / conceptual art), composition, emotional color palette, cinematic lighting, specific visual metaphor, atmosphere — min 80 words"
 }
 
-IMPORTANT RULES:
-- ALL fields in English (country dialect for texto/subtexto/slide_title)
-- prompt_imagen: ultra-detailed English prompt — include graphic style, composition, palette, typography, visual elements
-- For "oferta-falsa-chiste": EXPOSE the ridiculous offer as a denunciation, do NOT teach how to create one
-- Escalate the narrative: slide 1 is hook, middle slides develop, last is close/CTA
+RULES:
+- frase: in country dialect, max 7 words — must hit hard or cause bitter laughter
+- prompt_imagen: ONLY 1 text in the image (the phrase), everything else is pure visual
+- For "oferta-falsa-chiste": expose with humor, do NOT teach how to create fake offers
+- Emotional escalation: slide 1 hook (outrage), middle concrete examples, last close/reflection
+- The enemy is the work system, not specific people
 
 JSON:`;
 
@@ -1871,28 +1882,22 @@ JSON:`;
 
     slides.forEach((sl,i)=>{
       const num=i+1;
+      const frase=sl.frase||sl.texto_principal||'';
       html+=`<div style="background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span style="background:#1a1a1a;color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">${lang==='es'?'Imagen':'Image'} ${num}/${slides.length}</span>
-          <strong style="font-size:12px;color:#b45309;">${sl.slide_title||''}</strong>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-          <div style="background:#fef3c7;border-radius:7px;padding:8px;">
-            <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">📝 Texto principal</div>
-            <div style="font-size:13px;font-weight:700;color:#1a1a1a;line-height:1.3;">"${sl.texto_principal||''}"</div>
-          </div>
-          <div style="background:#f0fdf4;border-radius:7px;padding:8px;">
-            <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">💬 Subtexto / Remate</div>
-            <div style="font-size:12px;color:#166534;font-style:italic;line-height:1.3;">"${sl.subtexto||''}"</div>
-          </div>
+        <div style="background:#1a1a1a;border-radius:9px;padding:12px 16px;margin-bottom:10px;text-align:center;">
+          <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">${lang==='es'?'✍️ FRASE (texto en la imagen)':'✍️ PHRASE (text in image)'}</div>
+          <div style="font-size:18px;font-weight:900;color:#f5f0e0;line-height:1.3;letter-spacing:0.3px;">"${frase}"</div>
         </div>
         <div style="background:#f8f5e8;border-radius:7px;padding:8px;margin-bottom:8px;">
-          <div style="font-size:9px;font-weight:700;color:#78350f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎨 Descripción visual</div>
+          <div style="font-size:9px;font-weight:700;color:#78350f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎨 ${lang==='es'?'Escena visual':'Visual scene'}</div>
           <div style="font-size:11px;color:#44403c;line-height:1.5;">${sl.descripcion_visual||''}</div>
         </div>
         <div style="background:#f0f9ff;border-radius:7px;padding:8px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 Prompt para IA (Midjourney / DALL-E / Stable Diffusion)</div>
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 Prompt IA (Midjourney / DALL-E / Stable Diffusion)</div>
             <button class="clip-copy" onclick="copyTxt(${JSON.stringify(sl.prompt_imagen||'')})">📋</button>
           </div>
           <div class="clip-voice" style="font-size:10.5px;">${sl.prompt_imagen||''}</div>
