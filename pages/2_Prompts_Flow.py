@@ -1560,8 +1560,8 @@ async function generateNarratorPackage(){
   }).join(',\n');
 
   const clipPattern=isMulti
-    ?`{"narrator_id":[1-${n} rotating],"dialogue":"[max 26 words]"}`
-    :`{"dialogue":"[max 28 words]"}`;
+    ?`{"narrator_id":[1-${n} rotating],"dialogue":"[max 26 words]","pexels_query":"[3-5 English keywords for Pexels stock video B-roll matching this clip's visual mood]"}`
+    :`{"dialogue":"[max 28 words]","pexels_query":"[3-5 English keywords for Pexels stock video B-roll matching this clip's visual mood]"}`;
 
   // Opciones exactas por campo para recomendación del AI
   const SET_STYLE_OPTIONS='oscuro|moderno|natural|neon|biblioteca|mistico';
@@ -1605,7 +1605,8 @@ Rules:
 - clips: exactly ${clips} items${isMulti?`, rotate narrator_id 1-${n} evenly across all ${n} characters, escalate tension progressively`:', escalate progressively'}
 - All dialogue in ${lang==='es'?'Spanish':'English'}
 - hook and copy in ${lang==='es'?'Spanish':'English'}
-- hashtags lowercase, no spaces`;
+- hashtags lowercase, no spaces
+- pexels_query: ALWAYS in English, 3-5 specific keywords (e.g. "tired office worker desk", "galaxy stars timelapse", "factory worker machinery") — optimized for Pexels video search`;
 
   try{
     window._pStore=[];
@@ -1682,12 +1683,16 @@ Rules:
     // ── Clips Veo 3 ───────────────────────────────────────────────────────────
     if(clipsArr.length){
       html+=`<div style="font-size:11px;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;">📹 ${clipsArr.length} clips · Google Veo 3 / Flow</div>`;
+      const allPexelsQueries=[];
       clipsArr.forEach((c,i)=>{
         const nIdx=isMulti?((c.narrator_id||1)-1):0;
         const nr=narratorsArr[nIdx]||narratorsArr[0]||{};
         const color=NARRATOR_COLORS[nIdx]||'#185fa5';
         const label=getNarratorLabel(nIdx);
         const dialogue=c.dialogue||'';
+        const pexelsQ=(c.pexels_query||'').trim();
+        if(pexelsQ) allPexelsQueries.push({num:i+1,q:pexelsQ});
+        const pexelsUrl=pexelsQ?`https://www.pexels.com/search/videos/${encodeURIComponent(pexelsQ)}/`:'';
         const clipLightRole=isPanel?'host':(nIdx===0?'host':'guest');
         const fullPrompt=buildNarratorClipPrompt(i+1,clipsArr.length,sec,nr.visual||'',nr.voice||'',sharedSetting,dialogue,clipLightRole,label);
         window._allPrompts.push(fullPrompt);
@@ -1702,9 +1707,34 @@ Rules:
             <strong style="font-size:10px;color:${color};">PROMPT COMPLETO → Google Veo 3 / Flow</strong>
             <div class="clip-voice">${fullPrompt}</div>
           </div>
+          ${pexelsQ?`<div style="background:#05a081;border-radius:7px;padding:7px 10px;margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:9px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.5px;">🎞️ Pexels B-Roll</span>
+            <span style="font-size:11px;color:#fff;font-weight:600;flex:1;">${pexelsQ}</span>
+            <button onclick="copyTxt('${pexelsQ.replace(/'/g,"\\'")}')" style="padding:3px 8px;background:rgba(255,255,255,0.2);border:none;border-radius:5px;color:#fff;font-size:10px;cursor:pointer;">📋</button>
+            <a href="${pexelsUrl}" target="_blank" style="padding:3px 10px;background:#fff;border-radius:5px;color:#05a081;font-size:10px;font-weight:700;text-decoration:none;">🔍 Buscar</a>
+          </div>`:''}
           <button class="clip-copy" onclick="copyTxt(window._pStore[${clipIdx}])">📋 Copiar clip ${i+1}</button>
         </div>`;
       });
+      // ── Sección consolidada Pexels B-Roll ────────────────────────────────────
+      if(allPexelsQueries.length){
+        window._pStore.push(allPexelsQueries.map(p=>`Clip ${p.num}: ${p.q}`).join('\n'));
+        const pxAllIdx=window._pStore.length-1;
+        html+=`<div class="clip-card" style="border-left:3px solid #05a081;">
+          <div class="clip-header" style="color:#05a081;">🎞️ ${lang==='es'?'B-Roll Pexels — todas las búsquedas':'Pexels B-Roll — all queries'}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${allPexelsQueries.map(p=>{
+              const url=`https://www.pexels.com/search/videos/${encodeURIComponent(p.q)}/`;
+              return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid rgba(0,0,0,0.06);">
+                <span style="font-size:9px;font-weight:700;color:#888;width:42px;flex-shrink:0;">Clip ${p.num}</span>
+                <span style="font-size:11px;color:#1a1a1a;flex:1;">${p.q}</span>
+                <a href="${url}" target="_blank" style="padding:2px 8px;background:#05a081;border-radius:5px;color:#fff;font-size:10px;font-weight:700;text-decoration:none;flex-shrink:0;">🔍</a>
+              </div>`;
+            }).join('')}
+          </div>
+          <button class="clip-copy" onclick="copyTxt(window._pStore[${pxAllIdx}])">📋 Copiar todas las búsquedas</button>
+        </div>`;
+      }
     }
 
     // ── Paquete redes sociales ────────────────────────────────────────────────
