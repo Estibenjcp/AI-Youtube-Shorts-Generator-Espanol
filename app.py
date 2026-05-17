@@ -33,6 +33,7 @@ from modules.categories import (
     MENTE_MASCULINA_CATEGORIES, MENTE_MASCULINA_CATEGORIES_EN,
     MUJER_CONSCIENTE_CATEGORIES, MUJER_CONSCIENTE_CATEGORIES_EN,
     INDIGNACION_CATEGORIES, INDIGNACION_CATEGORIES_EN,
+    CIENCIA_FACIL_CATEGORIES, CIENCIA_FACIL_CATEGORIES_EN,
 )
 from dotenv import set_key, load_dotenv
 
@@ -1490,6 +1491,23 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                                                      category_hint=category, mode="indignacion")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
                                            lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "ciencia_facil":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="ciencia_facil")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="ciencia_facil")
+            script = brain.generate_ciencia_facil_script(topic, category=category,
+                                                         lang=pipeline_lang,
+                                                         chosen_hook=chosen_hook,
+                                                         num_scenes=_ai_num_scenes,
+                                                         max_words_per_scene=_max_wpsc)
 
         else:
             chosen_hook = params.get("chosen_hook", "").strip()
@@ -3177,6 +3195,7 @@ _mode_buttons = (
         ("mente_masculina",     "💎 Mente masc."),
         ("mujer_consciente",    "🌺 Mujer consc."),
         ("indignacion",         "😤 Indignación"),
+        ("ciencia_facil",       "🔬 Ciencia Fácil"),
     ]
     if lang_option == "es"
     else [
@@ -3202,6 +3221,7 @@ _mode_buttons = (
         ("mente_masculina",     "💎 Male Mind"),
         ("mujer_consciente",    "🌺 Conscious Woman"),
         ("indignacion",         "😤 Work Outrage"),
+        ("ciencia_facil",       "🔬 Easy Science"),
     ]
 )
 
@@ -3932,6 +3952,37 @@ elif mode == "indignacion":
     num_scenes     = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MODO CIENCIA FÁCIL (Edutainment)
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "ciencia_facil":
+
+    st.markdown(
+        f"<div class='auto-info'>{'🔬 Ciencia cotidiana sin tecnicismos. Explica fenómenos reales con analogías del día a día — para gente curiosa que aprende en el trayecto al trabajo.' if lang_option == 'es' else '🔬 Everyday science without jargon. Explains real phenomena with relatable analogies — for curious people learning during their commute.'}</div>",
+        unsafe_allow_html=True,
+    )
+
+    _cf_cats = CIENCIA_FACIL_CATEGORIES if lang_option == "es" else CIENCIA_FACIL_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría' if lang_option == 'es' else 'Category'}</div>", unsafe_allow_html=True)
+    cf_category = st.selectbox(
+        "cfcat", options=[""] + _cf_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="cf_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Fenómeno o pregunta (opcional)' if lang_option == 'es' else 'Phenomenon or question (optional)'}</div>", unsafe_allow_html=True)
+    cf_topic_input = st.text_input(
+        "cftopic", key="cf_topic_input",
+        placeholder="¿Por qué el agua caliente se congela antes que la fría?" if lang_option == "es" else "Why does hot water freeze faster than cold water?",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = cf_topic_input.strip()
+    final_category = cf_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
 # MODO PODCAST / DIÁLOGO
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -4004,7 +4055,7 @@ _HOOK_MODES = {
     # Modos nuevos — todos usan hook flow
     "true_crime", "psicologia_oscura", "conspiracion", "ciencia_misterio",
     "finanzas", "mentalidad", "historia_epica", "psicologia_positiva",
-    "mente_masculina", "mujer_consciente", "indignacion",
+    "mente_masculina", "mujer_consciente", "indignacion", "ciencia_facil",
 }
 # "empleo", "guion", "podcast", "novela" no usan hooks — el texto ya viene definido por el usuario
 

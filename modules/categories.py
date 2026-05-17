@@ -224,3 +224,33 @@ MUJER_CONSCIENTE_CATEGORIES_EN = ["Feminine Empowerment","Healing and Self-Worth
 # Indignación Laboral
 INDIGNACION_CATEGORIES = ["Red Flags Laborales","Explotación Disfrazada","Humor Negro del Trabajo","Ofertas de Trabajo Ridículas","Jefes Tóxicos","Salarios Miserables","Injusticia Laboral","Cultura Corporativa Falsa"]
 INDIGNACION_CATEGORIES_EN = ["Workplace Red Flags","Disguised Exploitation","Dark Work Humor","Ridiculous Job Offers","Toxic Bosses","Miserable Salaries","Labor Injustice","Fake Corporate Culture"]
+
+# Ciencia Fácil (Edutainment — ciencia sin tecnicismos para gente común)
+CIENCIA_FACIL_CATEGORIES = [
+    "Cómo Funciona Tu Cuerpo",
+    "La Ciencia de lo Cotidiano",
+    "Por Qué Pasa Eso",
+    "Física del Día a Día",
+    "Química que Comes",
+    "Tu Cerebro sin Tecnicismos",
+    "Animales y su Ciencia",
+    "El Espacio para Todos",
+    "Matemáticas de la Vida Real",
+    "Tecnología Explicada Fácil",
+    "Medio Ambiente y Naturaleza",
+    "Experimentos que No Sabías que Hacías",
+]
+CIENCIA_FACIL_CATEGORIES_EN = [
+    "How Your Body Works",
+    "The Science of Everyday Life",
+    "Why Does That Happen",
+    "Physics of Daily Life",
+    "Chemistry You Eat",
+    "Your Brain Without Jargon",
+    "Animals and Their Science",
+    "Space for Everyone",
+    "Real-Life Mathematics",
+    "Technology Explained Simply",
+    "Environment and Nature",
+    "Experiments You Didn't Know You Were Doing",
+]

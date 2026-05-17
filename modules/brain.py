@@ -76,7 +76,8 @@ class ContentBrain:
                                           PSICOLOGIA_POSITIVA_CATEGORIES, PSICOLOGIA_POSITIVA_CATEGORIES_EN,
                                           MENTE_MASCULINA_CATEGORIES, MENTE_MASCULINA_CATEGORIES_EN,
                                           MUJER_CONSCIENTE_CATEGORIES, MUJER_CONSCIENTE_CATEGORIES_EN,
-                                          INDIGNACION_CATEGORIES, INDIGNACION_CATEGORIES_EN)
+                                          INDIGNACION_CATEGORIES, INDIGNACION_CATEGORIES_EN,
+                                          CIENCIA_FACIL_CATEGORIES, CIENCIA_FACIL_CATEGORIES_EN)
 
         # Pick category from the right pool depending on mode
         if category_hint.strip():
@@ -112,6 +113,8 @@ class ContentBrain:
             category = _random.choice(MUJER_CONSCIENTE_CATEGORIES if lang == "es" else MUJER_CONSCIENTE_CATEGORIES_EN)
         elif mode == "indignacion":
             category = _random.choice(INDIGNACION_CATEGORIES if lang == "es" else INDIGNACION_CATEGORIES_EN)
+        elif mode == "ciencia_facil":
+            category = _random.choice(CIENCIA_FACIL_CATEGORIES if lang == "es" else CIENCIA_FACIL_CATEGORIES_EN)
         else:
             categories = TOPIC_CATEGORIES.get(lang, TOPIC_CATEGORIES_ES)
             category   = _random.choice(categories)
@@ -251,6 +254,32 @@ class ContentBrain:
                 f"- It can be: a specific verse (e.g. 'John 3:16'), a parable, a biblical theme (e.g. 'Faith that moves mountains').\n"
                 f"- Format: 'Theme or verse — biblical reference (if applicable)'\n"
                 f"- Return ONLY the theme/verse. Nothing else."
+            )
+        elif mode == "ciencia_facil":
+            prompt = (
+                f"Eres un divulgador científico para gente común. Dame 1 fenómeno, dato o experimento REAL "
+                f"de la categoría: {category}. "
+                f"Debe ser algo sorprendente que le pase a cualquier persona en su vida diaria "
+                f"o que pueda explicarse con una analogía cotidiana. "
+                f"PROHIBIDO: temas demasiado técnicos, jerga científica en el título, contenido académico aburrido. "
+                f"EJEMPLOS del estilo correcto: 'Por qué el cielo es azul y no violeta si la luz violeta es mas energetica', "
+                f"'El efecto Mpemba: por que el agua caliente se congela antes que la fria', "
+                f"'Por que sientes el estomago en la garganta cuando bajas rapido en un elevador'. "
+                f"Semilla: {seed}. "
+                f"{_excl_block_es}"
+                f"Responde ÚNICAMENTE con el nombre del tema, nada más. En español."
+            ) if lang == "es" else (
+                f"You are a science communicator for everyday people. Give me 1 REAL phenomenon, fact or experiment "
+                f"from the category: {category}. "
+                f"It must be something surprising that happens to anyone in daily life "
+                f"or that can be explained with a relatable everyday analogy. "
+                f"FORBIDDEN: overly technical topics, jargon in the title, boring academic content. "
+                f"CORRECT STYLE EXAMPLES: 'Why the sky is blue and not violet if violet light has more energy', "
+                f"'The Mpemba effect: why hot water freezes faster than cold water', "
+                f"'Why you feel your stomach drop when an elevator goes down fast'. "
+                f"Seed: {seed}. "
+                f"{_excl_block_en}"
+                f"Return ONLY the topic name, nothing else."
             )
         else:
             prompt = (
@@ -661,6 +690,19 @@ OUTPUT FORMAT (strict JSON, no markdown):
             )
             tone_es = "indignado y sarcastico, estilo humor negro laboral que viraliza"
             tone_en = "outraged and sarcastic, dark work humor style that goes viral"
+        elif mode == "ciencia_facil":
+            types_es = (
+                "- TIPO A (Dato sorprendente cotidiano): hecho cientifico real que pasa en la vida diaria ('Tu cerebro no puede distinguir entre recuerdo real e imaginado. Lo comprobaron en 1974.')\n"
+                "- TIPO B (Pregunta que no te esperabas): pregunta simple con respuesta sorprendente ('¿Por que los cubos de hielo del supermercado tienen un agujero en el centro?')\n"
+                "- TIPO C (Creencia popular destruida): algo que creías que era de una forma y no lo es ('Todo el mundo piensa que tragarse chicle es peligroso. La ciencia dice lo contrario.')\n"
+            )
+            types_en = (
+                "- TYPE A (Surprising daily fact): real science fact that happens in everyday life ('Your brain cannot tell the difference between a real memory and an imagined one. Proven in 1974.')\n"
+                "- TYPE B (Question you didn't expect): simple question with surprising answer ('Why do supermarket ice cubes have a hole in the middle?')\n"
+                "- TYPE C (Popular belief destroyed): something you thought worked one way and it doesn't ('Everyone thinks swallowing gum is dangerous. Science says the opposite.')\n"
+            )
+            tone_es = "curioso y cercano, como un amigo listo que te explica algo alucinante sin tecnicismos"
+            tone_en = "curious and relatable, like a smart friend explaining something mind-blowing without jargon"
         else:  # auto, category, viral
             types_es = (
                 "- TIPO A (Numero shockeante): cifra + consecuencia brutal ('40.000 personas murieron en 48 horas. Nadie lo investigo.')\n"
@@ -1564,6 +1606,94 @@ We need TWO different stock videos for every single scene.
             return scenes
         except json.JSONDecodeError:
             print("❌ Error parsing JSON. Raw output:")
+            print(clean_text)
+            return None
+
+    def generate_ciencia_facil_script(self, topic: str, category: str = "", lang: str = "es",
+                                      chosen_hook: str = "", num_scenes: int = 9,
+                                      max_words_per_scene: int = 999) -> list:
+        """Guion edutainment: ciencia cotidiana sin tecnicismos, tono de amigo listo."""
+        print(f"🔬 Ciencia Fácil script: {topic} ({num_scenes} scenes)...")
+
+        if lang == "es":
+            prompt = f"""Eres el guionista de un canal de TikTok/YouTube Shorts llamado "Ciencia para Todos".
+Tu misión: explicar ciencia real de forma cercana, sorprendente y SIN JERGA TÉCNICA.
+Hablas como un amigo curioso que acaba de descubrir algo alucinante y quiere contártelo.
+
+Tema: {topic}
+Categoría: {category or "Ciencia cotidiana"}
+
+### REGLAS DE ESCRITURA (CRÍTICAS):
+- **Tono:** Conversacional y cercano. Como si le explicaras a tu mejor amigo en una cafetería.
+- **Sin tecnicismos solos:** Si DEBES usar un término técnico, INMEDIATAMENTE lo explicas con una analogía cotidiana entre paréntesis o con "es decir..." / "o sea...".
+- **Perspectiva:** Mezcla de 2ª persona ("tu cuerpo hace X") y 3ª persona ("los científicos descubrieron..."). Involucra al espectador.
+- **Estructura:** Exactamente {num_scenes} escenas.
+- **Flujo:** Gancho sorprendente → Pregunta que todos se hacen → Explicación simple con analogía → Dato que lo hace más increíble → Cierre con "dato bonus" o "aplícalo en tu vida".
+- **HOOK CRÍTICO (Escena 1, máximo 12 palabras):** Debe ser una pregunta trampa, un dato cotidiano sorprendente, o una creencia popular que el video destruirá.{f' HOOK PRE-SELECCIONADO (usar EXACTO): "{chosen_hook}"' if chosen_hook else ""}
+- **Máximo {max_words_per_scene} palabras por escena.**
+- **PROHIBIDO:** emojis, fórmulas químicas o físicas sin explicar, palabras con ñ (usa "anio", "senor", "Espana"), anglicismos innecesarios.
+
+### REQUISITOS VISUALES (Pexels):
+- **visual_1:** Imagen cotidiana que el espectador reconoce inmediatamente (no laboratorios vacíos).
+- **visual_2:** Visualización del fenómeno o analogía usada en la escena.
+- Ambos en INGLÉS, 3-5 palabras, específicos y visuales.
+
+### FORMATO DE SALIDA (JSON estricto, exactamente {num_scenes} entradas):
+[
+    {{
+        "id": 1,
+        "text": "Tu cerebro lleva toda tu vida confiando en tus recuerdos. Pero hay un problema: aproximadamente el 40% de ellos son falsos.",
+        "visual_1": "person thinking daydream close-up",
+        "visual_2": "brain memory neurons colorful",
+        "mood": "intriguing"
+    }}
+]"""
+        else:
+            prompt = f"""You are the scriptwriter for a TikTok/YouTube Shorts channel called "Science for Everyone".
+Your mission: explain real science in a relatable, surprising way — ZERO JARGON.
+You talk like a smart curious friend who just discovered something mind-blowing and can't wait to share it.
+
+Topic: {topic}
+Category: {category or "Everyday science"}
+
+### WRITING RULES (CRITICAL):
+- **Tone:** Conversational and warm. Like explaining to your best friend at a coffee shop.
+- **No jargon alone:** If you MUST use a technical term, IMMEDIATELY explain it with an everyday analogy in parentheses or with "meaning..." / "basically...".
+- **Perspective:** Mix of 2nd person ("your body does X") and 3rd person ("scientists discovered..."). Involve the viewer.
+- **Structure:** Exactly {num_scenes} scenes.
+- **Flow:** Surprising hook → Question everyone asks → Simple explanation with analogy → Fact that makes it more incredible → Closing "bonus fact" or "apply it in your life".
+- **CRITICAL HOOK (Scene 1, max 12 words):** Must be a trap question, a surprising everyday fact, or a popular belief the video will destroy.{f' PRE-SELECTED HOOK (use EXACT text): "{chosen_hook}"' if chosen_hook else ""}
+- **Maximum {max_words_per_scene} words per scene.**
+- **FORBIDDEN:** emojis, unexplained chemical/physics formulas, unnecessary jargon.
+
+### VISUAL REQUIREMENTS (Pexels):
+- **visual_1:** Everyday image the viewer immediately recognizes (not empty labs).
+- **visual_2:** Visualization of the phenomenon or analogy used in the scene.
+- Both in ENGLISH, 3-5 words, specific and visual.
+
+### OUTPUT FORMAT (Strict JSON, exactly {num_scenes} entries):
+[
+    {{
+        "id": 1,
+        "text": "Your brain has spent your whole life trusting your memories. But there's a problem: roughly 40% of them are false.",
+        "visual_1": "person thinking daydream close-up",
+        "visual_2": "brain memory neurons colorful",
+        "mood": "intriguing"
+    }}
+]"""
+
+        raw = self._generate(prompt)
+        clean_text = raw.replace('```json', '').replace('```', '').strip()
+        try:
+            scenes = json.loads(clean_text)
+            if len(scenes) > num_scenes:
+                scenes = scenes[:num_scenes]
+            for i, scene in enumerate(scenes):
+                scene['id']   = i + 1
+                scene['text'] = self._sanitize(scene.get('text', ''))
+            return scenes
+        except json.JSONDecodeError:
+            print("❌ Error parsing JSON (ciencia_facil). Raw output:")
             print(clean_text)
             return None
 
