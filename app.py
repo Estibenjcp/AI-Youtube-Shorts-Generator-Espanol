@@ -22,6 +22,17 @@ from modules.categories import (
     BOOK_CATEGORIES, BOOK_CATEGORIES_EN,
     BIBLE_CATEGORIES, BIBLE_CATEGORIES_EN,
     MISTERIO_BIBLICO_CATEGORIES, MISTERIO_BIBLICO_CATEGORIES_EN,
+    TRUE_CRIME_CATEGORIES, TRUE_CRIME_CATEGORIES_EN,
+    PSICOLOGIA_OSCURA_CATEGORIES, PSICOLOGIA_OSCURA_CATEGORIES_EN,
+    CONSPIRACION_CATEGORIES, CONSPIRACION_CATEGORIES_EN,
+    CIENCIA_MISTERIO_CATEGORIES, CIENCIA_MISTERIO_CATEGORIES_EN,
+    FINANZAS_CATEGORIES, FINANZAS_CATEGORIES_EN,
+    MENTALIDAD_CATEGORIES, MENTALIDAD_CATEGORIES_EN,
+    HISTORIA_EPICA_CATEGORIES, HISTORIA_EPICA_CATEGORIES_EN,
+    PSICOLOGIA_POSITIVA_CATEGORIES, PSICOLOGIA_POSITIVA_CATEGORIES_EN,
+    MENTE_MASCULINA_CATEGORIES, MENTE_MASCULINA_CATEGORIES_EN,
+    MUJER_CONSCIENTE_CATEGORIES, MUJER_CONSCIENTE_CATEGORIES_EN,
+    INDIGNACION_CATEGORIES, INDIGNACION_CATEGORIES_EN,
 )
 from dotenv import set_key, load_dotenv
 
@@ -3001,6 +3012,17 @@ _mode_buttons = (
         ("guion",            "✍️ Guión"),
         ("novela",           "🎬 Mininovela"),
         ("podcast",          "🎙️ Podcast"),
+        ("true_crime",          "🔍 True Crime"),
+        ("psicologia_oscura",   "🧠 Psic. Oscura"),
+        ("conspiracion",        "👁️ Conspiración"),
+        ("ciencia_misterio",    "🌌 Ciencia"),
+        ("finanzas",            "💰 Finanzas"),
+        ("mentalidad",          "💪 Mentalidad"),
+        ("historia_epica",      "⚔️ Historia épica"),
+        ("psicologia_positiva", "🌸 Psic. Positiva"),
+        ("mente_masculina",     "💎 Mente masc."),
+        ("mujer_consciente",    "🌺 Mujer consc."),
+        ("indignacion",         "😤 Indignación"),
     ]
     if lang_option == "es"
     else [
@@ -3015,6 +3037,17 @@ _mode_buttons = (
         ("guion",            "✍️ Script"),
         ("novela",           "🎬 Miniseries"),
         ("podcast",          "🎙️ Podcast"),
+        ("true_crime",          "🔍 True Crime"),
+        ("psicologia_oscura",   "🧠 Dark Psych."),
+        ("conspiracion",        "👁️ Conspiracy"),
+        ("ciencia_misterio",    "🌌 Science"),
+        ("finanzas",            "💰 Finance"),
+        ("mentalidad",          "💪 Mindset"),
+        ("historia_epica",      "⚔️ Epic History"),
+        ("psicologia_positiva", "🌸 Pos. Psych."),
+        ("mente_masculina",     "💎 Male Mind"),
+        ("mujer_consciente",    "🌺 Conscious Woman"),
+        ("indignacion",         "😤 Work Outrage"),
     ]
 )
 
@@ -3435,6 +3468,314 @@ elif mode == "novela":
         final_topic    = novela_theme.strip()[:100] if novela_theme.strip() else ""
         final_category = ""
         num_scenes     = 8
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO TRUE CRIME
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "true_crime":
+
+    st.markdown(f"<div class='auto-info'>{'🔍 Casos criminales reales, oscuros y adictivos. La IA construye el caso desde cero.' if lang_option == 'es' else '🔍 Real criminal cases, dark and addictive. AI builds the case from scratch.'}</div>", unsafe_allow_html=True)
+
+    _tc_cats = TRUE_CRIME_CATEGORIES if lang_option == "es" else TRUE_CRIME_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría del crimen' if lang_option == 'es' else 'Crime category'}</div>", unsafe_allow_html=True)
+    tc_category = st.selectbox(
+        "tccat", options=[""] + _tc_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="tc_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema o caso (opcional)' if lang_option == 'es' else 'Topic or case (optional)'}</div>", unsafe_allow_html=True)
+    tc_topic_input = st.text_input(
+        "tctopic", key="tc_topic_input",
+        placeholder="El robo al Banco de España de 1981..." if lang_option == "es" else "The 1981 Bank of Spain robbery...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = tc_topic_input.strip()
+    final_category = tc_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO PSICOLOGÍA OSCURA
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "psicologia_oscura":
+
+    st.markdown(f"<div class='auto-info'>{'🧠 Tácticas de manipulación, narcisismo y psicología oscura. Contenido que engancha e incomoda.' if lang_option == 'es' else '🧠 Manipulation tactics, narcissism, and dark psychology. Content that hooks and unsettles.'}</div>", unsafe_allow_html=True)
+
+    _po_cats = PSICOLOGIA_OSCURA_CATEGORIES if lang_option == "es" else PSICOLOGIA_OSCURA_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría' if lang_option == 'es' else 'Category'}</div>", unsafe_allow_html=True)
+    po_category = st.selectbox(
+        "pocat", options=[""] + _po_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="po_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema específico (opcional)' if lang_option == 'es' else 'Specific topic (optional)'}</div>", unsafe_allow_html=True)
+    po_topic_input = st.text_input(
+        "potopic", key="po_topic_input",
+        placeholder="Cómo detectar a un narcisista..." if lang_option == "es" else "How to detect a narcissist...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = po_topic_input.strip()
+    final_category = po_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO CONSPIRACIÓN MODERNA
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "conspiracion":
+
+    st.markdown(f"<div class='auto-info'>{'👁️ Teorías modernas sobre poder, control y tecnología. La IA construye el argumento con datos reales.' if lang_option == 'es' else '👁️ Modern theories on power, control, and technology. AI builds the argument with real data.'}</div>", unsafe_allow_html=True)
+
+    _con_cats = CONSPIRACION_CATEGORIES if lang_option == "es" else CONSPIRACION_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría' if lang_option == 'es' else 'Category'}</div>", unsafe_allow_html=True)
+    con_category = st.selectbox(
+        "concat", options=[""] + _con_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="con_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema o conspiración (opcional)' if lang_option == 'es' else 'Topic or conspiracy (optional)'}</div>", unsafe_allow_html=True)
+    con_topic_input = st.text_input(
+        "contopic", key="con_topic_input",
+        placeholder="El sistema de crédito social en China..." if lang_option == "es" else "China's social credit system...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = con_topic_input.strip()
+    final_category = con_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO CIENCIA Y MISTERIO
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "ciencia_misterio":
+
+    st.markdown(f"<div class='auto-info'>{'🌌 Ciencia real con misterio. La IA explica lo inexplicable con rigor y asombro.' if lang_option == 'es' else '🌌 Real science with mystery. AI explains the unexplained with rigor and awe.'}</div>", unsafe_allow_html=True)
+
+    _cm_cats = CIENCIA_MISTERIO_CATEGORIES if lang_option == "es" else CIENCIA_MISTERIO_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría científica' if lang_option == 'es' else 'Scientific category'}</div>", unsafe_allow_html=True)
+    cm_category = st.selectbox(
+        "cmcat", options=[""] + _cm_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="cm_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema o fenómeno (opcional)' if lang_option == 'es' else 'Topic or phenomenon (optional)'}</div>", unsafe_allow_html=True)
+    cm_topic_input = st.text_input(
+        "cmtopic", key="cm_topic_input",
+        placeholder="La paradoja de Fermi y la vida extraterrestre..." if lang_option == "es" else "The Fermi paradox and extraterrestrial life...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = cm_topic_input.strip()
+    final_category = cm_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO FINANZAS & LIBERTAD
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "finanzas":
+
+    st.markdown(f"<div class='auto-info'>{'💰 Verdades sobre dinero, inversión y libertad financiera que el sistema no quiere que sepas.' if lang_option == 'es' else '💰 Truths about money, investment, and financial freedom the system does not want you to know.'}</div>", unsafe_allow_html=True)
+
+    _fin_cats = FINANZAS_CATEGORIES if lang_option == "es" else FINANZAS_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría financiera' if lang_option == 'es' else 'Financial category'}</div>", unsafe_allow_html=True)
+    fin_category = st.selectbox(
+        "fincat", options=[""] + _fin_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="fin_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema específico (opcional)' if lang_option == 'es' else 'Specific topic (optional)'}</div>", unsafe_allow_html=True)
+    fin_topic_input = st.text_input(
+        "fintopic", key="fin_topic_input",
+        placeholder="Por qué la mayoría nunca alcanza la libertad financiera..." if lang_option == "es" else "Why most people never reach financial freedom...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = fin_topic_input.strip()
+    final_category = fin_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO MENTALIDAD & DISCIPLINA
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "mentalidad":
+
+    st.markdown(f"<div class='auto-info'>{'💪 Hábitos, disciplina y mentalidad de alto rendimiento. Contenido que transforma y motiva.' if lang_option == 'es' else '💪 Habits, discipline, and high-performance mindset. Content that transforms and motivates.'}</div>", unsafe_allow_html=True)
+
+    _men_cats = MENTALIDAD_CATEGORIES if lang_option == "es" else MENTALIDAD_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría' if lang_option == 'es' else 'Category'}</div>", unsafe_allow_html=True)
+    men_category = st.selectbox(
+        "mencat", options=[""] + _men_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="men_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema o hábito (opcional)' if lang_option == 'es' else 'Topic or habit (optional)'}</div>", unsafe_allow_html=True)
+    men_topic_input = st.text_input(
+        "mentopic", key="men_topic_input",
+        placeholder="El hábito matutino que separa a los exitosos del resto..." if lang_option == "es" else "The morning habit that separates successful people from the rest...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = men_topic_input.strip()
+    final_category = men_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO HISTORIA ÉPICA
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "historia_epica":
+
+    st.markdown(f"<div class='auto-info'>{'⚔️ Batallas, imperios y revoluciones que cambiaron el mundo. Historia narrada con épica cinematográfica.' if lang_option == 'es' else '⚔️ Battles, empires, and revolutions that changed the world. History narrated with cinematic epic.'}</div>", unsafe_allow_html=True)
+
+    _he_cats = HISTORIA_EPICA_CATEGORIES if lang_option == "es" else HISTORIA_EPICA_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría histórica' if lang_option == 'es' else 'Historical category'}</div>", unsafe_allow_html=True)
+    he_category = st.selectbox(
+        "hecat", options=[""] + _he_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="he_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Batalla, personaje o evento (opcional)' if lang_option == 'es' else 'Battle, figure, or event (optional)'}</div>", unsafe_allow_html=True)
+    he_topic_input = st.text_input(
+        "hetopic", key="he_topic_input",
+        placeholder="La batalla de Termopilas y los 300 espartanos..." if lang_option == "es" else "The Battle of Thermopylae and the 300 Spartans...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = he_topic_input.strip()
+    final_category = he_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO PSICOLOGÍA POSITIVA
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "psicologia_positiva":
+
+    st.markdown(f"<div class='auto-info'>{'🌸 Sanación emocional, autoestima y crecimiento personal. Contenido que conecta y transforma.' if lang_option == 'es' else '🌸 Emotional healing, self-esteem, and personal growth. Content that connects and transforms.'}</div>", unsafe_allow_html=True)
+
+    _pp_cats = PSICOLOGIA_POSITIVA_CATEGORIES if lang_option == "es" else PSICOLOGIA_POSITIVA_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría' if lang_option == 'es' else 'Category'}</div>", unsafe_allow_html=True)
+    pp_category = st.selectbox(
+        "ppcat", options=[""] + _pp_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="pp_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema emocional (opcional)' if lang_option == 'es' else 'Emotional topic (optional)'}</div>", unsafe_allow_html=True)
+    pp_topic_input = st.text_input(
+        "pptopic", key="pp_topic_input",
+        placeholder="Cómo sanar después de una relación tóxica..." if lang_option == "es" else "How to heal after a toxic relationship...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = pp_topic_input.strip()
+    final_category = pp_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO MENTE MASCULINA
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "mente_masculina":
+
+    st.markdown(f"<div class='auto-info'>{'💎 Masculinidad consciente, propósito y desarrollo del hombre moderno. Contenido que desafía y eleva.' if lang_option == 'es' else '💎 Conscious masculinity, purpose, and modern man development. Content that challenges and elevates.'}</div>", unsafe_allow_html=True)
+
+    _mm_cats = MENTE_MASCULINA_CATEGORIES if lang_option == "es" else MENTE_MASCULINA_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría' if lang_option == 'es' else 'Category'}</div>", unsafe_allow_html=True)
+    mm_category = st.selectbox(
+        "mmcat", options=[""] + _mm_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="mm_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema específico (opcional)' if lang_option == 'es' else 'Specific topic (optional)'}</div>", unsafe_allow_html=True)
+    mm_topic_input = st.text_input(
+        "mmtopic", key="mm_topic_input",
+        placeholder="Lo que nadie le enseña a un hombre sobre las emociones..." if lang_option == "es" else "What nobody teaches men about emotions...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = mm_topic_input.strip()
+    final_category = mm_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO MUJER CONSCIENTE
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "mujer_consciente":
+
+    st.markdown(f"<div class='auto-info'>{'🌺 Empoderamiento femenino, sanación y amor propio. Contenido que resuena profundamente con la mujer actual.' if lang_option == 'es' else '🌺 Feminine empowerment, healing, and self-love. Content that deeply resonates with the modern woman.'}</div>", unsafe_allow_html=True)
+
+    _mc_cats = MUJER_CONSCIENTE_CATEGORIES if lang_option == "es" else MUJER_CONSCIENTE_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría' if lang_option == 'es' else 'Category'}</div>", unsafe_allow_html=True)
+    mc_category = st.selectbox(
+        "mccat", options=[""] + _mc_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="mc_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Tema (opcional)' if lang_option == 'es' else 'Topic (optional)'}</div>", unsafe_allow_html=True)
+    mc_topic_input = st.text_input(
+        "mctopic", key="mc_topic_input",
+        placeholder="Cómo una mujer deja de pedir permiso para ser ella misma..." if lang_option == "es" else "How a woman stops asking permission to be herself...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = mc_topic_input.strip()
+    final_category = mc_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO INDIGNACIÓN LABORAL
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "indignacion":
+
+    st.markdown(f"<div class='auto-info'>{'😤 Red flags, explotación y humor negro del mundo laboral. Contenido que indigna, identifica y viraliza.' if lang_option == 'es' else '😤 Red flags, exploitation, and dark work humor. Content that outrages, resonates, and goes viral.'}</div>", unsafe_allow_html=True)
+
+    _ind_cats = INDIGNACION_CATEGORIES if lang_option == "es" else INDIGNACION_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría laboral' if lang_option == 'es' else 'Work category'}</div>", unsafe_allow_html=True)
+    ind_category = st.selectbox(
+        "indcat", options=[""] + _ind_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="ind_cat_select",
+    )
+
+    st.markdown(f"<div class='step-header'>✍️ {'Situación o tema (opcional)' if lang_option == 'es' else 'Situation or topic (optional)'}</div>", unsafe_allow_html=True)
+    ind_topic_input = st.text_input(
+        "indtopic", key="ind_topic_input",
+        placeholder="Empresa que pide 5 años de experiencia para empleo de prácticas..." if lang_option == "es" else "Company asking for 5 years experience for an internship...",
+        label_visibility="collapsed",
+    )
+
+    final_topic    = ind_topic_input.strip()
+    final_category = ind_category
+    num_scenes     = st.session_state.get("global_num_scenes", 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO PODCAST / DIÁLOGO

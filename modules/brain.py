@@ -65,7 +65,18 @@ class ContentBrain:
         import random as _random
         from modules.categories import (VIRAL_CATEGORIES, TESTIMONIO_CATEGORIES,
                                           BOOK_CATEGORIES, BOOK_CATEGORIES_EN,
-                                          MISTERIO_BIBLICO_CATEGORIES, MISTERIO_BIBLICO_CATEGORIES_EN)
+                                          MISTERIO_BIBLICO_CATEGORIES, MISTERIO_BIBLICO_CATEGORIES_EN,
+                                          TRUE_CRIME_CATEGORIES, TRUE_CRIME_CATEGORIES_EN,
+                                          PSICOLOGIA_OSCURA_CATEGORIES, PSICOLOGIA_OSCURA_CATEGORIES_EN,
+                                          CONSPIRACION_CATEGORIES, CONSPIRACION_CATEGORIES_EN,
+                                          CIENCIA_MISTERIO_CATEGORIES, CIENCIA_MISTERIO_CATEGORIES_EN,
+                                          FINANZAS_CATEGORIES, FINANZAS_CATEGORIES_EN,
+                                          MENTALIDAD_CATEGORIES, MENTALIDAD_CATEGORIES_EN,
+                                          HISTORIA_EPICA_CATEGORIES, HISTORIA_EPICA_CATEGORIES_EN,
+                                          PSICOLOGIA_POSITIVA_CATEGORIES, PSICOLOGIA_POSITIVA_CATEGORIES_EN,
+                                          MENTE_MASCULINA_CATEGORIES, MENTE_MASCULINA_CATEGORIES_EN,
+                                          MUJER_CONSCIENTE_CATEGORIES, MUJER_CONSCIENTE_CATEGORIES_EN,
+                                          INDIGNACION_CATEGORIES, INDIGNACION_CATEGORIES_EN)
 
         # Pick category from the right pool depending on mode
         if category_hint.strip():
@@ -79,6 +90,28 @@ class ContentBrain:
             category = _random.choice(cats)
         elif mode == "libro":
             category = _random.choice(BOOK_CATEGORIES if lang == "es" else BOOK_CATEGORIES_EN)
+        elif mode == "true_crime":
+            category = _random.choice(TRUE_CRIME_CATEGORIES if lang == "es" else TRUE_CRIME_CATEGORIES_EN)
+        elif mode == "psicologia_oscura":
+            category = _random.choice(PSICOLOGIA_OSCURA_CATEGORIES if lang == "es" else PSICOLOGIA_OSCURA_CATEGORIES_EN)
+        elif mode == "conspiracion":
+            category = _random.choice(CONSPIRACION_CATEGORIES if lang == "es" else CONSPIRACION_CATEGORIES_EN)
+        elif mode == "ciencia_misterio":
+            category = _random.choice(CIENCIA_MISTERIO_CATEGORIES if lang == "es" else CIENCIA_MISTERIO_CATEGORIES_EN)
+        elif mode == "finanzas":
+            category = _random.choice(FINANZAS_CATEGORIES if lang == "es" else FINANZAS_CATEGORIES_EN)
+        elif mode == "mentalidad":
+            category = _random.choice(MENTALIDAD_CATEGORIES if lang == "es" else MENTALIDAD_CATEGORIES_EN)
+        elif mode == "historia_epica":
+            category = _random.choice(HISTORIA_EPICA_CATEGORIES if lang == "es" else HISTORIA_EPICA_CATEGORIES_EN)
+        elif mode == "psicologia_positiva":
+            category = _random.choice(PSICOLOGIA_POSITIVA_CATEGORIES if lang == "es" else PSICOLOGIA_POSITIVA_CATEGORIES_EN)
+        elif mode == "mente_masculina":
+            category = _random.choice(MENTE_MASCULINA_CATEGORIES if lang == "es" else MENTE_MASCULINA_CATEGORIES_EN)
+        elif mode == "mujer_consciente":
+            category = _random.choice(MUJER_CONSCIENTE_CATEGORIES if lang == "es" else MUJER_CONSCIENTE_CATEGORIES_EN)
+        elif mode == "indignacion":
+            category = _random.choice(INDIGNACION_CATEGORIES if lang == "es" else INDIGNACION_CATEGORIES_EN)
         else:
             categories = TOPIC_CATEGORIES.get(lang, TOPIC_CATEGORIES_ES)
             category   = _random.choice(categories)
@@ -563,6 +596,71 @@ OUTPUT FORMAT (strict JSON, no markdown):
             )
             tone_es = "espiritual, esperanzador y edificante, que toque el corazon"
             tone_en = "spiritual, hopeful and uplifting, touching the heart"
+        elif mode in ("true_crime", "psicologia_oscura", "conspiracion"):
+            types_es = (
+                "- TIPO A (Revelacion oscura): hecho perturbador real ('Lo que encontraron en esa casa no debia existir.')\n"
+                "- TIPO B (Dato shockeante): cifra + contexto impactante ('17 victimas. Un solo culpable. Y nadie lo busco.')\n"
+                "- TIPO C (Secreto oculto): 'Nadie habla de lo que paso realmente con [X].'\n"
+            )
+            types_en = (
+                "- TYPE A (Dark reveal): real disturbing fact ('What they found in that house should not have existed.')\n"
+                "- TYPE B (Shocking stat): number + impactful context ('17 victims. One perpetrator. And nobody looked.')\n"
+                "- TYPE C (Hidden secret): 'Nobody talks about what really happened with [X].'\n"
+            )
+            tone_es = "oscuro e investigativo, estilo documental criminal adictivo"
+            tone_en = "dark and investigative, addictive criminal documentary style"
+        elif mode == "ciencia_misterio":
+            types_es = (
+                "- TIPO A (Dato cientifico asombroso): hecho verificable que rompe creencias ('La fisica cuantica prueba que el tiempo no existe como crees.')\n"
+                "- TIPO B (Pregunta sin respuesta): '¿Por que los cientificos no pueden explicar [X]?'\n"
+                "- TIPO C (Descubrimiento oculto): 'Este experimento estuvo clasificado durante 40 anos.'\n"
+            )
+            types_en = (
+                "- TYPE A (Amazing scientific fact): verifiable fact that breaks beliefs ('Quantum physics proves time does not exist as you think.')\n"
+                "- TYPE B (Unanswered question): 'Why can scientists not explain [X]?'\n"
+                "- TYPE C (Hidden discovery): 'This experiment was classified for 40 years.'\n"
+            )
+            tone_es = "cientifico y misterioso, mezcla de rigor y asombro"
+            tone_en = "scientific and mysterious, blend of rigor and awe"
+        elif mode in ("finanzas", "mentalidad", "historia_epica"):
+            types_es = (
+                "- TIPO A (Verdad incomoda): dato que desafia la mentalidad comun ('El 95% trabaja mas duro pero sigue siendo pobre. Esta es la razon.')\n"
+                "- TIPO B (Secreto de exito): 'Lo que los ricos hacen diferente y nunca te contaron.'\n"
+                "- TIPO C (Hecho epico): evento real impactante que inspira o sacude ('En 1920 este hombre perdio todo. 10 anos despues controlaba el mundo.')\n"
+            )
+            types_en = (
+                "- TYPE A (Uncomfortable truth): fact challenging common mindset ('95% work harder but stay poor. Here is the reason.')\n"
+                "- TYPE B (Success secret): 'What the rich do differently and never told you.'\n"
+                "- TYPE C (Epic fact): impactful real event that inspires or shocks ('In 1920 this man lost everything. 10 years later he controlled the world.')\n"
+            )
+            tone_es = "inspirador e impactante, estilo conferencia TED + historia epica"
+            tone_en = "inspiring and impactful, TED talk + epic history style"
+        elif mode in ("psicologia_positiva", "mente_masculina", "mujer_consciente"):
+            types_es = (
+                "- TIPO A (Verdad emocional): frase que toca el corazon ('Nadie te enseno que puedes amarte sin explicaciones.')\n"
+                "- TIPO B (Pregunta reflexiva): '¿Y si todo lo que crees sobre [X] te esta limitando?'\n"
+                "- TIPO C (Promesa de transformacion): 'Esto cambio todo para miles de personas que sintieron lo mismo que tu.'\n"
+            )
+            types_en = (
+                "- TYPE A (Emotional truth): phrase that touches the heart ('Nobody taught you that you can love yourself without explanations.')\n"
+                "- TYPE B (Reflective question): 'What if everything you believe about [X] is limiting you?'\n"
+                "- TYPE C (Transformation promise): 'This changed everything for thousands who felt exactly like you.'\n"
+            )
+            tone_es = "emocional y sanador, estilo psicologia moderna con calidez"
+            tone_en = "emotional and healing, modern psychology style with warmth"
+        elif mode == "indignacion":
+            types_es = (
+                "- TIPO A (Red flag laboral): oferta o situacion absurda real ('Empresa pide 5 anos de experiencia para un trabajo de practicas. Sueldo: 600 euros.')\n"
+                "- TIPO B (Sarcasmo laboral): 'El jefe que lleva 3 anos diciendote que ya viene tu aumento.'\n"
+                "- TIPO C (Indignacion pura): dato injusto que enciende al espectador ('El CEO gano 400 veces mas que sus empleados. Y los despidio igual.')\n"
+            )
+            types_en = (
+                "- TYPE A (Work red flag): real absurd offer or situation ('Company asks for 5 years experience for an internship. Salary: 600 euros.')\n"
+                "- TYPE B (Work sarcasm): 'The boss who has been saying your raise is coming for 3 years.'\n"
+                "- TYPE C (Pure outrage): unfair fact that fires up the viewer ('The CEO earned 400 times more than his employees. And still laid them off.')\n"
+            )
+            tone_es = "indignado y sarcastico, estilo humor negro laboral que viraliza"
+            tone_en = "outraged and sarcastic, dark work humor style that goes viral"
         else:  # auto, category, viral
             types_es = (
                 "- TIPO A (Numero shockeante): cifra + consecuencia brutal ('40.000 personas murieron en 48 horas. Nadie lo investigo.')\n"

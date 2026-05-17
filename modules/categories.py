@@ -180,3 +180,47 @@ MISTERIO_BIBLICO_CATEGORIES_EN = [
     "Angelic Wars and Demons",
     "The First Biblical Civilizations",
 ]
+
+# True Crime
+TRUE_CRIME_CATEGORIES = ["Casos Criminales Sin Resolver","Asesinos en Serie","Fraudes y Estafas Épicas","Robos Imposibles","Crímenes de Cuello Blanco","Crímenes Históricos Famosos","Justicia que Falló","Cultos y Crímenes Sectarios"]
+TRUE_CRIME_CATEGORIES_EN = ["Unsolved Criminal Cases","Serial Killers","Epic Frauds and Scams","Impossible Heists","White Collar Crime","Famous Historic Crimes","Justice That Failed","Cult Crimes"]
+
+# Psicología Oscura
+PSICOLOGIA_OSCURA_CATEGORIES = ["Manipulación y Control Mental","Narcisismo y Psicopatía","Tácticas de Manipuladores","Relaciones Tóxicas","Lavado de Cerebro","Lenguaje Corporal Oscuro","Secretos de la Mente Criminal","Gaslighting y Abuso Emocional"]
+PSICOLOGIA_OSCURA_CATEGORIES_EN = ["Manipulation and Mind Control","Narcissism and Psychopathy","Manipulator Tactics","Toxic Relationships","Brainwashing","Dark Body Language","Criminal Mind Secrets","Gaslighting and Emotional Abuse"]
+
+# Conspiración Moderna
+CONSPIRACION_CATEGORIES = ["Inteligencia Artificial y Control","Élites y Poder Global","Vigilancia Masiva","Corporaciones vs Humanidad","Guerras de Información","Tecnología Oculta","Redes Sociales y Manipulación","Secretos Gubernamentales Actuales"]
+CONSPIRACION_CATEGORIES_EN = ["AI and Control","Elites and Global Power","Mass Surveillance","Corporations vs Humanity","Information Wars","Hidden Technology","Social Media Manipulation","Current Government Secrets"]
+
+# Ciencia y Misterio
+CIENCIA_MISTERIO_CATEGORIES = ["Misterios del Universo","Física Cuántica Extraña","Vida Extraterrestre","Dimensiones Paralelas","Anomalías Científicas","Experimentos Prohibidos","El Cerebro Humano","Origen de la Vida"]
+CIENCIA_MISTERIO_CATEGORIES_EN = ["Universe Mysteries","Strange Quantum Physics","Extraterrestrial Life","Parallel Dimensions","Scientific Anomalies","Forbidden Experiments","The Human Brain","Origin of Life"]
+
+# Finanzas & Libertad
+FINANZAS_CATEGORIES = ["Libertad Financiera","Inversión y Activos","Mentalidad de Riqueza","Errores que te Mantienen Pobre","Emprendimiento Real","Criptomonedas y Futuro","El Sistema Financiero al Descubierto","Ahorro e Independencia"]
+FINANZAS_CATEGORIES_EN = ["Financial Freedom","Investment and Assets","Wealth Mindset","Mistakes Keeping You Poor","Real Entrepreneurship","Crypto and the Future","The Financial System Exposed","Savings and Independence"]
+
+# Mentalidad & Disciplina
+MENTALIDAD_CATEGORIES = ["Hábitos de Alto Rendimiento","Disciplina Extrema","Gestión del Tiempo","Mentalidad Ganadora","Superar el Miedo","Productividad Real","Fuerza Mental","Propósito y Dirección"]
+MENTALIDAD_CATEGORIES_EN = ["High Performance Habits","Extreme Discipline","Time Management","Winning Mindset","Overcoming Fear","Real Productivity","Mental Strength","Purpose and Direction"]
+
+# Historia Épica
+HISTORIA_EPICA_CATEGORIES = ["Batallas Legendarias","Imperios Caídos","Héroes y Traidores","Conquistas Imposibles","Revoluciones que Cambiaron el Mundo","Líderes que Marcaron la Historia","Guerras Olvidadas","Civilizaciones Misteriosas"]
+HISTORIA_EPICA_CATEGORIES_EN = ["Legendary Battles","Fallen Empires","Heroes and Traitors","Impossible Conquests","World-Changing Revolutions","History-Making Leaders","Forgotten Wars","Mysterious Civilizations"]
+
+# Psicología Positiva
+PSICOLOGIA_POSITIVA_CATEGORIES = ["Autoestima y Amor Propio","Sanación Emocional","Límites Saludables","Apego y Relaciones","Inteligencia Emocional","Mindfulness y Paz Interior","Superación del Trauma","Propósito de Vida"]
+PSICOLOGIA_POSITIVA_CATEGORIES_EN = ["Self-Esteem and Self-Love","Emotional Healing","Healthy Boundaries","Attachment and Relationships","Emotional Intelligence","Mindfulness and Inner Peace","Trauma Recovery","Life Purpose"]
+
+# Mente Masculina
+MENTE_MASCULINA_CATEGORIES = ["Masculinidad Consciente","Amor Propio para Hombres","Relaciones y Emociones Masculinas","Propósito y Ambición","Disciplina del Hombre Moderno","Paternidad Consciente","Salud Mental Masculina","Liderazgo Personal"]
+MENTE_MASCULINA_CATEGORIES_EN = ["Conscious Masculinity","Self-Love for Men","Male Relationships and Emotions","Purpose and Ambition","Modern Man Discipline","Conscious Fatherhood","Male Mental Health","Personal Leadership"]
+
+# Mujer Consciente
+MUJER_CONSCIENTE_CATEGORIES = ["Empoderamiento Femenino","Sanación y Autoestima","Relaciones que Elevan","Independencia Emocional","La Mujer que Mereces Ser","Feminidad y Propósito","Liberarse de Relaciones Tóxicas","Amor Propio Radical"]
+MUJER_CONSCIENTE_CATEGORIES_EN = ["Feminine Empowerment","Healing and Self-Worth","Relationships That Elevate","Emotional Independence","The Woman You Deserve to Be","Femininity and Purpose","Breaking Free from Toxic Relationships","Radical Self-Love"]
+
+# Indignación Laboral
+INDIGNACION_CATEGORIES = ["Red Flags Laborales","Explotación Disfrazada","Humor Negro del Trabajo","Ofertas de Trabajo Ridículas","Jefes Tóxicos","Salarios Miserables","Injusticia Laboral","Cultura Corporativa Falsa"]
+INDIGNACION_CATEGORIES_EN = ["Workplace Red Flags","Disguised Exploitation","Dark Work Humor","Ridiculous Job Offers","Toxic Bosses","Miserable Salaries","Labor Injustice","Fake Corporate Culture"]
