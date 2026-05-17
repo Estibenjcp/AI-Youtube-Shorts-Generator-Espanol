@@ -1337,6 +1337,160 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             log_q.put("📝 [Mininovela] Escribiendo guión por escenas...")
             script = brain.generate_miniseries_script(bible, lang=pipeline_lang, num_scenes=_ai_num_scenes)
 
+        elif pipeline_mode == "true_crime":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="true_crime")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="true_crime")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "psicologia_oscura":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="psicologia_oscura")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="psicologia_oscura")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "conspiracion":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="conspiracion")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="conspiracion")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "ciencia_misterio":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="ciencia_misterio")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="ciencia_misterio")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "finanzas":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="finanzas")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="finanzas")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "mentalidad":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="mentalidad")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="mentalidad")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "historia_epica":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="historia_epica")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="historia_epica")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "psicologia_positiva":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="psicologia_positiva")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="psicologia_positiva")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "mente_masculina":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="mente_masculina")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="mente_masculina")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "mujer_consciente":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="mujer_consciente")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="mujer_consciente")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
+        elif pipeline_mode == "indignacion":
+            topic       = params.get("topic", "").strip()
+            category    = params.get("category", "").strip()
+            chosen_hook = params.get("chosen_hook", "").strip()
+            if not topic:
+                topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                 category_hint=category, mode="indignacion")
+                for _ in range(3):
+                    if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
+                    topic = brain.get_trending_topic("", lang=pipeline_lang,
+                                                     category_hint=category, mode="indignacion")
+            script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
+                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+
         else:
             chosen_hook = params.get("chosen_hook", "").strip()
             topic  = brain.get_trending_topic(params.get("topic", ""),
@@ -3845,8 +3999,14 @@ elif mode == "podcast":
 
 # ── Generar / Hook flow ───────────────────────────────────────────────────────
 # Modos donde el hook se inyecta en la Escena 1 del guion
-_HOOK_MODES = {"auto", "category", "viral", "testimonio", "misterio_biblico", "libro", "biblia"}
-# "empleo" y "guion" no usan hooks — el texto ya viene definido por el usuario
+_HOOK_MODES = {
+    "auto", "category", "viral", "testimonio", "misterio_biblico", "libro", "biblia",
+    # Modos nuevos — todos usan hook flow
+    "true_crime", "psicologia_oscura", "conspiracion", "ciencia_misterio",
+    "finanzas", "mentalidad", "historia_epica", "psicologia_positiva",
+    "mente_masculina", "mujer_consciente", "indignacion",
+}
+# "empleo", "guion", "podcast", "novela" no usan hooks — el texto ya viene definido por el usuario
 
 st.markdown("---")
 
