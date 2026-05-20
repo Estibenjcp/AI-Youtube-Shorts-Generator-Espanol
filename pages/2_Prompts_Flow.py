@@ -342,7 +342,8 @@ const MODES={
   'psicologia-positiva':{icon:'🌸',title:{es:'Psicología positiva',en:'Positive psychology'},desc:{es:'Autoestima, sanación emocional, límites, apego — contenido que sana',en:'Self-esteem, healing, boundaries, attachment — content that heals'}},
   'mente-masculina':{icon:'💎',title:{es:'Mente masculina',en:'Masculine mindset'},desc:{es:'Reflexiones profundas para hombres — emociones, amor propio, relaciones, propósito',en:'Deep reflections for men — emotions, self-love, relationships, purpose'}},
   'mujer-consciente':{icon:'🌺',title:{es:'Mujer consciente',en:'Conscious woman'},desc:{es:'Empoderamiento femenino — autoestima, sanación, relaciones, propósito y esencia propia',en:'Feminine empowerment — self-worth, healing, relationships, purpose and true self'}},
-  'indignacion-laboral':{icon:'😤',title:{es:'Indignación Laboral',en:'Labor Outrage'},desc:{es:'Contenido viral sobre red flags laborales, explotación disfrazada y humor negro del trabajo',en:'Viral content on workplace red flags, disguised exploitation and dark work humor'}}
+  'indignacion-laboral':{icon:'😤',title:{es:'Indignación Laboral',en:'Labor Outrage'},desc:{es:'Contenido viral sobre red flags laborales, explotación disfrazada y humor negro del trabajo',en:'Viral content on workplace red flags, disguised exploitation and dark work humor'}},
+  'meme-laboral':{icon:'😂',title:{es:'Meme Laboral',en:'Work Meme'},desc:{es:'Memes virales de trabajo — POV, Expectativa vs Realidad, Ofertas parodia, Frases bomba. Contenido que la gente guarda y reenvía a sus compañeros',en:'Viral work memes — POV, Expectation vs Reality, parody job listings, punchlines. Content people save and forward to coworkers'}}
 };
 
 const MODE_SELECTS={
@@ -487,6 +488,12 @@ const MODE_SELECTS={
   'image-format':{es:[['carrusel','📱 Carrusel (Instagram / LinkedIn)'],['historia','📸 Historia (Stories / Reels vertical)']],en:[['carrusel','📱 Carousel (Instagram / LinkedIn)'],['historia','📸 Story (Stories / Reels vertical)']]},
   'publico':{es:[['universal','🌎 Universal (todos los trabajadores)'],['random','🎲 Aleatorio (IA elige)'],['oficina-corporativo','🏢 Oficina / Corporativo'],['salud-enfermeria','🏥 Salud — médicos, enfermeros, auxiliares'],['educacion-docentes','📚 Educación — maestros y docentes'],['servicios-retail','🛒 Servicios — retail, restaurantes, tiendas'],['call-center','📞 Call center / atención al cliente'],['tecnologia-it','💻 Tecnología / IT / desarrolladores'],['freelance-independiente','🧑‍💻 Freelancers / trabajadores independientes'],['obrero-manufactura','🏭 Obreros / manufactura / operarios'],['recien-graduado','🎓 Recién graduados / primer empleo'],['remoto-home-office','🏠 Trabajadores remotos / home office'],['hosteleria-turismo','✈️ Hostelería / turismo / aerolíneas'],['seguridad-vigilancia','🔒 Seguridad / vigilancia / guardia']],en:[['universal','🌎 Universal (all workers)'],['random','🎲 Random (AI chooses)'],['oficina-corporativo','🏢 Office / Corporate'],['salud-enfermeria','🏥 Health — doctors, nurses, assistants'],['educacion-docentes','📚 Education — teachers'],['servicios-retail','🛒 Services — retail, restaurants, stores'],['call-center','📞 Call center / customer service'],['tecnologia-it','💻 Tech / IT / developers'],['freelance-independiente','🧑‍💻 Freelancers / independent workers'],['obrero-manufactura','🏭 Factory workers / manufacturing'],['recien-graduado','🎓 Recent graduates / first job'],['remoto-home-office','🏠 Remote / home office workers'],['hosteleria-turismo','✈️ Hospitality / tourism / airlines'],['seguridad-vigilancia','🔒 Security / guards']]}
 }
+,'meme-laboral':{
+  'meme-categoria':{es:[['random','🎲 Aleatorio (IA elige)'],['red-flags','🚩 Red flags laborales'],['explotacion-disfrazada','💀 Explotación disfrazada'],['humor-negro-trabajo','😂 Humor negro laboral'],['oferta-parodia','🎭 Oferta de trabajo parodia'],['indignacion-pura','😤 Indignación pura'],['salario-toxico','💸 Salario "competitivo"'],['jefes-toxicos','👔 Jefes tóxicos'],['injusticia-laboral','⚖️ Injusticia laboral']],en:[['random','🎲 Random (AI chooses)'],['red-flags','🚩 Workplace red flags'],['explotacion-disfrazada','💀 Disguised exploitation'],['humor-negro-trabajo','😂 Dark work humor'],['oferta-parodia','🎭 Parody job listing'],['indignacion-pura','😤 Pure outrage'],['salario-toxico','💸 "Competitive" salary'],['jefes-toxicos','👔 Toxic bosses'],['injusticia-laboral','⚖️ Labor injustice']]},
+  'meme-count':{es:[['3','3 memes'],['5','5 memes'],['7','7 memes'],['10','10 memes']],en:[['3','3 memes'],['5','5 memes'],['7','7 memes'],['10','10 memes']]},
+  'meme-formato':{es:[['variado','🎲 Variado (todos los formatos)'],['solo-pov','👁️ Solo POV'],['solo-comparacion','⚖️ Solo Expectativa / Realidad'],['solo-frase','💥 Solo frases bomba'],['solo-oferta','📋 Solo ofertas parodia']],en:[['variado','🎲 Varied (all formats)'],['solo-pov','👁️ POV only'],['solo-comparacion','⚖️ Expectation / Reality only'],['solo-frase','💥 Punchlines only'],['solo-oferta','📋 Parody listings only']]},
+  'pais':{es:[['universal','🌎 Universal (Español neutro)'],['mexico','🇲🇽 México'],['colombia','🇨🇴 Colombia'],['argentina','🇦🇷 Argentina'],['espana','🇪🇸 España'],['peru','🇵🇪 Perú'],['chile','🇨🇱 Chile'],['dominicana','🇩🇴 Rep. Dominicana'],['puertorico','🇵🇷 Puerto Rico']],en:[['universal','🌎 Universal (Neutral Spanish)'],['mexico','🇲🇽 Mexico'],['colombia','🇨🇴 Colombia'],['argentina','🇦🇷 Argentina'],['espana','🇪🇸 Spain'],['peru','🇵🇪 Peru'],['chile','🇨🇱 Chile'],['dominicana','🇩🇴 Dominican Rep.'],['puertorico','🇵🇷 Puerto Rico']]}
+}
 };
 
 const MODE_BLOCKS={
@@ -559,6 +566,10 @@ const MODE_BLOCKS={
   {id:'il-content-block',title:{es:'Tipo de contenido',en:'Content type'},fields:[{id:'content-type',label:{es:'Categoría',en:'Category'}},{id:'narrator-type',label:{es:'Voz / Narrador',en:'Voice / Narrator'}},{id:'publico',label:{es:'Público objetivo',en:'Target audience'}}]},
   {id:'il-style-block',title:{es:'Estilo y tono',en:'Style & tone'},fields:[{id:'style',label:{es:'Estilo',en:'Style'}},{id:'tone',label:{es:'Tono',en:'Tone'}}]},
   {id:'il-image-block',title:{es:'Configuración de imágenes',en:'Image configuration'},fields:[{id:'image-count',label:{es:'Cantidad de imágenes',en:'Number of images'}},{id:'image-format',label:{es:'Formato de secuencia',en:'Sequence format'}}]}
+]
+,'meme-laboral':[
+  {id:'ml-config-block',title:{es:'Configuración de memes',en:'Meme configuration'},fields:[{id:'meme-categoria',label:{es:'Categoría laboral',en:'Work category'}},{id:'meme-count',label:{es:'Cantidad de memes',en:'Number of memes'}},{id:'meme-formato',label:{es:'Estilo de formatos',en:'Format style'}}]},
+  {id:'ml-pais-block',title:{es:'País / Dialecto',en:'Country / Dialect'},fields:[{id:'pais',label:{es:'País',en:'Country'}}]}
 ]
 };
 
@@ -667,6 +678,28 @@ const RAND_TOPICS={
     '"Bonuses if we hit the target" — they hit the target, the bonuses mysteriously vanish',
     'Job description: 5 tasks. Reality: 18 tasks and the salary of just one',
     'Work WhatsApp at 10pm: "hey, can you deliver this by tomorrow morning?"'
+  ]
+}
+,'meme-laboral':{
+  es:[
+    'Empresa que no puede subir sueldos pero si contratar al jefe del jefe',
+    'Oferta de trabajo: 10 anios de experiencia para empleo de practicas sin pago',
+    'Bono garantizado que desaparece cuando se cumple la meta',
+    'Jefe que llega tarde todos los dias y te llama si tu llegas 5 minutos tarde',
+    'Somos una familia: sin prestaciones, sin aumento, con horas extra sonriendo',
+    'Evaluacion excelente con aumento del 0 por ciento',
+    'Prueba tecnica de 4 horas para empleo que ya tenian cubierto internamente',
+    'Home office voluntario donde no contestar a las 11pm te hace poco comprometido'
+  ],
+  en:[
+    'Company cannot afford raises but just hired a new VP last week',
+    'Job posting requires 10 years experience for an unpaid internship',
+    'The guaranteed bonus that mysteriously vanishes when you actually hit the target',
+    'Boss who arrives 2 hours late every day warns you for being 5 minutes late',
+    'We are family: no benefits, no raise, mandatory overtime with a smile',
+    'Exceptional performance review with a 0 percent raise',
+    '4-hour technical test for a position that was already filled internally',
+    'Optional remote work where not answering at 11pm makes you uncommitted'
   ]
 }
 };
@@ -1079,7 +1112,7 @@ function renderModes(){
   if(cNar) cNar.innerHTML='';
   if(cLab) cLab.innerHTML='';
   const podcastSet=new Set(['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna']);
-  const laboralSet=new Set(['indignacion-laboral']);
+  const laboralSet=new Set(['indignacion-laboral','meme-laboral']);
   Object.entries(MODES).forEach(([id,m])=>{
     const p=document.createElement('div');
     p.className='mode-pill'+(id===mode?' active':'');
@@ -1378,7 +1411,7 @@ ${VEO3_CAMERA}`;
 }
 
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
-const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente','libro-rapido','reflexion-biblica','indignacion-laboral'];
+const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente','libro-rapido','reflexion-biblica','indignacion-laboral','meme-laboral'];
 
 function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host',charLabel=''){
   const sc=getScene();
@@ -2008,6 +2041,143 @@ JSON:`;
   }
 }
 
+// ── Genera secuencia de memes laborales virales ───────────────────────────────
+async function generateMemeSequence(){
+  if(!_orKey) return;
+  const btn=document.getElementById('generate');
+  const area=document.getElementById('ai-output-area');
+  btn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Generando memes...':'Generating memes...');
+  btn.disabled=true;
+  area.innerHTML=`<div style="text-align:center;padding:20px;color:#888;font-size:12px;">😂 ${lang==='es'?'Generando memes virales...':'Generating viral memes...'}</div>`;
+
+  try{
+    const categoria=gv('meme-categoria')||'random';
+    const memeCount=parseInt(gv('meme-count')||'7');
+    const formato=gv('meme-formato')||'variado';
+    const pais=gv('pais')||'universal';
+    const topicHint=(_lastPreviewTopic||gv('topic')||'').trim();
+
+    const formatoInstr=formato==='variado'?'Use a MIX of all 9 formats (F1-F9). Each meme must use a DIFFERENT format.'
+      :formato==='solo-pov'?'ONLY use F1 (POV) format for ALL memes.'
+      :formato==='solo-comparacion'?'ONLY use F2 (EXPECTATIVA vs REALIDAD) and F8 (COMPARACIÓN DE 3) formats.'
+      :formato==='solo-frase'?'ONLY use F7 (FRASE BOMBA RELATABLE) format for ALL memes.'
+      :formato==='solo-oferta'?'ONLY use F6 (OFERTA PARODIA) format for ALL memes.'
+      :'Use a mix of all formats.';
+
+    const catContext=categoria==='random'?'General workplace frustration and dark work humor'
+      :categoria==='red-flags'?'Workplace red flags, toxic company culture signs'
+      :categoria==='explotacion-disfrazada'?'Disguised exploitation — unpaid overtime, "passion" used against workers'
+      :categoria==='humor-negro-trabajo'?'Dark workplace humor — absurd situations, gallows humor'
+      :categoria==='oferta-parodia'?'Parody job offers — ridiculous requirements for low pay'
+      :categoria==='indignacion-pura'?'Pure workplace outrage — unfair treatment, double standards'
+      :categoria==='salario-toxico'?'Toxic salary dynamics — "competitive" pay, no raises, cost of living'
+      :categoria==='jefes-toxicos'?'Toxic bosses — micromanagement, favorites, impossible demands'
+      :categoria==='injusticia-laboral'?'Labor injustice — unpaid benefits, illegal practices, worker abuse'
+      :'Workplace memes';
+
+    const paisCtx=pais==='universal'?'':`Country context: ${pais}. Add local cultural nuances if possible.`;
+    const topicCtx=topicHint?`Specific focus angle: "${topicHint}". `:'';
+
+    const sys=`You are a viral meme creator specializing in RELATABLE WORKPLACE MEMES for ${lang==='es'?'Spanish-speaking':'English-speaking'} audiences on TikTok, Instagram Reels, and YouTube Shorts.
+You create memes that make workers say "OMG THIS IS ME" and share immediately.
+Reply ONLY with a valid JSON array — no markdown, no extra text.`;
+
+    const usr=`Create ${memeCount} VIRAL workplace memes.
+Category: ${catContext}
+${topicCtx}${paisCtx}
+Language: ${lang==='es'?'Spanish (Latin American, casual, relatable)':'English (casual, relatable, universal)'}
+
+${formatoInstr}
+
+AVAILABLE FORMATS:
+F1 POV — "POV: [relatable situation]" — first person moment everyone relates to
+F2 EXPECTATIVA vs REALIDAD — Job posting vs reality, before vs after hiring
+F3 NADIE... / MI JEFE... — "Nobody: ... / My boss at 4:59pm: [impossible request]"
+F4 YO CUANDO... — "Me when [trigger]: [reaction]" — GIF-style reaction meme
+F5 ANTES / DESPUÉS — Before vs after work event (interview, raise request, etc)
+F6 OFERTA PARODIA — Satirical job posting (asking for 10 years exp for $8/hr, etc)
+F7 FRASE BOMBA RELATABLE — Single punchy statement everyone shares immediately
+F8 COMPARACIÓN DE 3 — 3-way comparison (Netflix/HBO/Disney style, but for work situations)
+F9 ESE MOMENTO CUANDO — "That moment when [situation]" — universal recognition
+
+Return a JSON array of ${memeCount} objects:
+[
+  {
+    "id": 1,
+    "formato": "POV",
+    "texto_principal": "main meme text (concise, punchy, max 2 lines)",
+    "subtexto": "optional secondary text or punchline (or empty string)",
+    "copy_redes": "caption for Instagram/TikTok post with 3-5 relevant hashtags",
+    "pexels_query": "2-4 word English search query for a matching stock photo/video",
+    "prompt_imagen": "Midjourney/DALL-E prompt: describe a simple meme-style image that matches this meme (flat design, minimal, bold text space)",
+    "mood": "sarcastic|tired|outraged|comedic|relatable|shocked"
+  }
+]`;
+
+    const raw=await _callOR(sys,usr,3000);
+    const m=raw.match(/\[[\s\S]*\]/);
+    if(!m) throw new Error(lang==='es'?'No se pudo parsear la respuesta de la IA':'Could not parse AI response');
+    const memes=JSON.parse(m[0]);
+
+    const moodEmoji={'sarcastic':'😏','tired':'😴','outraged':'😤','comedic':'😂','relatable':'💯','shocked':'😱'};
+    const formatoBg={'POV':'#1a1a2e','EXPECTATIVA vs REALIDAD':'#16213e','NADIE... / MI JEFE...':'#0f3460','YO CUANDO...':'#533483','ANTES / DESPUÉS':'#2d4a22','OFERTA PARODIA':'#4a1a1a','FRASE BOMBA RELATABLE':'#1a1a1a','COMPARACIÓN DE 3':'#2a1a4a','ESE MOMENTO CUANDO':'#3d1a00'};
+
+    let html=`<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,0.08);">😂 ${memes.length} ${lang==='es'?'memes virales generados':'viral memes generated'}</div>`;
+
+    memes.forEach((mm,i)=>{
+      const num=i+1;
+      const fmt=mm.formato||mm.meme_formato||'MEME';
+      const bg=formatoBg[fmt]||'#1a1a1a';
+      const mood=mm.mood||'relatable';
+      const pexelsUrl=`https://www.pexels.com/search/${encodeURIComponent(mm.pexels_query||'office work')}`;
+      html+=`<div style="background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="background:#1a1a1a;color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Meme ${num}/${memes.length}</span>
+          <span style="background:${bg};color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:0.3px;">${fmt}</span>
+          <span style="margin-left:auto;font-size:13px;" title="${mood}">${moodEmoji[mood]||'😄'}</span>
+        </div>
+        <div style="background:${bg};border-radius:9px;padding:14px 16px;margin-bottom:10px;text-align:center;">
+          <div style="font-size:16px;font-weight:900;color:#fff;line-height:1.35;letter-spacing:0.3px;">${mm.texto_principal||''}</div>
+          ${mm.subtexto?`<div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.75);margin-top:8px;line-height:1.3;">${mm.subtexto}</div>`:''}
+        </div>
+        ${mm.copy_redes?`<div style="background:#fdf4ff;border:0.5px solid #e9d5ff;border-radius:9px;padding:10px 12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <div style="font-size:9px;font-weight:700;color:#7e22ce;text-transform:uppercase;letter-spacing:0.5px;">📲 ${lang==='es'?'Copy para redes':'Social media copy'}</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(mm.copy_redes)})">📋</button>
+          </div>
+          <div style="font-size:12px;color:#3b0764;line-height:1.6;white-space:pre-wrap;">${mm.copy_redes}</div>
+        </div>`:''}
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;background:#f0f9ff;border-radius:7px;padding:8px;">
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">📸 Pexels</div>
+            <a href="${pexelsUrl}" target="_blank" style="font-size:11px;color:#0369a1;text-decoration:underline;">${mm.pexels_query||'office work'} →</a>
+          </div>
+          <div style="flex:1;background:#f8f5e8;border-radius:7px;padding:8px;">
+            <div style="font-size:9px;font-weight:700;color:#78350f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎭 ${lang==='es'?'Mood':'Mood'}</div>
+            <div style="font-size:11px;color:#44403c;">${moodEmoji[mood]||'😄'} ${mood}</div>
+          </div>
+        </div>
+        <div style="background:#f0f9ff;border-radius:7px;padding:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 Prompt IA (Midjourney / DALL-E)</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(mm.prompt_imagen||'')})">📋</button>
+          </div>
+          <div class="clip-voice" style="font-size:10.5px;">${mm.prompt_imagen||''}</div>
+        </div>
+      </div>`;
+    });
+
+    html+=`</div>`;
+    area.innerHTML=html;
+    area.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
+  }finally{
+    btn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
+    btn.disabled=false;
+  }
+}
+
 // ── Paso previo: muestra guion + config antes de generar Veo 3 ────────────────
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
@@ -2109,6 +2279,36 @@ async function _previewStep(){
       return;
     }
 
+    // ── Meme Laboral: sólo config, sin guion previo ───────────────────────────
+    if(mode==='meme-laboral'){
+      const memeCount=gv('meme-count')||'7';
+      const categoria=gv('meme-categoria')||'random';
+      const formato=gv('meme-formato')||'variado';
+      const pais=gv('pais')||'universal';
+      const catLabel={'random':'🎲 Aleatorio','red-flags':'🚩 Red flags','explotacion-disfrazada':'💀 Explotación disfrazada','humor-negro-trabajo':'😂 Humor negro del trabajo','oferta-parodia':'🎭 Oferta parodia','indignacion-pura':'😤 Indignación pura','salario-toxico':'💸 Salario tóxico','jefes-toxicos':'👔 Jefes tóxicos','injusticia-laboral':'⚖️ Injusticia laboral'}[categoria]||categoria;
+      const fmtLabel={'variado':'🎨 Variado (todos los formatos)','solo-pov':'📸 Solo POV','solo-comparacion':'⚖️ Solo Comparación','solo-frase':'💬 Solo Frase bomba','solo-oferta':'🎭 Solo Oferta parodia'}[formato]||formato;
+      const paisLabels={'universal':'🌎 Universal','mexico':'🇲🇽 México','colombia':'🇨🇴 Colombia','argentina':'🇦🇷 Argentina','espana':'🇪🇸 España','peru':'🇵🇪 Perú','chile':'🇨🇱 Chile','dominicana':'🇩🇴 Dominicana','paraguay':'🇵🇾 Paraguay','nicaragua':'🇳🇮 Nicaragua','puertorico':'🇵🇷 Puerto Rico'};
+      const aiTag=`<span style="font-size:9px;background:#e0e7ff;color:#3730a3;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;">IA</span>`;
+      const row=(label,value,bg,col)=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:0.5px solid rgba(0,0,0,0.06);">
+        <span style="font-size:10px;color:#888;font-weight:600;width:90px;flex-shrink:0;">${label}</span>
+        <span style="background:${bg};color:${col};padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;">${value}</span>
+      </div>`;
+      area.innerHTML=`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">😂 ${lang==='es'?'Resumen antes de generar memes':'Summary before generating memes'}</div>
+        <div style="font-size:12px;color:#1a1a1a;font-weight:600;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,0.1);">📌 ${lang==='es'?'Tema':'Topic'}: ${_pvTopic||lang==='es'?'Generado automáticamente':'Auto-generated'}</div>
+        ${row(lang==='es'?'Categoría:':'Category:', catLabel, '#fef3c7','#92400e')}
+        ${row(lang==='es'?'# Memes:':'# Memes:', memeCount+' memes', '#f0fdf4','#166534')}
+        ${row(lang==='es'?'Formato:':'Format:', fmtLabel, '#f3e8ff','#7c3aed')}
+        ${row(lang==='es'?'País:':'Country:', paisLabels[pais]||pais, '#e8f4ff','#185fa5')}
+      </div>`;
+      area.insertAdjacentHTML('beforeend',`<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;padding-bottom:8px;">
+        <button onclick="_previewStep()" style="padding:9px 18px;background:#f0ede2;color:#1a1a1a;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔄 ${lang==='es'?'Cambiar':'Regenerate'}</button>
+        <button onclick="_fullGenerate()" style="padding:9px 22px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">✅ ${lang==='es'?'Generar memes':'Generate memes'}</button>
+      </div>`);
+      area.scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
+
     // Genera guion (vista previa) + aplica recommended_config internamente
     await generateWithAI(true);
 
@@ -2154,6 +2354,10 @@ async function _fullGenerate(){
   if(NARRATOR_MODES.includes(mode)){
     if(mode==='indignacion-laboral' && gv('system-type')==='imagenes'){
       await generateImageSequence();
+      return;
+    }
+    if(mode==='meme-laboral'){
+      await generateMemeSequence();
       return;
     }
     await generateNarratorPackage();
