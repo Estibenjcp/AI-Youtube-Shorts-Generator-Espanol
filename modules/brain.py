@@ -1609,6 +1609,135 @@ We need TWO different stock videos for every single scene.
             print(clean_text)
             return None
 
+    def generate_meme_laboral_script(self, category: str = "", lang: str = "es",
+                                      num_memes: int = 7) -> list:
+        """Genera una secuencia de memes laborales virales para Shorts/TikTok."""
+        print(f"😂 Meme Laboral script: {category or 'general'} ({num_memes} memes)...")
+
+        if lang == "es":
+            prompt = f"""Eres el creador de contenido laboral mas viral de TikTok en espanol.
+Tu especialidad: memes de trabajo que hacen que la gente comparta porque "me representa al 100%".
+
+Categoria laboral: {category or "Indignacion Laboral general"}
+
+FORMATOS VIRALES — mezcla los mas adecuados para la categoria (no repitas el mismo dos veces seguidas):
+
+F1 POV — empieza con "POV:" y crea escena en 1 frase. Golpe directo.
+   Ej: "POV: Tu jefe dice que no hay presupuesto desde su coche de empresa nuevo"
+
+F2 EXPECTATIVA vs REALIDAD — 2 lineas: lo que prometen / lo que es en realidad.
+   Ej: "La oferta: ambiente dinamico y equipo unido. La realidad: 3 personas haciendo el trabajo de 9"
+
+F3 NADIE / JEFE — setup vacio + accion del jefe fuera de lugar.
+   Ej: "Nadie absolutamente nadie. Mi jefe a las 5:58pm del viernes:"
+
+F4 YO CUANDO — reaccion a situacion laboral universal.
+   Ej: "Yo cuando me entero que el companero nuevo gana el doble haciendo la mitad"
+
+F5 ANTES / DESPUES — contraste entre expectativa inicial y realidad tras meses.
+   Ej: "Yo el dia 1 lleno de ilusion vs yo 8 meses despues con el ojo twitchando"
+
+F6 OFERTA PARODIA — oferta de empleo con requisitos absurdos + sueldo ridiculo.
+   Ej: "Se busca: 15 anios experiencia, MBA, 4 idiomas, disponibilidad 24/7. Sueldo: 'acorde al mercado'"
+
+F7 FRASE SOLA RELATABLE — 1 frase directa sin setup. El 90% la guarda o la envia.
+   Ej: "La empresa no puede subir tu sueldo pero si contratar al jefe de tu jefe"
+
+F8 COMPARACION DE 3 — lo que prometen / lo que das / lo que te pagan.
+   Ej: "Prometen: flexibilidad. Tu das: 60 horas semanales. Te pagan: el minimo legal"
+
+F9 ESE MOMENTO CUANDO — nostalgia dolorosa + humor negro.
+   Ej: "Ese momento cuando tu evaluacion dice 'Desempeno Excepcional' y el aumento es 0%"
+
+REGLAS ABSOLUTAS:
+- Cada meme funciona SOLO, sin contexto previo del siguiente
+- Maximo 25 palabras de texto por meme — brevedad brutal
+- PROHIBIDO: palabras con la letra n con tilde (usa "anio" no "ano", "senor" no "senor"), emojis en el texto
+- El humor: NEGRO pero RELATABLE — que duela Y haga reir al mismo tiempo
+- Variedad: mezcla formatos, no pongas dos POV seguidos
+- Visuals en INGLES, 3-5 palabras, imagenes de stock reales y reconocibles
+
+FORMATO DE SALIDA (JSON estricto, exactamente {num_memes} entradas, sin markdown):
+[
+  {{
+    "id": 1,
+    "meme_formato": "POV",
+    "text": "POV: Tu jefe dice que no hay dinero para subir sueldos desde su BMW nuevo",
+    "visual_1": "luxury car office parking lot",
+    "visual_2": "employee frustrated desk low salary",
+    "mood": "sarcastic"
+  }}
+]"""
+        else:
+            prompt = f"""You are the most viral workplace content creator on TikTok.
+Your specialty: work memes people share because "this is literally me".
+
+Work category: {category or "General Work Outrage"}
+
+VIRAL FORMATS — mix the most fitting for the category (never repeat the same format twice in a row):
+
+F1 POV — starts with "POV:" and sets the scene in 1 line.
+   Ex: "POV: Your boss says there is no budget for raises from his new company car"
+
+F2 EXPECTATION vs REALITY — 2 lines: what they promise / what it actually is.
+   Ex: "Job posting: dynamic team and growth. Reality: 3 people doing the work of 9"
+
+F3 NOBODY / BOSS — empty setup + boss doing something out of place.
+   Ex: "Nobody. Nobody at all. My boss at 5:58pm on Friday:"
+
+F4 ME WHEN — reaction to a universal work situation.
+   Ex: "Me when I find out the new hire makes double doing half the work"
+
+F5 BEFORE / AFTER — contrast between initial excitement and months-later reality.
+   Ex: "Me on day 1 full of hope vs me 8 months later with a permanent eye twitch"
+
+F6 PARODY JOB LISTING — absurd requirements + ridiculous salary.
+   Ex: "Wanted: 15 years experience, MBA, 4 languages, 24/7 availability. Salary: competitive"
+
+F7 SOLO RELATABLE LINE — 1 direct punch line, no setup. 90% save or forward it.
+   Ex: "The company cannot afford your raise but just hired your boss a new boss"
+
+F8 TRIPLE COMPARISON — what they promise / what you give / what they pay.
+   Ex: "They promise: flexibility. You give: 60 hours a week. They pay: legal minimum"
+
+F9 THAT EXACT MOMENT — painful collective nostalgia + dark humor.
+   Ex: "That exact moment when your review says Exceptional Performance and the raise is 0 percent"
+
+ABSOLUTE RULES:
+- Each meme works ALONE, zero prior context needed
+- Maximum 25 words of text per meme — brutal brevity
+- FORBIDDEN: emojis in text, long explanations
+- Humor: DARK but RELATABLE — it should sting AND make you laugh
+- Variety: mix formats, never two POVs back to back
+- Visuals in ENGLISH, 3-5 words, real recognizable stock imagery
+
+OUTPUT FORMAT (strict JSON, exactly {num_memes} entries, no markdown):
+[
+  {{
+    "id": 1,
+    "meme_formato": "POV",
+    "text": "POV: Your boss says there is no money for raises from his brand new BMW",
+    "visual_1": "luxury car office parking lot",
+    "visual_2": "employee frustrated desk low salary",
+    "mood": "sarcastic"
+  }}
+]"""
+
+        raw = self._generate(prompt)
+        clean_text = raw.replace('```json', '').replace('```', '').strip()
+        try:
+            memes = json.loads(clean_text)
+            if len(memes) > num_memes:
+                memes = memes[:num_memes]
+            for i, meme in enumerate(memes):
+                meme['id']   = i + 1
+                meme['text'] = self._sanitize(meme.get('text', ''))
+            return memes
+        except json.JSONDecodeError:
+            print("❌ Error parsing meme JSON. Raw output:")
+            print(clean_text)
+            return None
+
     def generate_ciencia_facil_script(self, topic: str, category: str = "", lang: str = "es",
                                       chosen_hook: str = "", num_scenes: int = 9,
                                       max_words_per_scene: int = 999) -> list:

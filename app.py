@@ -1492,6 +1492,22 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
                                            lang=pipeline_lang, chosen_hook=chosen_hook)
 
+        elif pipeline_mode == "indignacion_meme":
+            category   = params.get("category", "").strip()
+            _n_memes   = int(params.get("num_scenes", 7))
+            # Memes no tienen topic per se — la categoría es suficiente
+            # Si el usuario escribió algo lo usamos como context hint para el prompt
+            _meme_hint = params.get("topic", "").strip()
+            _cat_with_hint = f"{category} — enfocado en: {_meme_hint}" if _meme_hint and category else (
+                _meme_hint or category or ""
+            )
+            topic  = _meme_hint or category or ("Meme Laboral" if pipeline_lang == "es" else "Work Meme")
+            script = brain.generate_meme_laboral_script(
+                category  = _cat_with_hint,
+                lang      = pipeline_lang,
+                num_memes = _n_memes,
+            )
+
         elif pipeline_mode == "ciencia_facil":
             topic       = params.get("topic", "").strip()
             category    = params.get("category", "").strip()
@@ -3195,6 +3211,7 @@ _mode_buttons = (
         ("mente_masculina",     "💎 Mente masc."),
         ("mujer_consciente",    "🌺 Mujer consc."),
         ("indignacion",         "😤 Indignación"),
+        ("indignacion_meme",    "😂 Meme Laboral"),
         ("ciencia_facil",       "🔬 Ciencia Fácil"),
     ]
     if lang_option == "es"
@@ -3221,6 +3238,7 @@ _mode_buttons = (
         ("mente_masculina",     "💎 Male Mind"),
         ("mujer_consciente",    "🌺 Conscious Woman"),
         ("indignacion",         "😤 Work Outrage"),
+        ("indignacion_meme",    "😂 Work Meme"),
         ("ciencia_facil",       "🔬 Easy Science"),
     ]
 )
@@ -3950,6 +3968,49 @@ elif mode == "indignacion":
     final_topic    = ind_topic_input.strip()
     final_category = ind_category
     num_scenes     = st.session_state.get("global_num_scenes", 9)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODO MEME LABORAL
+# ══════════════════════════════════════════════════════════════════════════════
+
+elif mode == "indignacion_meme":
+
+    st.markdown(
+        f"<div class='auto-info'>{'😂 Genera memes laborales virales: POV, Expectativa vs Realidad, Ofertas parodia, Frases bomba y más. Contenido que la gente guarda, comparte y manda a sus compañeros.' if lang_option == 'es' else '😂 Generate viral work memes: POV, Expectation vs Reality, parody job listings, punchlines, and more. Content people save, share and forward to their coworkers.'}</div>",
+        unsafe_allow_html=True,
+    )
+
+    _meme_cats = INDIGNACION_CATEGORIES if lang_option == "es" else INDIGNACION_CATEGORIES_EN
+    st.markdown(f"<div class='step-header'>🎯 {'Categoría laboral' if lang_option == 'es' else 'Work category'}</div>", unsafe_allow_html=True)
+    meme_category = st.selectbox(
+        "memecat", options=[""] + _meme_cats,
+        format_func=lambda x: T["category_placeholder"] if x == "" else x,
+        label_visibility="collapsed",
+        key="meme_cat_select",
+    )
+
+    st.markdown(
+        f"<div class='step-header'>😤 {'Situación o tema del meme (opcional)' if lang_option == 'es' else 'Meme situation or topic (optional)'}</div>",
+        unsafe_allow_html=True,
+    )
+    meme_topic_input = st.text_input(
+        "memetopic", key="meme_topic_input",
+        placeholder=(
+            "Ej: jefes que dicen 'somos familia' pero no hay aumento..."
+            if lang_option == "es"
+            else "Ex: bosses who say 'we're family' but no raises exist..."
+        ),
+        label_visibility="collapsed",
+    )
+
+    _meme_count_label = "Número de memes" if lang_option == "es" else "Number of memes"
+    meme_count = st.slider(_meme_count_label, min_value=3, max_value=10, value=7, step=1,
+                           key="meme_count_slider")
+    st.session_state["meme_count"] = meme_count
+
+    final_topic    = meme_topic_input.strip()
+    final_category = meme_category
+    num_scenes     = meme_count
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MODO CIENCIA FÁCIL (Edutainment)
