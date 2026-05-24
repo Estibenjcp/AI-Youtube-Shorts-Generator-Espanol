@@ -2303,19 +2303,6 @@ Return ONE JSON object (not an array):
   "musica": "Music style for the whole video (1 sentence)",
   "hashtags": "12 hashtags: #EmpleoNicaragua #TrabajoNica + sector + emotion",
   "copy_redes": "Complete ready-to-post caption for Instagram/Facebook/TikTok: 2-3 engaging sentences in Spanish (warm, direct, Nicaraguan tone) + call to action + emojis. This is the post description, NOT the on-screen text.",
-  "personaje": {
-    "nombre": "Character full name (Nicaraguan name, e.g. Doña Carmen, Don Jaime, Joven Keyla)",
-    "edad": "Age or range (e.g. 28 años, 45-50 años)",
-    "origen": "City or region in Nicaragua (e.g. Managua, Estelí, León, Matagalpa, Costa Caribe)",
-    "apariencia": "Detailed physical description: skin tone, hair, eyes, build, distinctive features. Consistent across all scenes.",
-    "vestuario": "Outfit description matching the sector and story (specific colors, style, accessories). Same throughout the video for visual consistency.",
-    "personalidad": "3-4 personality traits that make them relatable and likeable to Nicaraguan viewers",
-    "rol_en_video": "What role does this character play? (protagonist, narrator, witness, guide, etc.)",
-    "voz_narrador": "Voice style for narration or dialogue — tone, pace, regional accent if any (e.g. acento nicaragüense cálido, voz suave y directa)",
-    "presencia": "How does the character appear? (on-camera actor, miniature figurine, voiceover only, animated character, etc.)",
-    "arco_emocional": "Emotional journey across the video: starting emotion → transformation → ending emotion",
-    "prompt_personaje": "English prompt for AI image generation of this character: detailed physical description, clothing, setting, lighting, style (photorealistic / miniature figurine / illustrated), aspect ratio --ar 9:16"
-  },
   "escenas": [
     {
       "num": 1,
@@ -2369,30 +2356,7 @@ Return ONE JSON object (not an array):
         <div style="font-size:10.5px;color:rgba(255,255,255,0.7);line-height:1.5;flex:1;">${video.hashtags||''}</div>
         <button onclick="copyTxt(${JSON.stringify(video.hashtags||'')})" style="margin-left:8px;background:rgba(255,255,255,0.15);color:#fff;border:0.5px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 10px;font-size:10px;cursor:pointer;flex-shrink:0;">📋</button>
       </div>
-    </div>
-    ${(()=>{const pc=video.personaje;if(!pc)return'';const presRow=(lbl,val)=>val?`<div style="display:flex;gap:6px;padding:5px 0;border-bottom:0.5px solid rgba(0,0,0,0.07);"><span style="font-size:9.5px;color:#6b7280;font-weight:600;width:110px;flex-shrink:0;">${lbl}</span><span style="font-size:11px;color:#1a1a1a;line-height:1.5;flex:1;">${val}</span></div>`:'';return`<div style="background:#fff;border:1.5px solid #0d2137;border-radius:12px;padding:14px 16px;margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="background:#0d2137;color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;">🎭 ${lang==='es'?'Personaje del video':'Video character'}</span>
-        <span style="font-size:14px;font-weight:900;color:#0d2137;">${pc.nombre||''}</span>
-        <span style="font-size:11px;color:#6b7280;margin-left:4px;">${pc.edad||''} · ${pc.origen||''}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:10px;">
-        <div>${presRow(lang==='es'?'Apariencia:':'Appearance:',pc.apariencia)}</div>
-        <div>${presRow(lang==='es'?'Vestuario:':'Outfit:',pc.vestuario)}</div>
-      </div>
-      ${presRow(lang==='es'?'Personalidad:':'Personality:',pc.personalidad)}
-      ${presRow(lang==='es'?'Rol:':'Role:',pc.rol_en_video)}
-      ${presRow(lang==='es'?'Presencia:':'Presence:',pc.presencia)}
-      ${presRow(lang==='es'?'Voz / narración:':'Voice / narration:',pc.voz_narrador)}
-      ${presRow(lang==='es'?'Arco emocional:':'Emotional arc:',pc.arco_emocional)}
-      ${pc.prompt_personaje?`<div style="background:#e0f2fe;border-radius:8px;padding:10px 12px;margin-top:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-          <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 ${lang==='es'?'Prompt IA para generar el personaje':'AI prompt to generate the character'}</div>
-          <button class="clip-copy" onclick="copyTxt(${JSON.stringify(pc.prompt_personaje)})">📋</button>
-        </div>
-        <div class="clip-voice" style="font-size:10.5px;color:#0c4a6e;line-height:1.6;">${pc.prompt_personaje}</div>
-      </div>`:''}
-    </div>`;})()||''}
+    </div>`;
 
     // Scene cards
     html+=`<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🎬 ${lang==='es'?'Prompts por escena para Google Flow / Veo 3':'Scene-by-scene prompts for Google Flow / Veo 3'}</div>`;
