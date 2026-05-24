@@ -2302,6 +2302,7 @@ Return ONE JSON object (not an array):
   "texto_pantalla_cta": "CTA text — max 6 words (e.g. ¡Síguenos para más empleos!)",
   "musica": "Music style for the whole video (1 sentence)",
   "hashtags": "12 hashtags: #EmpleoNicaragua #TrabajoNica + sector + emotion",
+  "copy_redes": "Complete ready-to-post caption for Instagram/Facebook/TikTok: 2-3 engaging sentences in Spanish (warm, direct, Nicaraguan tone) + call to action + emojis. This is the post description, NOT the on-screen text.",
   "escenas": [
     {
       "num": 1,
@@ -2344,6 +2345,13 @@ Return ONE JSON object (not an array):
         <div style="font-size:13px;font-weight:700;color:#f5c842;margin-top:4px;">📣 ${video.texto_pantalla_cta||''}</div>
         <button onclick="copyTxt(${JSON.stringify((video.texto_pantalla_hook||'')+'\n'+(video.texto_pantalla_cta||''))})" style="margin-top:8px;background:rgba(255,255,255,0.15);color:#fff;border:0.5px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 10px;font-size:10px;cursor:pointer;">📋 ${lang==='es'?'Copiar textos':'Copy texts'}</button>
       </div>
+      ${video.copy_redes?`<div style="background:rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.6px;">📲 ${lang==='es'?'Copy para redes sociales':'Social media copy'}</div>
+          <button onclick="copyTxt(${JSON.stringify(video.copy_redes)})" style="background:rgba(255,255,255,0.15);color:#fff;border:0.5px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 10px;font-size:10px;cursor:pointer;">📋 ${lang==='es'?'Copiar':'Copy'}</button>
+        </div>
+        <div style="font-size:11.5px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap;">${video.copy_redes}</div>
+      </div>`:''}
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div style="font-size:10.5px;color:rgba(255,255,255,0.7);line-height:1.5;flex:1;">${video.hashtags||''}</div>
         <button onclick="copyTxt(${JSON.stringify(video.hashtags||'')})" style="margin-left:8px;background:rgba(255,255,255,0.15);color:#fff;border:0.5px solid rgba(255,255,255,0.3);border-radius:6px;padding:3px 10px;font-size:10px;cursor:pointer;flex-shrink:0;">📋</button>
