@@ -2303,16 +2303,26 @@ Return ONE JSON object (not an array):
   "musica": "Music style for the whole video (1 sentence)",
   "hashtags": "12 hashtags: #EmpleoNicaragua #TrabajoNica + sector + emotion",
   "copy_redes": "Complete ready-to-post caption for Instagram/Facebook/TikTok: 2-3 engaging sentences in Spanish (warm, direct, Nicaraguan tone) + call to action + emojis. This is the post description, NOT the on-screen text.",
+  "personaje": {
+    "nombre": "Full Nicaraguan name (e.g. Keyla Martinez, Don Jaime, Dona Carmen)",
+    "edad": "Age (e.g. 26 anos)",
+    "origen": "Nicaraguan city (e.g. Esteli, Managua, Leon)",
+    "apariencia": "Physical description: skin tone, hair, eyes, build — consistent across all scenes",
+    "vestuario": "Outfit matching the sector and story — specific colors, style, accessories",
+    "arco_emocional": "Start emotion to transformation to end emotion (1 line)",
+    "prompt_base": "English AI image prompt to generate this character consistently: detailed physical appearance, clothing, Nicaraguan context, photorealistic cinematic style, --ar 9:16"
+  },
   "escenas": [
     {
       "num": 1,
       "rol": "HOOK|STORY|CLIMAX|CTA",
       "descripcion_visual": "What to film/animate in this scene — objects, people, action, Nicaraguan elements, lighting (in Spanish, 2-3 sentences)",
-      "accion_mano": "Giant hand action for this scene (only if Miniature World format, else write 'N/A')",
-      "texto_pantalla": "Short on-screen text for this scene (leave empty string if no text needed)",
+      "accion_mano": "Giant hand action for this scene (only if Miniature World format, else write N/A)",
+      "texto_pantalla": "Short on-screen text for this scene (empty string if no text needed)",
       "movimiento_camara": "Camera: start position, movement, end position (1 sentence)",
       "mood": "emotional tone of this scene (1-3 words)",
-      "prompt_flow": "Google Flow / Veo 3 English prompt for this 8-second clip: describe the exact visual, movement, style, lighting, Nicaraguan elements, cinematic quality. Be specific and detailed."
+      "prompt_flow": "Google Flow / Veo 3 English prompt for this 8-second clip WITHOUT character description: scene environment, action, style, lighting, Nicaraguan elements, cinematic quality.",
+      "prompt_con_personaje": "Google Flow / Veo 3 English prompt WITH the character fully described: start with the character physical appearance and outfit, then describe what they do in this scene, then the environment, lighting, and cinematic style. Ready to paste directly into Google Flow."
     }
   ]
 }`;
@@ -2358,6 +2368,28 @@ Return ONE JSON object (not an array):
       </div>
     </div>`;
 
+    // Character card
+    const pc=video.personaje||{};
+    if(pc.nombre){
+      html+=`<div style="background:#fff;border:1.5px solid #0d2137;border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;color:#0d2137;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🎭 ${lang==='es'?'Personaje del video':'Video character'}</div>
+        <div style="font-size:14px;font-weight:900;color:#0d2137;margin-bottom:4px;">${pc.nombre}</div>
+        <div style="font-size:11px;color:#6b7280;margin-bottom:10px;">${pc.edad||''} · ${pc.origen||''}</div>
+        <div style="display:grid;gap:6px;margin-bottom:10px;">
+          <div style="background:#f8f8f5;border-radius:7px;padding:8px 10px;"><span style="font-size:9px;font-weight:700;color:#555;text-transform:uppercase;">👤 ${lang==='es'?'Apariencia':'Appearance'}</span><div style="font-size:11px;color:#1a1a1a;margin-top:3px;line-height:1.5;">${pc.apariencia||''}</div></div>
+          <div style="background:#f8f8f5;border-radius:7px;padding:8px 10px;"><span style="font-size:9px;font-weight:700;color:#555;text-transform:uppercase;">👔 ${lang==='es'?'Vestuario':'Outfit'}</span><div style="font-size:11px;color:#1a1a1a;margin-top:3px;line-height:1.5;">${pc.vestuario||''}</div></div>
+          <div style="background:#fef3c7;border-radius:7px;padding:8px 10px;"><span style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;">🎭 ${lang==='es'?'Arco emocional':'Emotional arc'}</span><div style="font-size:11px;color:#78350f;margin-top:3px;line-height:1.5;">${pc.arco_emocional||''}</div></div>
+        </div>
+        ${pc.prompt_base?`<div style="background:#e0f2fe;border-radius:7px;padding:9px 11px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 ${lang==='es'?'Prompt IA para generar el personaje (Midjourney / CapCut AI)':'AI prompt to generate character (Midjourney / CapCut AI)'}</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(pc.prompt_base)})">📋</button>
+          </div>
+          <div class="clip-voice" style="font-size:10.5px;color:#0c4a6e;line-height:1.6;">${pc.prompt_base}</div>
+        </div>`:''}
+      </div>`;
+    }
+
     // Scene cards
     html+=`<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🎬 ${lang==='es'?'Prompts por escena para Google Flow / Veo 3':'Scene-by-scene prompts for Google Flow / Veo 3'}</div>`;
 
@@ -2392,13 +2424,20 @@ Return ONE JSON object (not an array):
           </div>
         </div>
 
-        <div style="background:#e0f2fe;border-radius:7px;padding:9px 11px;">
+        <div style="background:#e0f2fe;border-radius:7px;padding:9px 11px;margin-bottom:8px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 Google Flow / Veo 3 Prompt</div>
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 Google Flow / Veo 3 — ${lang==='es'?'Solo escena':'Scene only'}</div>
             <button class="clip-copy" onclick="copyTxt(${JSON.stringify(sc.prompt_flow||'')})">📋</button>
           </div>
           <div class="clip-voice" style="font-size:10.5px;color:#0c4a6e;line-height:1.6;">${sc.prompt_flow||''}</div>
         </div>
+        ${sc.prompt_con_personaje?`<div style="background:#f3e8ff;border-radius:7px;padding:9px 11px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <div style="font-size:9px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:0.5px;">🎭 Google Flow / Veo 3 — ${lang==='es'?'Escena + personaje':'Scene + character'}</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(sc.prompt_con_personaje)})">📋</button>
+          </div>
+          <div class="clip-voice" style="font-size:10.5px;color:#4c1d95;line-height:1.6;">${sc.prompt_con_personaje}</div>
+        </div>`:''}
       </div>`;
     });
 
