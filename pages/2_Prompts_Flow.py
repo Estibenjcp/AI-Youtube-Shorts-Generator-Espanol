@@ -343,7 +343,8 @@ const MODES={
   'mente-masculina':{icon:'💎',title:{es:'Mente masculina',en:'Masculine mindset'},desc:{es:'Reflexiones profundas para hombres — emociones, amor propio, relaciones, propósito',en:'Deep reflections for men — emotions, self-love, relationships, purpose'}},
   'mujer-consciente':{icon:'🌺',title:{es:'Mujer consciente',en:'Conscious woman'},desc:{es:'Empoderamiento femenino — autoestima, sanación, relaciones, propósito y esencia propia',en:'Feminine empowerment — self-worth, healing, relationships, purpose and true self'}},
   'indignacion-laboral':{icon:'😤',title:{es:'Indignación Laboral',en:'Labor Outrage'},desc:{es:'Contenido viral sobre red flags laborales, explotación disfrazada y humor negro del trabajo',en:'Viral content on workplace red flags, disguised exploitation and dark work humor'}},
-  'meme-laboral':{icon:'😂',title:{es:'Meme Laboral',en:'Work Meme'},desc:{es:'Memes virales de trabajo — POV, Expectativa vs Realidad, Ofertas parodia, Frases bomba. Contenido que la gente guarda y reenvía a sus compañeros',en:'Viral work memes — POV, Expectation vs Reality, parody job listings, punchlines. Content people save and forward to coworkers'}}
+  'meme-laboral':{icon:'😂',title:{es:'Meme Laboral',en:'Work Meme'},desc:{es:'Memes virales de trabajo — POV, Expectativa vs Realidad, Ofertas parodia, Frases bomba. Contenido que la gente guarda y reenvía a sus compañeros',en:'Viral work memes — POV, Expectation vs Reality, parody job listings, punchlines. Content people save and forward to coworkers'}},
+  'miniature-nicaragua':{icon:'🎬',title:{es:'Miniature Nicaragua',en:'Miniature Nicaragua'},desc:{es:'Prompts para Reels virales estilo Miniature World con temática laboral de Nicaragua — mano gigante, emociones y empleo',en:'Prompts for viral Miniature World Reels with Nicaraguan employment themes — giant hand, emotions and jobs'}}
 };
 
 const MODE_SELECTS={
@@ -494,6 +495,14 @@ const MODE_SELECTS={
   'meme-formato':{es:[['variado','🎲 Variado (todos los formatos)'],['solo-pov','👁️ Solo POV'],['solo-comparacion','⚖️ Solo Expectativa / Realidad'],['solo-frase','💥 Solo frases bomba'],['solo-oferta','📋 Solo ofertas parodia']],en:[['variado','🎲 Varied (all formats)'],['solo-pov','👁️ POV only'],['solo-comparacion','⚖️ Expectation / Reality only'],['solo-frase','💥 Punchlines only'],['solo-oferta','📋 Parody listings only']]},
   'pais':{es:[['universal','🌎 Universal (Español neutro)'],['mexico','🇲🇽 México'],['colombia','🇨🇴 Colombia'],['argentina','🇦🇷 Argentina'],['espana','🇪🇸 España'],['peru','🇵🇪 Perú'],['chile','🇨🇱 Chile'],['dominicana','🇩🇴 Rep. Dominicana'],['nicaragua','🇳🇮 Nicaragua'],['puertorico','🇵🇷 Puerto Rico']],en:[['universal','🌎 Universal (Neutral Spanish)'],['mexico','🇲🇽 Mexico'],['colombia','🇨🇴 Colombia'],['argentina','🇦🇷 Argentina'],['espana','🇪🇸 Spain'],['peru','🇵🇪 Peru'],['chile','🇨🇱 Chile'],['dominicana','🇩🇴 Dominican Rep.'],['nicaragua','🇳🇮 Nicaragua'],['puertorico','🇵🇷 Puerto Rico']]}
 }
+,'miniature-nicaragua':{
+  'mn-categoria':{es:[['random','🎲 Aleatorio (IA elige)'],['miniature-laboral','🖐️ Miniature World Laboral (Principal)'],['motivacion','💪 Motivación & Superación'],['historias-reales','🧑 Historias Reales de Nicaragüenses'],['tips-empleo','💡 Tips Prácticos de Empleo'],['ofertas','📋 Ofertas de Trabajo'],['dia-vida','🎥 Día en la Vida (Day in the Life)'],['humor-laboral','😂 Humor Laboral Nicaragüense'],['exito-realidad','⚖️ Éxito vs Realidad']],en:[['random','🎲 Random (AI chooses)'],['miniature-laboral','🖐️ Miniature World Labor (Main)'],['motivacion','💪 Motivation & Overcoming'],['historias-reales','🧑 Real Stories from Nicaraguans'],['tips-empleo','💡 Practical Job Tips'],['ofertas','📋 Job Listings'],['dia-vida','🎥 Day in the Life'],['humor-laboral','😂 Nicaraguan Work Humor'],['exito-realidad','⚖️ Success vs Reality']]},
+  'mn-formato':{es:[['random','🎲 Aleatorio'],['miniature-mano','🖐️ Miniature World + Mano Gigante (Recomendado)'],['miniature-texto','✍️ Miniature + Texto Motivacional'],['stop-motion','🎞️ Stop Motion Laboral'],['antes-despues','↔️ Antes y Después'],['storytelling','❤️ Storytelling Emocional'],['lista-rapida','📝 Lista Rápida (Top 5)'],['relatable','😅 Relatable Humor'],['transformacion','✨ Transformación Personal']],en:[['random','🎲 Random'],['miniature-mano','🖐️ Miniature World + Giant Hand (Recommended)'],['miniature-texto','✍️ Miniature + Motivational Text'],['stop-motion','🎞️ Labor Stop Motion'],['antes-despues','↔️ Before and After'],['storytelling','❤️ Emotional Storytelling'],['lista-rapida','📝 Quick List (Top 5)'],['relatable','😅 Relatable Humor'],['transformacion','✨ Personal Transformation']]},
+  'mn-objetivo':{es:[['random','🎲 Aleatorio'],['inspirar-busqueda','🔍 Inspirar a buscar empleo'],['celebrar-contratacion','🎉 Celebrar una contratación'],['superar-obstaculos','💪 Superar obstáculos (entrevistas, CV, rechazos)'],['mostrar-oportunidades','🏢 Mostrar oportunidades por sector'],['motivacion-diaria','☀️ Motivación diaria'],['advertencia-realidad','⚠️ Advertencia / Realidad del mercado'],['llamado-accion','📣 CTA (seguir página, enviar CV)']],en:[['random','🎲 Random'],['inspirar-busqueda','🔍 Inspire job searching'],['celebrar-contratacion','🎉 Celebrate getting hired'],['superar-obstaculos','💪 Overcome obstacles (interviews, CV, rejections)'],['mostrar-oportunidades','🏢 Show sector opportunities'],['motivacion-diaria','☀️ Daily motivation'],['advertencia-realidad','⚠️ Market reality check'],['llamado-accion','📣 CTA (follow, send CV)']]},
+  'mn-sector':{es:[['random','🎲 Aleatorio / General'],['construccion','🏗️ Construcción'],['call-center','📞 Call Centers / BPO'],['turismo','✈️ Turismo & Hostelería'],['agricultura','🌾 Agricultura'],['tecnologia','💻 Tecnología & Freelancing'],['comercio','🛒 Comercio & Retail'],['salud','🏥 Salud & Enfermería'],['educacion','📚 Educación'],['manufactura','🏭 Manufactura & Zona Franca']],en:[['random','🎲 Random / General'],['construccion','🏗️ Construction'],['call-center','📞 Call Centers / BPO'],['turismo','✈️ Tourism & Hospitality'],['agricultura','🌾 Agriculture'],['tecnologia','💻 Technology & Freelancing'],['comercio','🛒 Commerce & Retail'],['salud','🏥 Health & Nursing'],['educacion','📚 Education'],['manufactura','🏭 Manufacturing & Free Trade Zone']]},
+  'mn-duracion':{es:[['12s','⚡ 12 seg (máximo impacto)'],['15s','🎬 15 seg (óptimo Reels)'],['18s','📱 18 seg (más historia)'],['30s','🎥 30 seg (storytelling completo)']],en:[['12s','⚡ 12s (max impact)'],['15s','🎬 15s (optimal Reels)'],['18s','📱 18s (more story)'],['30s','🎥 30s (full storytelling)']]},
+  'mn-count':{es:[['1','1 prompt'],['3','3 prompts'],['5','5 prompts']],en:[['1','1 prompt'],['3','3 prompts'],['5','5 prompts']]}
+}
 };
 
 const MODE_BLOCKS={
@@ -570,6 +579,10 @@ const MODE_BLOCKS={
 ,'meme-laboral':[
   {id:'ml-config-block',title:{es:'Configuración de memes',en:'Meme configuration'},fields:[{id:'meme-categoria',label:{es:'Categoría laboral',en:'Work category'}},{id:'meme-count',label:{es:'Cantidad de memes',en:'Number of memes'}},{id:'meme-formato',label:{es:'Estilo de formatos',en:'Format style'}}]},
   {id:'ml-pais-block',title:{es:'País / Dialecto',en:'Country / Dialect'},fields:[{id:'pais',label:{es:'País',en:'Country'}}]}
+]
+,'miniature-nicaragua':[
+  {id:'mn-main-block',title:{es:'Tipo de contenido',en:'Content type'},fields:[{id:'mn-categoria',label:{es:'Categoría temática',en:'Theme category'}},{id:'mn-formato',label:{es:'Formato de video',en:'Video format'}},{id:'mn-objetivo',label:{es:'Objetivo del video',en:'Video objective'}}]},
+  {id:'mn-detail-block',title:{es:'Detalles de producción',en:'Production details'},fields:[{id:'mn-sector',label:{es:'Sector laboral',en:'Work sector'}},{id:'mn-duracion',label:{es:'Duración objetivo',en:'Target duration'}},{id:'mn-count',label:{es:'Cantidad de prompts',en:'Number of prompts'}}]}
 ]
 };
 
@@ -700,6 +713,28 @@ const RAND_TOPICS={
     'Exceptional performance review with a 0 percent raise',
     '4-hour technical test for a position that was already filled internally',
     'Optional remote work where not answering at 11pm makes you uncommitted'
+  ]
+}
+,'miniature-nicaragua':{
+  es:[
+    'Primer dia de trabajo en una zona franca de Nicaragua',
+    'Nicaraguense que fue rechazado 10 veces y al final fue contratado',
+    'Joven de Esteli que encontro trabajo remoto sin salir del pais',
+    'Familia de Managua celebrando el primer sueldo del hijo',
+    'Trabajadora de call center pagando su primer mes de universidad',
+    'Obrero construyendo su propia casa con sus primeros ahorros',
+    'Maestra rural de Nicaragua recibiendo su contrato definitivo',
+    'Tecnico graduado del INATEC consiguiendo empleo en tecnologia'
+  ],
+  en:[
+    'First day of work at a Nicaraguan free trade zone',
+    'Nicaraguan rejected 10 times who finally got hired',
+    'Young person from Esteli finding remote work without leaving the country',
+    'Family in Managua celebrating their child first paycheck',
+    'Call center worker paying for her first month of college',
+    'Worker building his own house with his first savings',
+    'Rural teacher in Nicaragua receiving her permanent contract',
+    'INATEC graduate landing a job in technology'
   ]
 }
 };
@@ -1112,7 +1147,7 @@ function renderModes(){
   if(cNar) cNar.innerHTML='';
   if(cLab) cLab.innerHTML='';
   const podcastSet=new Set(['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna']);
-  const laboralSet=new Set(['indignacion-laboral','meme-laboral']);
+  const laboralSet=new Set(['indignacion-laboral','meme-laboral','miniature-nicaragua']);
   Object.entries(MODES).forEach(([id,m])=>{
     const p=document.createElement('div');
     p.className='mode-pill'+(id===mode?' active':'');
@@ -1411,7 +1446,7 @@ ${VEO3_CAMERA}`;
 }
 
 const PODCAST_MODES=['ficticio-viral','true-crime','psicologia-oscura','conspiracion-moderna'];
-const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente','libro-rapido','reflexion-biblica','indignacion-laboral','meme-laboral'];
+const NARRATOR_MODES=['documental-narrado','ciencia-misterio','finanzas-libertad','mentalidad-disciplina','historia-epica','psicologia-positiva','testimonio-real','misterio-biblico','mente-masculina','mujer-consciente','libro-rapido','reflexion-biblica','indignacion-laboral','meme-laboral','miniature-nicaragua'];
 
 function buildNarratorImagePrompt(charDesc,setting,sceneType='solo',lightingRole='host',charLabel=''){
   const sc=getScene();
@@ -2178,6 +2213,200 @@ Return a JSON array of ${memeCount} objects:
   }
 }
 
+// ── Genera prompts de producción Miniature World — Empleo Nicaragua ───────────
+async function generateMiniaturePrompts(){
+  if(!_orKey) return;
+  const btn=document.getElementById('generate');
+  const area=document.getElementById('ai-output-area');
+  btn.innerHTML='<span class="spinner"></span>'+(lang==='es'?'Generando prompts...':'Generating prompts...');
+  btn.disabled=true;
+  area.innerHTML=`<div style="text-align:center;padding:20px;color:#888;font-size:12px;">🎬 ${lang==='es'?'Generando prompts Miniature World...':'Generating Miniature World prompts...'}</div>`;
+
+  try{
+    const mnCount=parseInt(gv('mn-count')||'3');
+    const categoria=gv('mn-categoria')||'random';
+    const formato=gv('mn-formato')||'random';
+    const objetivo=gv('mn-objetivo')||'random';
+    const sector=gv('mn-sector')||'random';
+    const duracion=gv('mn-duracion')||'15s';
+    const topicHint=(_lastPreviewTopic||gv('topic')||'').trim();
+
+    const catCtx=categoria==='random'?'General labor/employment content for Nicaragua'
+      :categoria==='miniature-laboral'?'Miniature World scenes with Nicaraguan workers and workplaces'
+      :categoria==='motivacion'?'Motivation and personal overcoming in the job search journey'
+      :categoria==='historias-reales'?'Real stories of Nicaraguans finding employment and succeeding'
+      :categoria==='tips-empleo'?'Practical job tips: CV, interviews, LinkedIn, networking in Nicaragua'
+      :categoria==='ofertas'?'Job openings and employment opportunities in Nicaragua'
+      :categoria==='dia-vida'?'Day in the life of a Nicaraguan worker in their sector'
+      :categoria==='humor-laboral'?'Relatable Nicaraguan work humor — funny but warm, never mean'
+      :categoria==='exito-realidad'?'Success vs Reality — honest comparison of job expectations in Nicaragua'
+      :'Employment content for Nicaragua';
+
+    const fmtCtx=formato==='random'?'Choose the most viral format for the topic'
+      :formato==='miniature-mano'?'Miniature World hiperrealista con mano gigante heroica — estilo @theminiatureworlds. OBLIGATORIO: escena en miniatura + mano gigante que ayuda emocionalmente'
+      :formato==='miniature-texto'?'Miniature World con texto motivacional superpuesto. Escena bonita + palabras que impactan'
+      :formato==='stop-motion'?'Stop motion laboral — objetos animados step by step contando una historia de empleo'
+      :formato==='antes-despues'?'Antes y Después poderoso — transformación visual clara en 2 partes del video'
+      :formato==='storytelling'?'Storytelling emocional — narración en primera persona, íntima, que conecta profundamente'
+      :formato==='lista-rapida'?'Lista rápida estilo Top 5 — información útil presentada de forma dinámica y visual'
+      :formato==='relatable'?'Humor relatable — situación que todo trabajador nicaragüense reconoce y comparte'
+      :formato==='transformacion'?'Transformación personal — arco emocional de lucha → logro → celebración'
+      :'Viral video format for Reels';
+
+    const objCtx=objetivo==='random'?'Most impactful objective for the topic'
+      :objetivo==='inspirar-busqueda'?'GOAL: Inspire viewers to actively search for employment. Leave them motivated and hopeful'
+      :objetivo==='celebrar-contratacion'?'GOAL: Celebrate getting hired — emotional, wholesome, shareable moment'
+      :objetivo==='superar-obstaculos'?'GOAL: Help viewers overcome job search obstacles (rejections, bad interviews, no experience)'
+      :objetivo==='mostrar-oportunidades'?'GOAL: Show real job opportunities available in Nicaragua right now'
+      :objetivo==='motivacion-diaria'?'GOAL: Daily motivation — a small dose of energy and purpose for the work day'
+      :objetivo==='advertencia-realidad'?'GOAL: Honest reality check about the job market — informative, not discouraging'
+      :objetivo==='llamado-accion'?'GOAL: Drive action — follow the page, send CV, visit the employment website'
+      :'Engage and inspire the audience';
+
+    const sectCtx=sector==='random'?''
+      :`Focus on the ${sector==='construccion'?'construction industry':sector==='call-center'?'call center / BPO sector':sector==='turismo'?'tourism & hospitality sector':sector==='agricultura'?'agriculture sector':sector==='tecnologia'?'technology & freelancing sector':sector==='comercio'?'retail & commerce sector':sector==='salud'?'healthcare & nursing sector':sector==='educacion'?'education sector':sector==='manufactura'?'manufacturing & free trade zones (zonas francas) sector':sector} in Nicaragua.`;
+
+    const durSecs=duracion==='12s'?12:duracion==='15s'?15:duracion==='18s'?18:30;
+    const topicCtx=topicHint?`Specific story/topic angle: "${topicHint}". `:'Generate a compelling topic automatically based on the category and sector. ';
+
+    const sys=`You are a viral content director specializing in short-form video (Instagram Reels, TikTok, YouTube Shorts) for NICARAGUA's employment market.
+You create highly emotional, shareable, and inspiring content that connects with everyday Nicaraguan workers and job seekers.
+You know the Miniature World video style (@theminiatureworlds) deeply — hiperrealista, tilt-shift, giant caring hand, emotional moments, warm lighting.
+You understand Nicaraguan culture, local geography (Managua, León, Estelí, Masaya, Matagalpa, Granada, Zelaya, Costa Caribe), landmarks (Volcán Momotombo, Lago de Nicaragua, Mercado Oriental, zonas francas) and economic reality.
+Reply ONLY with a valid JSON array — no markdown, no extra text, no explanations.`;
+
+    const usr=`Create ${mnCount} complete video production prompt(s) for Nicaragua employment content.
+
+${topicCtx}
+Category: ${catCtx}
+Video format: ${fmtCtx}
+${sectCtx}
+Objective: ${objCtx}
+Target duration: ${durSecs} seconds (vertical 9:16 for Instagram Reels/TikTok)
+Language of on-screen text: Spanish (Nicaraguan / Latin American, warm and direct)
+
+IMPORTANT RULES:
+- Every prompt must include genuine Nicaraguan cultural elements (flags, landscapes, cities, food, traditions)
+- Emotions must be REAL: hope, pride, family, perseverance, joy of achievement
+- For Miniature World format: the giant hand must act HEROICALLY and GENTLY — like a helping hand from God or fate
+- On-screen text must be SHORT, PUNCHY, and READABLE in under 3 seconds
+- Hashtags must be Nicaragua-specific and employment-focused
+- The AI image prompt (for Midjourney/Runway/CapCut AI) must be in ENGLISH and very detailed
+
+Return a JSON array of ${mnCount} object(s) with this exact structure:
+[
+  {
+    "titulo": "Short catchy title for this video concept",
+    "formato": "Video format name in Spanish",
+    "objetivo": "Video objective in Spanish",
+    "escena_miniatura": "Detailed description of the miniature/main scene — objects, people, setting, Nicaraguan elements, lighting, atmosphere (in Spanish, 2-4 sentences)",
+    "accion_mano": "How the giant caring hand interacts with the scene — movement, emotion, symbolism (in Spanish, 1-2 sentences). Write 'N/A' if format is not miniature.",
+    "texto_linea1": "LINE 1 on screen — SHORT, CAPS OK, max 5 words",
+    "texto_linea2": "LINE 2 on screen — SHORT, emotional punch, max 6 words, can include 🇳🇮 emoji",
+    "musica": "Recommended music style/mood for this video (1 sentence)",
+    "movimiento_camara": "Camera movement description — how it starts, moves, and ends (1 sentence)",
+    "prompt_ia": "Full English prompt for AI image/video generation (Midjourney / Runway / CapCut AI). Include: style, subjects, setting, Nicaraguan elements, lighting, aspect ratio --ar 9:16, quality flags",
+    "pexels_query": "2-4 word English search query for stock footage on Pexels",
+    "hashtags": "10-12 relevant hashtags in Spanish: mix of #EmpleoNicaragua #TrabajoNica + sector-specific + emotion-specific"
+  }
+]`;
+
+    const raw=await _callOR(sys,usr,4500);
+    const m=raw.match(/\[[\s\S]*\]/);
+    if(!m) throw new Error(lang==='es'?'No se pudo parsear la respuesta de la IA':'Could not parse AI response');
+    const prompts=JSON.parse(m[0]);
+
+    const fmtColors={'Miniature World + Mano Gigante':'#0d2137','Miniature + Texto Motivacional':'#1a1a2e','Stop Motion':'#1c2938','Antes y Después':'#2d1f3d','Storytelling Emocional':'#1a2e1a','Lista Rápida':'#2e1a1a','Relatable Humor':'#2e2a1a','Transformación Personal':'#1a2e2b'};
+
+    let html=`<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,0.08);">🎬 ${prompts.length} ${lang==='es'?'prompt(s) de producción generados':'production prompt(s) generated'} 🇳🇮</div>`;
+
+    prompts.forEach((p,i)=>{
+      const num=i+1;
+      const fmtBg=Object.entries(fmtColors).find(([k])=>p.formato&&p.formato.toLowerCase().includes(k.toLowerCase().split(' ')[0]))?.[1]||'#1a1a1a';
+      const pexelsUrl=`https://www.pexels.com/search/${encodeURIComponent(p.pexels_query||'nicaragua workers')}`;
+      const hasHand=p.accion_mano&&p.accion_mano!=='N/A'&&p.accion_mano.trim().length>3;
+      html+=`<div style="background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="background:#1a1a1a;color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;">Prompt ${num}/${prompts.length}</span>
+          <span style="background:${fmtBg};color:#fff;border-radius:6px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:0.3px;">🎬 ${p.formato||'Video'}</span>
+          <span style="background:#f0fdf4;color:#166534;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:600;">${p.objetivo||''}</span>
+          <span style="margin-left:auto;font-size:14px;">🇳🇮</span>
+        </div>
+
+        <!-- Título -->
+        <div style="font-size:13px;font-weight:800;color:#1a1a1a;margin-bottom:12px;line-height:1.3;">📌 ${p.titulo||''}</div>
+
+        <!-- Escena miniatura -->
+        <div style="background:#f0f4ff;border-left:3px solid #4f6ef7;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:#3730a3;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:5px;">🏙️ ${lang==='es'?'Escena principal':'Main scene'}</div>
+          <div style="font-size:12px;color:#1e1b4b;line-height:1.6;">${p.escena_miniatura||''}</div>
+        </div>
+
+        <!-- Acción mano (solo si aplica) -->
+        ${hasHand?`<div style="background:#fff7ed;border-left:3px solid #f97316;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:5px;">✋ ${lang==='es'?'Acción de la mano gigante':'Giant hand action'}</div>
+          <div style="font-size:12px;color:#7c2d12;line-height:1.6;">${p.accion_mano}</div>
+        </div>`:''}
+
+        <!-- Texto en pantalla -->
+        <div style="background:#1a1a1a;border-radius:10px;padding:14px 16px;margin-bottom:10px;text-align:center;">
+          <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">💬 ${lang==='es'?'Texto en pantalla':'On-screen text'}</div>
+          <div style="font-size:20px;font-weight:900;color:#fff;line-height:1.2;letter-spacing:0.5px;">${p.texto_linea1||''}</div>
+          <div style="font-size:16px;font-weight:700;color:#f5c842;margin-top:6px;line-height:1.3;">${p.texto_linea2||''}</div>
+          <button onclick="copyTxt(${JSON.stringify((p.texto_linea1||'')+'\n'+(p.texto_linea2||''))})" style="margin-top:10px;background:rgba(255,255,255,0.15);color:#fff;border:0.5px solid rgba(255,255,255,0.3);border-radius:6px;padding:4px 12px;font-size:10px;cursor:pointer;">📋 Copiar texto</button>
+        </div>
+
+        <!-- Música + Cámara -->
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div style="flex:1;background:#fdf4ff;border-radius:8px;padding:9px 11px;">
+            <div style="font-size:9px;font-weight:700;color:#7e22ce;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎵 ${lang==='es'?'Música':'Music'}</div>
+            <div style="font-size:11px;color:#3b0764;line-height:1.5;">${p.musica||''}</div>
+          </div>
+          <div style="flex:1;background:#f0fdf4;border-radius:8px;padding:9px 11px;">
+            <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎥 ${lang==='es'?'Cámara':'Camera'}</div>
+            <div style="font-size:11px;color:#14532d;line-height:1.5;">${p.movimiento_camara||''}</div>
+          </div>
+        </div>
+
+        <!-- Prompt IA -->
+        <div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">🤖 Prompt IA (Midjourney / Runway / CapCut AI)</div>
+            <button class="clip-copy" onclick="copyTxt(${JSON.stringify(p.prompt_ia||'')})">📋</button>
+          </div>
+          <div class="clip-voice" style="font-size:10.5px;color:#0c4a6e;line-height:1.6;">${p.prompt_ia||''}</div>
+        </div>
+
+        <!-- Pexels + Hashtags -->
+        <div style="display:flex;gap:8px;margin-bottom:0;">
+          <div style="flex:1;background:#f8faff;border-radius:8px;padding:9px 11px;">
+            <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">📸 Stock Footage</div>
+            <a href="${pexelsUrl}" target="_blank" style="font-size:11px;color:#0369a1;text-decoration:underline;">${p.pexels_query||'nicaragua workers'} →</a>
+          </div>
+          <div style="flex:2;background:#f8fdf8;border-radius:8px;padding:9px 11px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.5px;">📣 Hashtags</div>
+              <button class="clip-copy" onclick="copyTxt(${JSON.stringify(p.hashtags||'')})">📋</button>
+            </div>
+            <div style="font-size:10.5px;color:#14532d;line-height:1.6;">${p.hashtags||''}</div>
+          </div>
+        </div>
+
+      </div>`;
+    });
+
+    area.innerHTML=html;
+    area.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    area.innerHTML=`<div style="background:#fff1f2;border-radius:8px;padding:12px;font-size:12px;color:#9f1239;">❌ ${e.message}</div>`;
+  }finally{
+    btn.innerHTML='⚡ '+(lang==='es'?'Generar prompts':'Generate prompts');
+    btn.disabled=false;
+  }
+}
+
 // ── Paso previo: muestra guion + config antes de generar Veo 3 ────────────────
 async function generate(){
   if(!_orKey){alert(lang==='es'?'Configura tu API key primero.':'Configure your API key first.');return;}
@@ -2309,6 +2538,42 @@ async function _previewStep(){
       return;
     }
 
+    // ── Miniature Nicaragua: config summary sin guion ─────────────────────────
+    if(mode==='miniature-nicaragua'){
+      const mnCount=gv('mn-count')||'3';
+      const categoria=gv('mn-categoria')||'random';
+      const formato=gv('mn-formato')||'random';
+      const objetivo=gv('mn-objetivo')||'random';
+      const sector=gv('mn-sector')||'random';
+      const duracion=gv('mn-duracion')||'15s';
+      const topicHint=(_lastPreviewTopic||gv('topic')||'').trim();
+      const catLabel={'random':'🎲 Aleatorio','miniature-laboral':'🖐️ Miniature World Laboral','motivacion':'💪 Motivación & Superación','historias-reales':'🧑 Historias Reales','tips-empleo':'💡 Tips de Empleo','ofertas':'📋 Ofertas de Trabajo','dia-vida':'🎥 Day in the Life','humor-laboral':'😂 Humor Laboral','exito-realidad':'⚖️ Éxito vs Realidad'}[categoria]||categoria;
+      const fmtLabel={'random':'🎲 Aleatorio','miniature-mano':'🖐️ Miniature + Mano Gigante','miniature-texto':'✍️ Miniature + Texto','stop-motion':'🎞️ Stop Motion','antes-despues':'↔️ Antes y Después','storytelling':'❤️ Storytelling','lista-rapida':'📝 Lista Rápida','relatable':'😅 Relatable Humor','transformacion':'✨ Transformación Personal'}[formato]||formato;
+      const objLabel={'random':'🎲 Aleatorio','inspirar-busqueda':'🔍 Inspirar búsqueda','celebrar-contratacion':'🎉 Celebrar contratación','superar-obstaculos':'💪 Superar obstáculos','mostrar-oportunidades':'🏢 Mostrar oportunidades','motivacion-diaria':'☀️ Motivación diaria','advertencia-realidad':'⚠️ Realidad del mercado','llamado-accion':'📣 Llamado a acción'}[objetivo]||objetivo;
+      const sectLabel={'random':'🎲 General','construccion':'🏗️ Construcción','call-center':'📞 Call Centers','turismo':'✈️ Turismo','agricultura':'🌾 Agricultura','tecnologia':'💻 Tecnología','comercio':'🛒 Comercio','salud':'🏥 Salud','educacion':'📚 Educación','manufactura':'🏭 Zona Franca'}[sector]||sector;
+      const durLabel={'12s':'⚡ 12 seg','15s':'🎬 15 seg','18s':'📱 18 seg','30s':'🎥 30 seg'}[duracion]||duracion;
+      const row=(label,value,bg,col)=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:0.5px solid rgba(0,0,0,0.06);">
+        <span style="font-size:10px;color:#888;font-weight:600;width:90px;flex-shrink:0;">${label}</span>
+        <span style="background:${bg};color:${col};padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;">${value}</span>
+      </div>`;
+      area.innerHTML=`<div style="background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.1);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">🎬 ${lang==='es'?'Resumen antes de generar prompts':'Summary before generating prompts'}</div>
+        ${topicHint?`<div style="font-size:12px;color:#1a1a1a;font-weight:600;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,0.1);">📌 ${lang==='es'?'Tema':'Topic'}: ${topicHint}</div>`:'<div style="font-size:11px;color:#888;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,0.1);">📌 Tema: auto-generado por IA 🇳🇮</div>'}
+        ${row(lang==='es'?'Categoría:':'Category:', catLabel, '#fef3c7','#92400e')}
+        ${row(lang==='es'?'Formato:':'Format:', fmtLabel, '#f3e8ff','#7c3aed')}
+        ${row(lang==='es'?'Objetivo:':'Objective:', objLabel, '#f0fdf4','#166534')}
+        ${row(lang==='es'?'Sector:':'Sector:', sectLabel, '#fff7ed','#c2410c')}
+        ${row(lang==='es'?'Duración:':'Duration:', durLabel, '#e8f4ff','#185fa5')}
+        ${row(lang==='es'?'# Prompts:':'# Prompts:', mnCount+' prompts', '#fdf4ff','#7e22ce')}
+      </div>`;
+      area.insertAdjacentHTML('beforeend',`<div style="display:flex;gap:10px;margin-top:16px;justify-content:center;padding-bottom:8px;">
+        <button onclick="_previewStep()" style="padding:9px 18px;background:#f0ede2;color:#1a1a1a;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔄 ${lang==='es'?'Cambiar':'Regenerate'}</button>
+        <button onclick="_fullGenerate()" style="padding:9px 22px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">✅ ${lang==='es'?'Generar prompts':'Generate prompts'}</button>
+      </div>`);
+      area.scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
+
     // Genera guion (vista previa) + aplica recommended_config internamente
     await generateWithAI(true);
 
@@ -2358,6 +2623,10 @@ async function _fullGenerate(){
     }
     if(mode==='meme-laboral'){
       await generateMemeSequence();
+      return;
+    }
+    if(mode==='miniature-nicaragua'){
+      await generateMiniaturePrompts();
       return;
     }
     await generateNarratorPackage();
