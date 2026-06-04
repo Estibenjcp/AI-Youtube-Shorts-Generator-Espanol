@@ -1,7 +1,9 @@
 import os
 import time
 import random
+import threading
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,6 +14,15 @@ _SESSION.headers.update({
     "User-Agent": "AutoShorts/1.0 (video generator)",
     "Connection": "keep-alive",
 })
+
+# Workers para búsqueda/descarga de clips en paralelo (una tarea por escena).
+_DOWNLOAD_WORKERS = int(os.getenv("DOWNLOAD_WORKERS", "4"))
+
+# Caché en memoria de la respuesta de búsqueda de Pexels por query (evita
+# repetir la llamada de red para queries idénticas). La selección sigue siendo
+# random.choice sobre la lista cacheada → mantiene variedad.
+_SEARCH_CACHE = {}
+_SEARCH_LOCK  = threading.Lock()
 
 
 class AssetManager:
@@ -24,15 +35,14 @@ class AssetManager:
 
     # ── Search ────────────────────────────────────────────────────────────────
 
-    def search_video(self, query: str, duration_min: int = 4, _depth: int = 0) -> str | None:
+    def _fetch_videos(self, query: str) -> list:
         """
-        Searches Pexels for a portrait video matching the query.
-        Returns the download URL or None.
+        Devuelve la lista cruda de videos de Pexels para una query (cacheada).
+        Solo hace red la primera vez que se ve esa query en el proceso.
         """
-        if _depth > 1:          # max one simplification retry
-            return None
-
-        print(f"   🔍 Searching Pexels for: '{query}'...")
+        with _SEARCH_LOCK:
+            if query in _SEARCH_CACHE:
+                return _SEARCH_CACHE[query]
 
         params = {
             "query":       query,
@@ -41,6 +51,7 @@ class AssetManager:
             "size":        "medium",
         }
 
+        videos = []
         for attempt in range(3):
             try:
                 resp = _SESSION.get(
@@ -56,29 +67,41 @@ class AssetManager:
                     continue
                 if resp.status_code != 200:
                     print(f"      ⚠️ API Error: {resp.status_code}")
-                    return None
-
-                data = resp.json()
+                    return []
+                videos = resp.json().get("videos", [])
                 break
-
             except Exception as e:
                 wait = 3 * (attempt + 1)
                 print(f"      ⚠️ Search attempt {attempt+1}/3 failed: {e} — retrying in {wait}s")
                 time.sleep(wait)
         else:
+            return []
+
+        with _SEARCH_LOCK:
+            _SEARCH_CACHE[query] = videos
+        return videos
+
+    def search_video(self, query: str, duration_min: int = 4, _depth: int = 0) -> str | None:
+        """
+        Searches Pexels for a portrait video matching the query.
+        Returns the download URL or None.
+        """
+        if _depth > 1:          # max one simplification retry
             return None
 
-        if not data.get("videos"):
+        print(f"   🔍 Searching Pexels for: '{query}'...")
+        videos = self._fetch_videos(query)
+
+        if not videos:
             if " " in query:
                 simple = query.split()[-1]
                 print(f"      ⚠️ No results. Retrying with '{simple}'...")
-                time.sleep(1)
                 return self.search_video(simple, duration_min, _depth + 1)
             return None
 
-        valid = [v for v in data["videos"] if v["duration"] >= duration_min]
+        valid = [v for v in videos if v["duration"] >= duration_min]
         if not valid:
-            valid = data["videos"]
+            valid = videos
 
         chosen     = random.choice(valid)
         vid_files  = sorted(chosen["video_files"], key=lambda x: x["width"] * x["height"], reverse=True)
@@ -129,27 +152,22 @@ class AssetManager:
         Returns a list of tuples: (path_a, path_b) or (path_a, path_b, path_c).
         """
         print("🎥 Starting Video Download...")
-        video_pairs = []
 
-        for scene in script_data:
+        def _process_scene(scene):
+            """Descarga los clips (A/B/C) de UNA escena. Devuelve la tupla o None."""
             scene_id = scene["id"]
             query_a  = scene.get("visual_1", scene.get("keywords", "abstract"))
             query_b  = scene.get("visual_2", query_a)
             query_c  = scene.get("visual_3", None)
 
-            # Search A
             url_a  = self.search_video(query_a)
             path_a = self.download_video(url_a, f"scene_{scene_id}_a.mp4") if url_a else None
-            time.sleep(1.5)
 
-            # Search B
             url_b  = self.search_video(query_b)
             path_b = self.download_video(url_b, f"scene_{scene_id}_b.mp4") if url_b else None
 
-            # Search C (only if visual_3 exists)
             path_c = None
             if query_c:
-                time.sleep(1.5)
                 url_c  = self.search_video(query_c)
                 path_c = self.download_video(url_c, f"scene_{scene_id}_c.mp4") if url_c else None
 
@@ -158,20 +176,22 @@ class AssetManager:
                 path_a = path_b
             if not path_b and path_a:
                 path_b = path_a
-            if path_c is None and path_a:
-                pass  # C is optional, no fallback needed
 
             if path_a and path_b:
                 if path_c:
-                    video_pairs.append((path_a, path_b, path_c))
                     print(f"   ✅ Scene {scene_id} Ready (A + B + C).")
-                else:
-                    video_pairs.append((path_a, path_b))
-                    print(f"   ✅ Scene {scene_id} Ready (A + B).")
-            else:
-                print(f"   ❌ Scene {scene_id} Completely Failed.")
-                video_pairs.append(None)
+                    return (path_a, path_b, path_c)
+                print(f"   ✅ Scene {scene_id} Ready (A + B).")
+                return (path_a, path_b)
 
-            time.sleep(1)
+            print(f"   ❌ Scene {scene_id} Completely Failed.")
+            return None
+
+        # Paralelizar por escena. ex.map preserva el orden de script_data.
+        # Las descargas usan nombres de archivo únicos (scene_{id}_a/b/c) → sin
+        # colisiones. Sin sleeps fijos: el backoff por 429 vive en _fetch_videos.
+        workers = max(1, min(_DOWNLOAD_WORKERS, len(script_data)))
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            video_pairs = list(ex.map(_process_scene, script_data))
 
         return video_pairs

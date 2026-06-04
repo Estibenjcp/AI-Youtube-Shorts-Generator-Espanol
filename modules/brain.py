@@ -1,5 +1,6 @@
 import os
 import json
+import functools
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,8 +20,14 @@ def _get_secret(key: str, default: str = "") -> str:
         return default
 
 
+@functools.lru_cache(maxsize=1)
 def _get_client():
-    """Inicializa el cliente de IA solo cuando se necesita (lazy init)."""
+    """Inicializa el cliente de IA una sola vez (singleton por proceso).
+
+    Cacheado con lru_cache: antes se re-instanciaba en cada _generate (~25/run),
+    re-leyendo secrets y reimportando el SDK. Si cambias las API keys/secrets,
+    reinicia la app para que tome los nuevos valores.
+    """
     provider  = _get_secret("AI_PROVIDER", "gemini").lower()
     api_key   = _get_secret("AI_API_KEY", "")
     model     = _get_secret("AI_MODEL", "")

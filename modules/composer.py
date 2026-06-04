@@ -2,6 +2,13 @@ import os
 import random
 import ffmpeg
 
+# Hilos para FFmpeg: 0 = auto (todos los núcleos). En Streamlit Cloud, si el
+# render multi-hilo falla, setear FFMPEG_THREADS=1 en secrets/env sin tocar código.
+_FFMPEG_THREADS = int(os.getenv("FFMPEG_THREADS", "0"))
+
+# Workers para render de escenas en paralelo (subprocesos FFmpeg independientes).
+_RENDER_WORKERS = int(os.getenv("RENDER_WORKERS", "4"))
+
 class Composer:
     def __init__(self, use_avatar: bool = True):
         self.temp_dir    = os.path.join(os.getcwd(), "assets", "temp")
@@ -488,7 +495,7 @@ class Composer:
                 pix_fmt='yuv420p',
                 preset='ultrafast',
                 crf=26,
-                threads=1,
+                threads=_FFMPEG_THREADS,
             ).run(overwrite_output=True, quiet=True)
 
             return output_path
@@ -499,7 +506,7 @@ class Composer:
 
     def render_all_scenes(self, script_data, video_pairs,
                           ken_burns: bool = False, color_grade: str = None):
-        rendered_paths = []
+        from concurrent.futures import ThreadPoolExecutor
 
         # Pick avatar scenes only if enabled and avatar file exists
         avatar_indices = []
@@ -509,6 +516,10 @@ class Composer:
             avatar_indices = sorted(random.sample(valid_range, count))
             print(f"🎲 Avatar set for Scenes: {[i+1 for i in avatar_indices]}")
 
+        # ── Fase 1: decisión secuencial (barata) — qué clip usa cada escena ─────
+        # Construye la lista de trabajos respetando el orden posicional. Los
+        # descartes (sin audio / sin clip) NO generan trabajo.
+        jobs = []   # (orden_original, scene, current_pair, is_avatar)
         for i, scene in enumerate(script_data):
             audio_path = scene.get('audio_path', '')
             if not audio_path or not os.path.exists(audio_path):
@@ -539,12 +550,34 @@ class Composer:
                     continue
                 current_pair = fallback_pair
 
-            path = self.process_scene(scene, current_pair, is_avatar,
-                                      ken_burns=ken_burns, color_grade=color_grade)
-            if path:
-                rendered_paths.append(path)
+            jobs.append((i, scene, current_pair, is_avatar))
 
-        return rendered_paths
+        if not jobs:
+            return []
+
+        # ── Fase 2: render en paralelo (subprocesos FFmpeg independientes) ──────
+        # Cada process_scene lanza su propio ffmpeg → se solapan en CPU/IO.
+        # Se preserva el orden posicional indexando por la posición del trabajo.
+        results = [None] * len(jobs)
+
+        def _render(job_idx, scene, pair, is_av):
+            return job_idx, self.process_scene(
+                scene, pair, is_av,
+                ken_burns=ken_burns, color_grade=color_grade,
+            )
+
+        workers = max(1, min(_RENDER_WORKERS, len(jobs)))
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futures = [
+                ex.submit(_render, jidx, scene, pair, is_av)
+                for jidx, (_orig, scene, pair, is_av) in enumerate(jobs)
+            ]
+            for fut in futures:
+                jidx, path = fut.result()
+                results[jidx] = path
+
+        # Mantener orden y descartar fallos (None)
+        return [p for p in results if p]
 
     def concatenate_with_transitions(
         self,
@@ -719,7 +752,7 @@ class Composer:
                 movflags='faststart',
                 preset='ultrafast',
                 crf=26,
-                threads=1,
+                threads=_FFMPEG_THREADS,
             ).run(overwrite_output=True, quiet=False)
 
             print(f"✅ FINAL VIDEO SAVED: {output_path}")

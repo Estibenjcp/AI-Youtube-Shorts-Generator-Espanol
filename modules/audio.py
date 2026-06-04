@@ -169,13 +169,14 @@ class AudioEngine:
     async def process_script(self, script_data):
         print(f"🎙️ Starting Audio Generation for {len(script_data)} scenes...")
         total_scenes = len(script_data)
+        sem = asyncio.Semaphore(3)   # límite de concurrencia (respeta rate limits)
 
-        for idx, scene in enumerate(script_data):
+        async def _one(idx, scene):
             scene_id = scene['id']
             text = self._clean_text(scene.get('text', ''))
             if not text:
                 print(f"   ⚠️ Scene {scene_id} has empty text — skipping.")
-                continue
+                return
             filename = f"voice_{scene_id}.mp3"
 
             # Mood "energetic" → todas las escenas al ritmo de hook (+8%)
@@ -190,30 +191,29 @@ class AudioEngine:
             else:
                 scene_rate = self.rate
 
-            try:
-                # Soporte de dos voces para modo podcast/diálogo
-                _speaker = scene.get("speaker", "host")
-                _voice_override = None
-                if self.voice_b and _speaker in ("guest", "b", "invitado"):
-                    _voice_override = self.voice_b
+            async with sem:
+                try:
+                    # Soporte de dos voces para modo podcast/diálogo
+                    _speaker = scene.get("speaker", "host")
+                    _voice_override = None
+                    if self.voice_b and _speaker in ("guest", "b", "invitado"):
+                        _voice_override = self.voice_b
 
-                file_path = await self.generate_audio(text, filename, rate_override=scene_rate, voice_override=_voice_override)
-                duration  = self.get_audio_duration(file_path)
+                    file_path = await self.generate_audio(text, filename, rate_override=scene_rate, voice_override=_voice_override)
+                    duration  = self.get_audio_duration(file_path)
 
-                if duration <= 0:
-                    print(f"   ❌ Scene {scene_id}: audio duration is 0 after generation — skipping.")
-                    continue
+                    if duration <= 0:
+                        print(f"   ❌ Scene {scene_id}: audio duration is 0 after generation — skipping.")
+                        return
 
-                scene['audio_path'] = file_path
-                scene['duration']   = duration
-                print(f"   ✅ Scene {scene_id}: {duration:.2f}s generated.")
+                    scene['audio_path'] = file_path
+                    scene['duration']   = duration
+                    print(f"   ✅ Scene {scene_id}: {duration:.2f}s generated.")
 
-                await asyncio.sleep(1)
+                except Exception as e:
+                    print(f"   ❌ Skipping Scene {scene_id} due to audio error: {e}")
 
-            except Exception as e:
-                print(f"   ❌ Skipping Scene {scene_id} due to audio error: {e}")
-                continue
-
+        await asyncio.gather(*[_one(idx, scene) for idx, scene in enumerate(script_data)])
         return script_data
 
 
@@ -731,12 +731,14 @@ class GoogleTTSAudioEngine:
         total = len(script_data)
         print(f"🎙️ [Google TTS] Generating audio for {total} scenes "
               f"(voice={self.voice_name}, rate={self.speaking_rate})...")
-        for idx, scene in enumerate(script_data):
+        sem = asyncio.Semaphore(3)   # límite de concurrencia (respeta rate limits)
+
+        async def _one(idx, scene):
             scene_id = scene["id"]
             text = self._clean_text(scene.get("text", ""))
             if not text:
                 print(f"   ⚠️ Scene {scene_id}: empty text — skipping.")
-                continue
+                return
             out_path = os.path.join(self.output_dir, f"voice_{scene_id}.mp3")
 
             # Mood "energetic" → todo el video rápido (+8%)
@@ -750,19 +752,23 @@ class GoogleTTSAudioEngine:
             else:
                 scene_rate = self.speaking_rate
 
-            try:
-                self._synthesize(text, out_path, speaking_rate=scene_rate)
-                self._normalize(out_path)
-                duration = self.get_audio_duration(out_path)
-                if duration <= 0:
-                    print(f"   ❌ Scene {scene_id}: invalid audio — skipping.")
-                    continue
-                scene["audio_path"] = out_path
-                scene["duration"]   = duration
-                print(f"   ✅ Scene {scene_id}: {duration:.2f}s")
-                await asyncio.sleep(0.1)   # respect rate limits
-            except Exception as e:
-                print(f"   ❌ Scene {scene_id} error: {e}")
-                continue
+            async with sem:
+                try:
+                    # _synthesize (REST) + _normalize (ffmpeg) son bloqueantes →
+                    # corren en un hilo para no bloquear el event loop.
+                    def _work():
+                        self._synthesize(text, out_path, speaking_rate=scene_rate)
+                        self._normalize(out_path)
+                        return self.get_audio_duration(out_path)
+                    duration = await asyncio.to_thread(_work)
+                    if duration <= 0:
+                        print(f"   ❌ Scene {scene_id}: invalid audio — skipping.")
+                        return
+                    scene["audio_path"] = out_path
+                    scene["duration"]   = duration
+                    print(f"   ✅ Scene {scene_id}: {duration:.2f}s")
+                except Exception as e:
+                    print(f"   ❌ Scene {scene_id} error: {e}")
 
+        await asyncio.gather(*[_one(idx, scene) for idx, scene in enumerate(script_data)])
         return script_data

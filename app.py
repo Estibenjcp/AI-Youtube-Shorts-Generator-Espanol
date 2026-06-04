@@ -1169,11 +1169,9 @@ def run_pipeline(log_q: queue.Queue, params: dict):
     sys.stdout = QueueWriter()
 
     try:
-        import modules.brain         as _brain_mod
-        import modules.asset_manager as _am_mod
-        importlib.reload(_brain_mod)
-        importlib.reload(_am_mod)
-
+        # Nota: ya no se usa importlib.reload aquí. Los cambios de API key/secrets
+        # desde la UI se aplican con load_dotenv(override=True) + _get_client.cache_clear()
+        # en el momento de guardar (ver sección de configuración).
         from modules.brain         import ContentBrain
         from modules.audio         import AudioEngine
         from modules.asset_manager import AssetManager
@@ -1602,11 +1600,11 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 rate    = params.get("rate", "+10%"),
                 voice_b = params.get("podcast_voice_b", ""),
             )
-        script = asyncio.run(audio_engine.process_script(script))
-
-        log_q.put("STAGE:Assets")
         _video_src = params.get("video_source", "pexels")
         if _video_src in ("ai_video", "ai_video_test"):
+            # AI video usa audio_duration (best_duration) → audio PRIMERO, luego clips.
+            script = asyncio.run(audio_engine.process_script(script))
+            log_q.put("STAGE:Assets")
             from modules.ai_video import AIVideoEngine
             _ai_vid_engine = AIVideoEngine(
                 provider      = params.get("ai_video_provider", "fal"),
@@ -1644,8 +1642,16 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                         _fb_idx += 1
             assets_map = _assets_list
         else:
+            # Pexels NO depende del audio → generar audio y descargar clips EN PARALELO.
+            log_q.put("STAGE:Assets")
             asset_manager = AssetManager()
-            assets_map    = asset_manager.get_videos(script)
+
+            async def _audio_and_assets():
+                t_audio  = asyncio.create_task(audio_engine.process_script(script))
+                t_assets = asyncio.create_task(asyncio.to_thread(asset_manager.get_videos, script))
+                return await asyncio.gather(t_audio, t_assets)
+
+            script, assets_map = asyncio.run(_audio_and_assets())
 
         log_q.put("STAGE:Composer")
         composer = Composer(use_avatar=params.get("use_avatar", False))
@@ -1910,6 +1916,12 @@ with st.sidebar:
             set_key(ENV_PATH, "AI_VIDEO_KEY",  ai_video_key)
         set_key(ENV_PATH, "AI_VIDEO_MODEL",    ai_video_model)
         load_dotenv(ENV_PATH, override=True)
+        # El cliente de IA está cacheado (lru_cache) — limpiarlo para que tome la nueva key
+        try:
+            from modules.brain import _get_client as _bc
+            _bc.cache_clear()
+        except Exception:
+            pass
         st.success(T["api_saved"])
 
     # ── Diagnóstico de Conexiones ─────────────────────────
