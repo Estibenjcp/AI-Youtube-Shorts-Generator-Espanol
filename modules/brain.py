@@ -458,6 +458,42 @@ OUTPUT FORMAT (strict JSON, no markdown):
             text = text.replace(char, rep)
         return text
 
+    def _parse_scenes(self, raw: str, num_scenes: int, label: str,
+                      default_mood: str,
+                      fallback_visual_1: str = "dramatic cinematic footage",
+                      fallback_visual_2: str = "historical documentary",
+                      success_label: str = None) -> list:
+        """Mecánica común de parseo para los generate_*_script de patrón estándar.
+
+        Limpia las vallas ```json, parsea el array, normaliza id/text/mood,
+        recorta a num_scenes y, si el JSON falla, cae a un fallback por frases.
+        Los modos con lógica especial (visual_3 atmosférico, speaker de podcast,
+        etc.) NO usan este helper y conservan su parseo propio.
+        """
+        import re as _re
+        clean = raw.replace('```json', '').replace('```', '').strip()
+        try:
+            scenes = json.loads(clean)
+            for i, s in enumerate(scenes):
+                s['id']   = i + 1
+                s['text'] = self._sanitize(s.get('text', ''))
+                s.setdefault('mood', default_mood)
+            if len(scenes) > num_scenes:
+                print(f"⚠️ AI returned {len(scenes)} {label} scenes, trimming to {num_scenes}.")
+                scenes = scenes[:num_scenes]
+            elif len(scenes) < num_scenes:
+                print(f"⚠️ AI returned only {len(scenes)} {label} scenes (requested {num_scenes}).")
+            print(f"✅ {len(scenes)} {success_label or label} scenes ready")
+            return scenes
+        except Exception:
+            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
+            return [
+                {"id": i + 1, "text": self._sanitize(s),
+                 "visual_1": fallback_visual_1, "visual_2": fallback_visual_2,
+                 "mood": default_mood}
+                for i, s in enumerate(sentences)
+            ]
+
     def get_topic_and_description(self, manual_topic: str = "", category: str = "",
                                    mode: str = "auto", lang: str = "es",
                                    exclude_books: list = None) -> dict:
@@ -868,28 +904,8 @@ JSON RULES:
 - "visual_1" and "visual_2": English Pexels search terms (2-4 words) matching the content.
 - "mood": always "dramatic"."""
 
-        raw   = self._generate(prompt)
-        clean = raw.replace('```json', '').replace('```', '').strip()
-
-        try:
-            scenes = json.loads(clean)
-            for i, s in enumerate(scenes):
-                s['id']   = i + 1
-                s['text'] = self._sanitize(s.get('text', ''))
-                s.setdefault('mood', 'dramatic')
-            if len(scenes) > num_scenes:
-                print(f"⚠️ AI returned {len(scenes)} viral scenes, trimming to {num_scenes}.")
-                scenes = scenes[:num_scenes]
-            elif len(scenes) < num_scenes:
-                print(f"⚠️ AI returned only {len(scenes)} viral scenes (requested {num_scenes}).")
-            print(f"✅ {len(scenes)} viral scenes ready")
-            return scenes
-        except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
-            return [
-                {"id": i+1, "text": self._sanitize(s), "visual_1": "dramatic cinematic footage", "visual_2": "historical documentary", "mood": "dramatic"}
-                for i, s in enumerate(sentences)
-            ]
+        raw = self._generate(prompt)
+        return self._parse_scenes(raw, num_scenes, label="viral", default_mood="dramatic")
 
     def generate_testimonio_script(self, topic: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9, max_words_per_scene: int = 999) -> list:
         """Guion estilo testimonio misterioso — narración lenta, cinematográfica, terror.
@@ -1208,28 +1224,11 @@ JSON RULES:
 - "visual_1" and "visual_2": English Pexels search terms (2-4 words). Inspiring: people reading, writing, thinking, nature, city, success. AVOID dark visuals.
 - "mood": always "inspiring"."""
 
-        raw   = self._generate(prompt)
-        clean = raw.replace('```json', '').replace('```', '').strip()
-
-        try:
-            scenes = json.loads(clean)
-            for i, s in enumerate(scenes):
-                s['id']   = i + 1
-                s['text'] = self._sanitize(s.get('text', ''))
-                s.setdefault('mood', 'inspiring')
-            if len(scenes) > num_scenes:
-                print(f"⚠️ AI returned {len(scenes)} book scenes, trimming to {num_scenes}.")
-                scenes = scenes[:num_scenes]
-            elif len(scenes) < num_scenes:
-                print(f"⚠️ AI returned only {len(scenes)} book scenes (requested {num_scenes}).")
-            print(f"✅ {len(scenes)} book summary scenes ready")
-            return scenes
-        except Exception:
-            sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', clean) if len(s.strip()) > 8][:num_scenes]
-            return [
-                {"id": i+1, "text": self._sanitize(s), "visual_1": "person reading book", "visual_2": "open notebook inspiring", "mood": "inspiring"}
-                for i, s in enumerate(sentences)
-            ]
+        raw = self._generate(prompt)
+        return self._parse_scenes(raw, num_scenes, label="book", default_mood="inspiring",
+                                  fallback_visual_1="person reading book",
+                                  fallback_visual_2="open notebook inspiring",
+                                  success_label="book summary")
 
     def generate_bible_script(self, verse: str, category: str, lang: str = "es", chosen_hook: str = "", num_scenes: int = 9, max_words_per_scene: int = 999) -> list:
         """Reflexión bíblica de 60 seg centrada en UN versículo como fuente de toda la narración."""
