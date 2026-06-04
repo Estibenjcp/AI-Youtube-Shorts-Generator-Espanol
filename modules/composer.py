@@ -2,12 +2,39 @@ import os
 import random
 import ffmpeg
 
-# Hilos para FFmpeg: 0 = auto (todos los núcleos). En Streamlit Cloud, si el
-# render multi-hilo falla, setear FFMPEG_THREADS=1 en secrets/env sin tocar código.
-_FFMPEG_THREADS = int(os.getenv("FFMPEG_THREADS", "0"))
+
+def _is_constrained_env() -> bool:
+    """Detecta entornos con poca RAM/CPU (p.ej. Streamlit Cloud, ~1GB/1-2 cores).
+
+    En esos entornos correr varios FFmpeg en paralelo agota la memoria y mata el
+    proceso ("Error running app"). Señales: el checkout de Streamlit Cloud vive en
+    /mount/src, o la máquina tiene <= 2 núcleos.
+    """
+    if os.path.isdir("/mount/src"):
+        return True
+    if os.getenv("STREAMLIT_RUNTIME_ENV") or os.getenv("STREAMLIT_SERVER_HEADLESS") == "true":
+        # Heurística adicional: en la nube headless con pocos cores, ser conservador.
+        try:
+            if (os.cpu_count() or 1) <= 2:
+                return True
+        except Exception:
+            pass
+    try:
+        return (os.cpu_count() or 1) <= 2
+    except Exception:
+        return False
+
+
+_CONSTRAINED = _is_constrained_env()
+
+# Hilos para FFmpeg: 0 = auto (todos los núcleos). En entornos limitados se usa 1
+# (comportamiento original estable en la nube). Configurable con FFMPEG_THREADS.
+_FFMPEG_THREADS = int(os.getenv("FFMPEG_THREADS", "1" if _CONSTRAINED else "0"))
 
 # Workers para render de escenas en paralelo (subprocesos FFmpeg independientes).
-_RENDER_WORKERS = int(os.getenv("RENDER_WORKERS", "4"))
+# CRÍTICO: en entornos limitados (cloud) el render se hace SECUENCIAL (1 worker)
+# para no agotar RAM. En local se usan 4. Override explícito con RENDER_WORKERS.
+_RENDER_WORKERS = int(os.getenv("RENDER_WORKERS", "1" if _CONSTRAINED else "4"))
 
 class Composer:
     def __init__(self, use_avatar: bool = True):
