@@ -1,6 +1,20 @@
 import warnings
 warnings.filterwarnings("ignore", message="Accessing `__path__`")
 
+import sys as _sys
+
+# La consola de Windows usa cp1252, que no sabe codificar los emoji de los
+# print() de los modulos. Cuando el pipeline corre en su hilo eso no se nota,
+# porque pipeline.py redirige stdout a la cola de logs; pero cualquier llamada
+# hecha directamente desde el hilo de Streamlit (por ejemplo el preview del
+# guion) escribiria en la consola real y lanzaria UnicodeEncodeError.
+# errors="replace" degrada el caracter en vez de romper la ejecucion.
+for _stream in (_sys.stdout, _sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import streamlit as st
 import threading
 import asyncio
@@ -3244,17 +3258,25 @@ elif mode == "guion":
 
     if _pv_go:
         with st.spinner("Generando guion..." if lang_option == "es" else "Generating script..."):
+            import contextlib as _ctx
+            _pv_log = io.StringIO()
             try:
                 from modules.brain import ContentBrain as _PvBrain
-                _pv_scenes = _PvBrain().generate_freeform_script(
-                    guion_raw,
-                    lang=lang_option,
-                    target_secs=st.session_state.get("target_total_secs", 60),
-                    tono_key=_tono_sel,
-                )
-                st.session_state["guion_preview"] = _pv_scenes
+                # Se captura la salida de brain.py en vez de dejarla ir a la
+                # consola: asi se muestra en la UI y no depende de la
+                # codificacion del terminal.
+                with _ctx.redirect_stdout(_pv_log):
+                    _pv_scenes = _PvBrain().generate_freeform_script(
+                        guion_raw,
+                        lang=lang_option,
+                        target_secs=st.session_state.get("target_total_secs", 60),
+                        tono_key=_tono_sel,
+                    )
+                st.session_state["guion_preview"]     = _pv_scenes
+                st.session_state["guion_preview_log"] = _pv_log.getvalue()
             except Exception as _pv_e:
                 st.session_state["guion_preview"] = None
+                st.session_state["guion_preview_log"] = _pv_log.getvalue()
                 st.error(f"{_pv_e}")
 
     _pv_scenes = st.session_state.get("guion_preview")
@@ -3287,6 +3309,12 @@ elif mode == "guion":
             for _i, _s in enumerate(_pv_scenes, 1):
                 st.caption(f"{_i}. [{_s.get('mood','')}] "
                            f"{_s.get('visual_1','')}  |  {_s.get('visual_2','')}")
+
+        _pv_logtxt = st.session_state.get("guion_preview_log", "")
+        if _pv_logtxt.strip():
+            with st.expander("📋 " + ("Log de generacion" if lang_option == "es"
+                                     else "Generation log"), expanded=False):
+                st.code(_pv_logtxt, language="text")
 
     if guion_raw.strip():
         _first_guion_line = next((l.strip() for l in guion_raw.splitlines() if l.strip()), "")
