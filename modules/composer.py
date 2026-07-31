@@ -738,8 +738,17 @@ class Composer:
                 [a_stream, next_clip.audio],
                 'acrossfade',
                 d=a_trans,
-                c1='tri',   # outgoing fades through silence (not speech) → sounds natural
-                c2='tri',   # incoming speech fades in gently
+                # c1='tri': la cola del clip saliente es el silencio del apad, asi que
+                #   este fundido de salida es inaudible.
+                # c2='nofade': la voz entrante ARRANCA A VOLUMEN PLENO. Es obligatorio:
+                #   con cualquier curva de entrada (tri, exp...) la voz sube desde cero
+                #   durante a_trans segundos y se oye "viniendo desde abajo", porque
+                #   audio.py recorta el silencio de cabeza y la rampa cae sobre habla.
+                #   No hay riesgo de dos voces solapadas MIENTRAS apad >= a_trans:
+                #   el apad de 0.5 s garantiza que el tramo solapado del clip saliente
+                #   sea silencio. Si algun dia se baja el apad, revisar esto.
+                c1='tri',
+                c2='nofade',
             )
             current_dur = (current_dur + valid_durs[i]) - v_trans
 

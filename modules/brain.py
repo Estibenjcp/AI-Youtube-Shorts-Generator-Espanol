@@ -1,11 +1,14 @@
 import os
 import json
 import functools
+import re as _re_mod
+import unicodedata as _ud
 from dotenv import load_dotenv
 
 load_dotenv()
 
 from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, TOPIC_CATEGORIES
+from modules.personas import DEFAULT_PERSONA, get_persona
 
 
 def _get_secret(key: str, default: str = "") -> str:
@@ -42,6 +45,136 @@ def _get_client():
         default_model = "gemini-2.0-flash-exp"
 
     return client, provider, model or default_model
+
+
+# Modos de contenido educativo que pasan por generate_script(): en ellos se exige
+# evidencia verificable y un paso accionable, con un flujo narrativo distinto al
+# de los modos de misterio/viral.
+# Nota: "ciencia_facil" NO va aqui — tiene su propia funcion
+# (generate_ciencia_facil_script), donde esas reglas estan aplicadas por separado.
+EDUCATIONAL_MODES = {
+    "mentalidad",            # productividad, habitos, disciplina
+    "psicologia_positiva",   # desarrollo personal, inteligencia emocional
+}
+
+
+# ── Parser del modo Guion ────────────────────────────────────────────────────
+# Permite pegar un guion ya escrito con cabecera estructurada, por ejemplo:
+#
+#   Titulo: El secreto para estudiar sin distraerte
+#   Categoria: Psicologia conductual y Productividad
+#   Visual/Interfaz sugerida: Escritorio desordenado con celular -> escritorio limpio
+#   Guion: "¿Sientes que te falta disciplina?
+#   . Tu atencion ira al estimulo mas facil
+#   . Pon el telefono en otra habitacion"
+#
+# Sin cabecera, el texto entero se trata como guion (comportamiento anterior).
+
+_FF_LABELS = {
+    "titulo":    ("titulo", "title"),
+    "categoria": ("categoria", "category", "nicho", "niche"),
+    "visual":    ("visual/interfaz sugerida", "visual interfaz sugerida", "visual sugerida",
+                  "interfaz sugerida", "visual", "suggested visual", "visuals"),
+    "guion":     ("guion", "script", "texto", "text"),
+}
+
+_FF_BULLET_RE = _re_mod.compile(r"^\s*(?:[.\-•·*–—>]+|\d+[.)])\s+")
+
+
+def _ff_normalize(s: str) -> str:
+    """Minusculas sin acentos, para comparar etiquetas de forma tolerante."""
+    s = _ud.normalize("NFD", s.strip().lower())
+    return "".join(c for c in s if _ud.category(c) != "Mn")
+
+
+def _ff_strip_bullet(line: str) -> str:
+    """Quita la vinieta inicial ('.', '-', '*', '1.', etc.) de una linea."""
+    return _FF_BULLET_RE.sub("", line).strip()
+
+
+def parse_freeform_input(raw_text: str) -> dict:
+    """Separa la cabecera estructurada del cuerpo del guion.
+
+    Devuelve: {titulo, categoria, visual, guion, beats, has_structure}
+    - beats: lista de frases del guion (una por vinieta o linea), sin vinietas.
+    - has_structure: True si se reconocio al menos una etiqueta de cabecera.
+    """
+    out = {"titulo": "", "categoria": "", "visual": "", "guion": "",
+           "beats": [], "has_structure": False}
+    if not raw_text or not raw_text.strip():
+        return out
+
+    lines = raw_text.splitlines()
+    guion_lines: list[str] = []
+    in_guion = False
+
+    for line in lines:
+        matched_field = None
+        if ":" in line and not in_guion:
+            head, _, tail = line.partition(":")
+            head_norm = _ff_normalize(head)
+            for field, aliases in _FF_LABELS.items():
+                if head_norm in aliases:
+                    matched_field = field
+                    break
+            if matched_field:
+                out["has_structure"] = True
+                value = tail.strip()
+                if matched_field == "guion":
+                    in_guion = True           # el resto del texto es el guion
+                    if value:
+                        guion_lines.append(value)
+                else:
+                    out[matched_field] = value
+                continue
+
+        # Una vez dentro del guion (o si no hay cabecera) acumulamos todo.
+        if in_guion or not out["has_structure"]:
+            guion_lines.append(line)
+        elif line.strip():
+            # Texto suelto tras la cabecera pero antes de "Guion:" — es guion igualmente.
+            guion_lines.append(line)
+
+    body = "\n".join(guion_lines).strip()
+    # Quitar comillas envolventes que suelen acompaniar al guion pegado
+    if len(body) >= 2 and body[0] in '"“«' and body[-1] in '"”»':
+        body = body[1:-1].strip()
+    body = body.strip().strip('"“”«»').strip()
+
+    out["guion"] = body
+    # Un beat solo cuenta si contiene texto real: descarta restos de puntuacion
+    # como el '.' o '."' que suelen quedar al final de un guion pegado.
+    out["beats"] = [b for b in (_ff_strip_bullet(l) for l in body.splitlines())
+                    if any(c.isalnum() for c in b)]
+    return out
+
+
+def _ff_missing_key_terms(beats: list, scenes: list) -> list:
+    """Comprueba que los terminos distintivos del autor sobrevivieron a la re-voz.
+
+    Al permitir reescritura libre ya no se puede comparar palabra por palabra, asi
+    que vigilamos las palabras largas y especificas (arquitectura, conductual,
+    dopamina...). Si alguna desaparece, es senial de que se perdio una idea.
+    Devuelve la lista de terminos ausentes (vacia si todo esta cubierto).
+    """
+    def _norm(s: str) -> str:
+        s = _ud.normalize("NFD", (s or "").lower())
+        return "".join(c for c in s if _ud.category(c) != "Mn")
+
+    salida = _norm(" ".join((s.get("text") or "") for s in scenes if isinstance(s, dict)))
+    if not salida:
+        return []
+
+    _ignorar = {"cualquier", "cualquiera", "entonces", "tambien", "despues",
+                "mientras", "siempre", "probablemente", "realmente"}
+    terminos, vistos = [], set()
+    for b in beats:
+        for w in _norm(b).split():
+            w = w.strip(".,;:¿?¡!()\"'-")
+            if len(w) >= 9 and w not in _ignorar and w not in vistos:
+                vistos.add(w)
+                terminos.append(w)
+    return [t for t in terminos if t not in salida]
 
 
 class ContentBrain:
@@ -694,7 +827,22 @@ OUTPUT FORMAT (strict JSON, no markdown):
             )
             tone_es = "cientifico y misterioso, mezcla de rigor y asombro"
             tone_en = "scientific and mysterious, blend of rigor and awe"
-        elif mode in ("finanzas", "mentalidad", "historia_epica"):
+        elif mode == "mentalidad":
+            types_es = (
+                "- TIPO A (Dato conductual): cifra real + causa contraintuitiva ('El 92% abandona su meta antes de febrero. La causa no es falta de voluntad.')\n"
+                "- TIPO B (Mito destruido): creencia popular que la investigacion desmonta ('Los habitos NO se forman en 21 dias. Ese numero salio de leer mal un estudio.')\n"
+                "- TIPO C (Mecanismo oculto): explica el porque real detras de la conducta ('Tu cerebro no procrastina por pereza. Esta evitando una emocion concreta.')\n"
+                "- TIPO D (Accion minima): promesa de algo aplicable hoy en segundos ('30 segundos de accion rompen el ciclo. Asi funciona.')\n"
+            )
+            types_en = (
+                "- TYPE A (Behavioral fact): real stat + counterintuitive cause ('92% quit their goal before February. The cause is not willpower.')\n"
+                "- TYPE B (Myth destroyed): popular belief research dismantles ('Habits do NOT form in 21 days. That number came from misreading a study.')\n"
+                "- TYPE C (Hidden mechanism): explain the real why behind the behavior ('Your brain does not procrastinate out of laziness. It is avoiding a specific emotion.')\n"
+                "- TYPE D (Minimum action): promise something applicable today in seconds ('30 seconds of action breaks the loop. Here is how.')\n"
+            )
+            tone_es = "practico y revelador, estilo conferencia TED: rigor sin sermon, cero frases de superacion vacias"
+            tone_en = "practical and revealing, TED talk style: rigor without preaching, zero empty self-help lines"
+        elif mode in ("finanzas", "historia_epica"):
             types_es = (
                 "- TIPO A (Verdad incomoda): dato que desafia la mentalidad comun ('El 95% trabaja mas duro pero sigue siendo pobre. Esta es la razon.')\n"
                 "- TIPO B (Secreto de exito): 'Lo que los ricos hacen diferente y nunca te contaron.'\n"
@@ -1427,10 +1575,27 @@ JSON RULES:
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_freeform_script(self, raw_text: str, lang: str = "es") -> list:
-        """Convierte texto libre (noticias, chismes, reflexiones, curiosidades) en un
-        guion de YouTube Shorts adaptado al tono del texto original."""
+    def generate_freeform_script(self, raw_text: str, lang: str = "es",
+                                 target_secs: float = 0) -> list:
+        """Convierte texto libre en un guion de YouTube Shorts.
+
+        Dos caminos:
+        - Guion autorado (cabecera Titulo/Categoria/Visual o lista de vinietas):
+          se respeta palabra por palabra, un beat = una escena. Solo se suaviza
+          para que suene natural al narrarlo.
+        - Texto suelto (noticia, chisme, reflexion): se adapta a formato viral
+          como hasta ahora.
+        """
         import re as _re
+        parsed = parse_freeform_input(raw_text)
+        _beats = parsed["beats"]
+        # Guion ya escrito por el usuario: cabecera explicita, o >=3 vinietas.
+        _authored = parsed["has_structure"] or len(_beats) >= 3
+
+        if _authored:
+            return self._generate_authored_script(parsed, lang=lang,
+                                                  target_secs=target_secs)
+
         label = "Adaptando texto libre a guion viral" if lang == "es" else "Adapting freeform text to viral script"
         print(f"✍️ {label}...")
 
@@ -1523,9 +1688,341 @@ Respond ONLY with the JSON, no explanations."""
                 for i, s in enumerate(sentences)
             ]
 
-    def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es", chosen_hook: str = "") -> list:
+    def _repair_enie(self, scenes: list, lang: str = "es") -> list:
+        """Segunda pasada: sustituye las palabras con ñ que se colaron.
+
+        El prompt principal ya pide cero ñ, pero el modelo a veces recae en
+        palabras muy naturales ("diseñar"). Aqui se le pide solo el reemplazo de
+        esas palabras concretas, lo que es mucho mas fiable que reintentar el
+        guion entero. Si la reparacion falla, se devuelven las escenas intactas:
+        audio.py convertira la ñ en n como ultima red.
+        """
+        palabras = sorted({w for s in scenes
+                           for w in _re_mod.findall(r"[\w'\-]*[ñÑ][\w'\-]*", s.get("text", ""))})
+        if not palabras:
+            return scenes
+
+        print(f"   🔤 Reparando {len(palabras)} palabra(s) con ñ: {', '.join(palabras)}")
+        prompt = f"""Cada palabra de esta lista contiene la letra ñ y hay que sustituirla
+porque el motor de voz la pronuncia mal.
+
+PALABRAS: {', '.join(palabras)}
+
+Para cada una, da un sinonimo en espanol latino que:
+- NO contenga la letra ñ.
+- Mantenga la MISMA forma gramatical (mismo tiempo verbal, mismo genero y numero).
+- Encaje en un guion sobre psicologia del comportamiento.
+- NO sea una deformacion ortografica de la original (nada de "disenia" o "anio").
+
+Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."""
+
+        try:
+            raw   = self._generate(prompt)
+            clean = raw.replace('```json', '').replace('```', '').strip()
+            mapa  = json.loads(clean)
+            if not isinstance(mapa, dict):
+                raise ValueError("no es un objeto")
+        except Exception as e:
+            print(f"   ⚠️ No se pudo reparar la ñ ({e}). audio.py la convertira en n.")
+            return scenes
+
+        for s in scenes:
+            texto = s.get("text", "")
+            for orig, nuevo in mapa.items():
+                if isinstance(nuevo, str) and nuevo and "ñ" not in nuevo and "Ñ" not in nuevo:
+                    texto = texto.replace(orig, nuevo)
+            s["text"] = texto
+
+        _quedan = [w for s in scenes
+                   for w in _re_mod.findall(r"[\w'\-]*[ñÑ][\w'\-]*", s.get("text", ""))]
+        if _quedan:
+            print(f"   ⚠️ Aun quedan palabras con ñ: {', '.join(sorted(set(_quedan)))}")
+        else:
+            print("   ✅ Guion sin ninguna ñ")
+        return scenes
+
+    def _generate_authored_script(self, parsed: dict, lang: str = "es",
+                                  persona_key: str = None,
+                                  target_secs: float = 0) -> list:
+        """Reescribe un guion del usuario con la voz de una persona narradora.
+
+        El autor aporta el CONTENIDO (sus ideas y sus terminos); la persona aporta
+        la VOZ (tono, ritmo, estructura). El modelo puede reescribir cada frase de
+        cero y reordenar las ideas, pero no puede perder ninguna ni inventar datos.
+
+        persona_key: clave en modules/personas.py. None usa DEFAULT_PERSONA.
+        """
+        beats     = parsed["beats"]
+        titulo    = parsed["titulo"]
+        categoria = parsed["categoria"]
+        visual    = parsed["visual"]
+        n_ideas   = len(beats)
+
+        # ── Duracion objetivo ────────────────────────────────────────────────
+        # Convencion del proyecto (ver pipeline.py): el TTS locuta ~2.3 pal/seg.
+        # Con una duracion objetivo repartimos el guion en mas escenas que ideas
+        # si hace falta, para que ninguna escena se alargue sobre un solo visual.
+        _WPS = 2.3
+        _SECS_POR_ESCENA_IDEAL = 5.5
+        if target_secs and target_secs > 0:
+            total_palabras = int(target_secs * _WPS)
+            n = max(n_ideas, min(n_ideas * 2,
+                                 max(1, round(target_secs / _SECS_POR_ESCENA_IDEAL))))
+            wpsc = max(8, total_palabras // n)
+            _dur_block = f"""
+### DURACION OBJETIVO — {target_secs:.0f} SEGUNDOS (obligatorio):
+- El guion completo debe rondar las {total_palabras} palabras. Es el dato que
+  determina la duracion final del video, asi que acercate a esa cifra.
+- Repartelas en {n} escenas de unas {wpsc} palabras cada una.
+- Tienes {n_ideas} ideas del autor para {n} escenas: DIVIDE las ideas en varias
+  escenas y desarrolla mejor cada mecanismo (el porque detras del comportamiento,
+  como se siente, que pasa si no se cambia).
+- Desarrollar NO es rellenar: prohibido repetir lo mismo con otras palabras,
+  prohibido anadir frases de adorno. Si no tienes con que llenar {total_palabras}
+  palabras de contenido real, entrega menos y mejor.
+"""
+        else:
+            n    = n_ideas
+            wpsc = 22
+            _dur_block = ""
+
+        # La persona solo aplica si su idioma coincide con el del guion.
+        _pkey    = DEFAULT_PERSONA if persona_key is None else persona_key
+        _persona = get_persona(_pkey)
+        if _persona and _persona.get("lang") != lang:
+            _persona = None
+
+        if _persona:
+            _persona_block = _persona["spec"]
+            _cta_block     = _persona.get("cta", "")
+        else:
+            _persona_block = (
+                "### VOZ:\n"
+                "- Segunda persona, cercana y adulta. Como alguien que domina el tema\n"
+                "  y te lo explica de tu, sin sensacionalismo ni tono de coach.\n"
+                "- Frases naturales de longitud media, ritmo tranquilo.\n"
+            )
+            _cta_block = (
+                "### CIERRE:\n"
+                "- Si el autor trae un cierre o llamada a la accion, respetalo.\n"
+                "- Si no, no inventes productos ni enlaces.\n"
+            )
+
+        print(f"✍️ Guion autorado: {n_ideas} ideas → {n} escenas"
+              + (f" · ~{target_secs:.0f}s" if target_secs else "")
+              + (f" · voz: {_persona['label']}" if _persona else " · voz neutra")
+              + (f" · {titulo}" if titulo else "")
+              + (f" · {categoria}" if categoria else ""))
+
+        beats_block = "\n".join(f"{i}. {b}" for i, b in enumerate(beats, 1))
+        _ctx_es, _ctx_en = "", ""
+        if titulo:
+            _ctx_es += f"TITULO: {titulo}\n"
+            _ctx_en += f"TITLE: {titulo}\n"
+        if categoria:
+            _ctx_es += f"CATEGORIA / NICHO: {categoria}\n"
+            _ctx_en += f"CATEGORY / NICHE: {categoria}\n"
+        if visual:
+            _ctx_es += f"DIRECCION VISUAL DEL AUTOR: {visual}\n"
+            _ctx_en += f"AUTHOR VISUAL DIRECTION: {visual}\n"
+
+        _visual_rule_es = (
+            f"- La DIRECCION VISUAL DEL AUTOR manda: derivala en terminos de Pexels y repartela\n"
+            f"  a lo largo de las escenas siguiendo su progresion (si describe un antes y un despues,\n"
+            f"  las primeras escenas muestran el 'antes' y las ultimas el 'despues')."
+            if visual else
+            "- Elige visuales literales y cotidianos que el espectador reconozca al instante."
+        )
+        _visual_rule_en = (
+            f"- The AUTHOR VISUAL DIRECTION rules: translate it into Pexels terms and spread it\n"
+            f"  across the scenes following its progression (if it describes a before and an after,\n"
+            f"  early scenes show the 'before' and final scenes the 'after')."
+            if visual else
+            "- Choose literal, everyday visuals the viewer recognizes instantly."
+        )
+
+        if lang == "es":
+            prompt = f"""Vas a reescribir un guion para un Short vertical en espanol latino.
+El autor ya definio QUE decir. Tu decides COMO se dice, adoptando la voz de abajo.
+
+{_persona_block}
+{_ctx_es}
+IDEAS DEL AUTOR (cada linea es una idea que debe aparecer en el guion final):
+{beats_block}
+
+### TU TAREA:
+Reescribe estas ideas como un guion hablado de {n} escenas con la voz descrita arriba.
+Tienes libertad total de redaccion: cada frase puede quedar completamente distinta
+a como la escribio el autor, si asi suena mas como esa voz.
+{_dur_block}
+
+### PUEDES:
+- Reescribir cada frase de cero con tus propias palabras.
+- REORDENAR las ideas para que el arco funcione (el gancho mas potente primero,
+  aunque el autor lo hubiera puesto en medio).
+- Anadir conectores y giros de sentido ("Por eso...", "Eso significa que...").
+- Anadir UNA analogia cotidiana propia si aclara el mecanismo.
+- Partir una idea larga en dos escenas o unir dos ideas cortas en una,
+  siempre que al final aparezcan TODAS.
+
+### NO PUEDES:
+- Perder ninguna idea del autor. Las {n_ideas} lineas de arriba deben estar todas
+  representadas en el guion final.
+- Cambiar los terminos tecnicos que uso el autor: si escribio "arquitectura
+  conductual", el guion dice "arquitectura conductual", no "organizar tu espacio".
+- Inventar cifras, porcentajes, anios, estudios, universidades ni nombres de
+  investigadores. Si necesitas respaldo y no lo tienes, dilo en cualitativo
+  ("la evidencia apunta a que...") o no lo digas.
+- Contradecir al autor ni suavizar su conclusion.
+
+{_cta_block}
+### FORMATO:
+- Espanol latino neutro.
+- CERO PALABRAS CON LA LETRA ñ. El motor de voz la pronuncia mal, asi que ninguna
+  palabra del guion puede llevarla. Se resuelve eligiendo OTRA palabra:
+    * "disenia / diseñar / diseñado"  ->  "organizar", "acomodar", "preparar",
+                                          "montar", "ajustar", "crear"
+    * "mañana"    ->  "el dia siguiente"       * "pequeño"  ->  "minimo", "breve"
+    * "acompaña"  ->  "va contigo"             * "señal"    ->  "aviso", "indicio"
+    * "año"       ->  "temporada", "doce meses"* "dueño"    ->  "propietario"
+    * "enseña"    ->  "explica", "muestra"     * "extraño"  ->  "raro", "ajeno"
+  NUNCA deformes la ortografia: "disenha", "disenia" y "anio" se leen tal como
+  estan escritos y suenan aun peor. Si una frase te obliga a usar una ñ,
+  REESCRIBE LA FRASE COMPLETA con otra construccion. Siempre hay una salida.
+- Manten los acentos y los signos de apertura ¿ y ¡.
+- PROHIBIDO: emojis, caracteres Unicode especiales, comillas dentro del texto.
+- Maximo {wpsc} palabras por escena. Una sola idea por escena.
+{_visual_rule_es}
+- visual_1 y visual_2 en INGLES, 2-4 palabras, concretos y filmables.
+
+FORMATO JSON (sin markdown, exactamente {n} entradas):
+[
+  {{"id":1,"text":"texto narrado","visual_1":"english pexels search","visual_2":"another english search","mood":"informative|calm|exciting|dramatic|mysterious|fun"}}
+]
+
+Responde SOLO el JSON."""
+        else:
+            prompt = f"""You are a script editor for YouTube Shorts.
+The author ALREADY WROTE their script. Your job is NOT to rewrite it: it is to prepare it for voiceover.
+
+{_ctx_en}
+AUTHOR SCRIPT (each numbered line is one scene, in this exact order):
+{beats_block}
+
+### GOLDEN RULE — FIDELITY:
+- Produce EXACTLY {n} scenes, one per numbered line, in the SAME order.
+- Keep the author's message, technical terms and examples.
+  If the author says "behavioral architecture", say "behavioral architecture" — do not simplify it.
+- FORBIDDEN to add ideas, facts, figures, hooks or advice the author did not write.
+- FORBIDDEN to drop the author's ideas or merge two lines into one scene.
+
+### WHAT YOU MAY CHANGE (so it sounds natural read aloud):
+- Reorder words within a sentence so it flows when spoken.
+- Add brief spoken connectors between scenes so it does not sound like a list:
+  "and this matters", "that is why", "so", "look", "the result".
+- Turn written phrasing into spoken phrasing (natural contractions, rhythm).
+- Trim filler if a line is long, WITHOUT losing any of the author's ideas.
+
+### TONE:
+- Second person, warm, like someone who knows the topic explaining it to you.
+- Affirmative and calm. No advertising shout, no motivational-coach voice.
+- No sensationalism: the content is already valuable, it does not need selling.
+
+### FORMAT:
+- FORBIDDEN: emojis, special Unicode characters, quotes inside the text.
+- Maximum 22 words per scene.
+{_visual_rule_en}
+- visual_1 and visual_2 in ENGLISH, 2-4 words, concrete and filmable.
+
+JSON FORMAT (no markdown, exactly {n} entries):
+[
+  {{"id":1,"text":"narrated text","visual_1":"english pexels search","visual_2":"another english search","mood":"informative|calm|exciting|dramatic|mysterious|fun"}}
+]
+
+Respond ONLY with the JSON."""
+
+        raw   = self._generate(prompt)
+        clean = raw.replace('```json', '').replace('```', '').strip()
+
+        try:
+            scenes = json.loads(clean)
+            if not isinstance(scenes, list):
+                raise ValueError("la respuesta no es una lista")
+        except Exception:
+            scenes = []
+
+        # Nos quedamos solo con escenas utilizables
+        scenes = [s for s in scenes if isinstance(s, dict) and (s.get("text") or "").strip()]
+
+        # Red de seguridad. Al permitir reordenacion ya NO se puede rellenar la
+        # escena i con el beat i: eso mezclaria el orden nuevo con el viejo y
+        # rompería la narrativa. Solo hay dos salidas honestas: usar lo que
+        # devolvio el modelo, o caer al guion original completo.
+        if len(scenes) < 3:
+            print("⚠️ El modelo no devolvio un guion utilizable — se narran las "
+                  "ideas del autor tal cual, sin re-voz.")
+            scenes = [{"text": b} for b in beats]
+        elif len(scenes) != n:
+            print(f"ℹ️ El modelo entrego {len(scenes)} escenas, se pidieron {n} "
+                  f"(el autor puso {n_ideas} ideas).")
+
+        for i, s in enumerate(scenes):
+            s['id']   = i + 1
+            s['text'] = self._sanitize((s.get('text') or '').strip())
+            s.setdefault('mood', 'informative')
+            s.setdefault('visual_1', 'person thinking indoors')
+            s.setdefault('visual_2', 'focused person close up')
+
+        # Segunda pasada para eliminar cualquier ñ que se haya colado
+        if lang == "es":
+            scenes = self._repair_enie(scenes, lang=lang)
+
+        # Verificar que ninguna idea del autor se quedo fuera de la re-voz
+        _faltan = _ff_missing_key_terms(beats, scenes)
+        if _faltan:
+            print(f"⚠️ Terminos del autor ausentes del guion final: {', '.join(_faltan[:6])}"
+                  + (" ..." if len(_faltan) > 6 else ""))
+        else:
+            print("✅ Todos los terminos clave del autor estan presentes")
+
+        print(f"✅ {len(scenes)} escenas listas")
+        return scenes
+
+    def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es",
+                        chosen_hook: str = "", mode: str = "auto") -> list:
         label = "Escribiendo guion" if lang == "es" else "Writing script"
         print(f"📝 {label}: {topic} ({num_scenes} scenes)...")
+
+        # Modos educativos: el espectador debe salir sabiendo QUE hacer, no solo motivado.
+        # Cambia el flujo narrativo y anade reglas de evidencia + accion concreta.
+        if mode in EDUCATIONAL_MODES:
+            flow_es = ("Gancho -> Contexto (a quien le pasa) -> Mecanismo (el porque real) -> "
+                       "Evidencia (estudio, cifra o experimento concreto) -> "
+                       "Aplicacion (paso accionable hoy) -> Cierre que reencuadra")
+            flow_en = ("Hook -> Context (who this happens to) -> Mechanism (the real why) -> "
+                       "Evidence (concrete study, stat or experiment) -> "
+                       "Application (actionable step today) -> Reframing outro")
+            extra_es = (
+                "\n### 1b. REGLAS EDUCATIVAS (OBLIGATORIAS en este modo):\n"
+                "- **Evidencia real:** al menos UNA escena debe citar algo verificable (estudio, universidad, cifra, anio o nombre del experimento). Si no estas seguro del dato exacto, describe el hallazgo sin inventar cifras ni atribuciones falsas.\n"
+                "- **Paso accionable:** al menos UNA escena debe dar una accion concreta que el espectador pueda hacer hoy, en una frase, sin ambiguedad (no vale 'se disciplinado' ni 'cambia tu mentalidad').\n"
+                "- **Mecanismo antes que consejo:** explica POR QUE ocurre antes de decir que hacer.\n"
+                "- **Prohibido:** frases de superacion vacias, sermones, promesas irreales, lenguaje de coach.\n"
+                "- **Carga cognitiva:** una sola idea por escena. Si una escena necesita dos frases largas, simplifica.\n"
+            )
+            extra_en = (
+                "\n### 1b. EDUCATIONAL RULES (MANDATORY in this mode):\n"
+                "- **Real evidence:** at least ONE scene must cite something verifiable (study, university, stat, year or experiment name). If unsure of the exact figure, describe the finding without inventing numbers or false attributions.\n"
+                "- **Actionable step:** at least ONE scene must give a concrete action the viewer can take today, in one sentence, unambiguous (not 'be disciplined' or 'change your mindset').\n"
+                "- **Mechanism before advice:** explain WHY it happens before saying what to do.\n"
+                "- **Forbidden:** empty self-help lines, preaching, unrealistic promises, coach-speak.\n"
+                "- **Cognitive load:** one single idea per scene. If a scene needs two long sentences, simplify.\n"
+            )
+        else:
+            flow_es  = "Gancho -> Contexto -> Mecanismo -> Giro inesperado -> Cierre memorable"
+            flow_en  = "Hook -> Context -> Mechanism -> Twist -> Memorable Outro"
+            extra_es = ""
+            extra_en = ""
 
         if lang == "es":
             prompt = f"""Eres el guionista principal de un canal viral de YouTube Shorts en español latino llamado "Mentes Curiosas".
@@ -1542,9 +2039,9 @@ Necesitamos DOS videos de stock diferentes por cada escena.
 - **Perspectiva:** Estrictamente **3ª Persona** ("Los científicos descubrieron...", "El océano esconde...").
 - **Tono:** Cautivador, rápido, lógico. Sin relleno. Cada oración debe generar curiosidad.
 - **Estructura:** Exactamente {num_scenes} escenas en total.
-- **Flujo:** Gancho -> Contexto -> Mecanismo -> Giro inesperado -> Cierre memorable.
+- **Flujo:** {flow_es}.
 - **HOOK CRITICO (Escena 1, maximo 12 palabras):** OBLIGATORIO uno de: (A) Numero shockeante + consecuencia brutal, (B) "Todo lo que sabes sobre X esta mal", (C) "Nadie habla de lo que paso con X", (D) Pregunta trampa imposible de ignorar.{f' HOOK PRE-SELECCIONADO (usar EXACTO): "{chosen_hook}"' if chosen_hook else ""}
-
+{extra_es}
 ### 2. REQUISITOS VISUALES (Doble visual por escena):
 - Para CADA escena, proporciona DOS términos de búsqueda distintos:
   - **visual_1:** Corresponde al *inicio* de la oración.
@@ -1576,9 +2073,9 @@ We need TWO different stock videos for every single scene.
 - **Perspective:** Strictly **3rd Person** ("Scientists found...", "The ocean hides...").
 - **Tone:** Engaging, fast-paced, logical. No fluff. Every sentence must build curiosity.
 - **Structure:** Exactly {num_scenes} scenes total.
-- **Flow:** Hook -> Context -> Mechanism -> Twist -> Memorable Outro.
+- **Flow:** {flow_en}.
 - **CRITICAL HOOK (Scene 1, max 12 words):** MANDATORY one of: (A) Shocking number + brutal consequence, (B) "Everything you know about X is wrong", (C) "Nobody is talking about what happened with X", (D) Impossible-to-ignore trap question.{f' PRE-SELECTED HOOK (use EXACT text): "{chosen_hook}"' if chosen_hook else ""}
-
+{extra_en}
 ### 2. VISUAL REQUIREMENTS (Dual Visuals):
 - For EVERY scene, provide TWO distinct search terms:
   - **visual_1:** Matches the *start* of the sentence.
@@ -1767,6 +2264,9 @@ Categoría: {category or "Ciencia cotidiana"}
 - **HOOK CRÍTICO (Escena 1, máximo 12 palabras):** Debe ser una pregunta trampa, un dato cotidiano sorprendente, o una creencia popular que el video destruirá.{f' HOOK PRE-SELECCIONADO (usar EXACTO): "{chosen_hook}"' if chosen_hook else ""}
 - **Máximo {max_words_per_scene} palabras por escena.**
 - **PROHIBIDO:** emojis, fórmulas químicas o físicas sin explicar, palabras con ñ (usa "anio", "senor", "Espana"), anglicismos innecesarios.
+- **RIGOR (crítico):** no inventes cifras, porcentajes, anios ni atribuciones. Si no estás seguro del número exacto, describe el hallazgo en términos cualitativos ("la mayoría", "buena parte de") en lugar de fabricar una cifra falsa. Nunca atribuyas un estudio a una universidad o investigador si no lo tienes claro.
+- **UNA IDEA POR ESCENA:** si una escena necesita dos explicaciones distintas, divídela o simplifica.
+- **APLICABLE:** al menos UNA escena debe dar algo concreto que el espectador pueda observar o hacer hoy, en una frase (no vale un consejo genérico).
 
 ### REQUISITOS VISUALES (Pexels):
 - **visual_1:** Imagen cotidiana que el espectador reconoce inmediatamente (no laboratorios vacíos).
@@ -1800,6 +2300,9 @@ Category: {category or "Everyday science"}
 - **CRITICAL HOOK (Scene 1, max 12 words):** Must be a trap question, a surprising everyday fact, or a popular belief the video will destroy.{f' PRE-SELECTED HOOK (use EXACT text): "{chosen_hook}"' if chosen_hook else ""}
 - **Maximum {max_words_per_scene} words per scene.**
 - **FORBIDDEN:** emojis, unexplained chemical/physics formulas, unnecessary jargon.
+- **RIGOR (critical):** do not invent figures, percentages, years or attributions. If unsure of the exact number, describe the finding qualitatively ("most", "a large share of") instead of fabricating a false stat. Never attribute a study to a university or researcher unless you are certain.
+- **ONE IDEA PER SCENE:** if a scene needs two separate explanations, split it or simplify.
+- **APPLICABLE:** at least ONE scene must give something concrete the viewer can observe or do today, in one sentence (a generic tip does not count).
 
 ### VISUAL REQUIREMENTS (Pexels):
 - **visual_1:** Everyday image the viewer immediately recognizes (not empty labs).

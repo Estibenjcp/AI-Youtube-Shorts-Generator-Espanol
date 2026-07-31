@@ -201,9 +201,39 @@ CIENCIA_MISTERIO_CATEGORIES_EN = ["Universe Mysteries","Strange Quantum Physics"
 FINANZAS_CATEGORIES = ["Libertad Financiera","Inversión y Activos","Mentalidad de Riqueza","Errores que te Mantienen Pobre","Emprendimiento Real","Criptomonedas y Futuro","El Sistema Financiero al Descubierto","Ahorro e Independencia"]
 FINANZAS_CATEGORIES_EN = ["Financial Freedom","Investment and Assets","Wealth Mindset","Mistakes Keeping You Poor","Real Entrepreneurship","Crypto and the Future","The Financial System Exposed","Savings and Independence"]
 
-# Mentalidad & Disciplina
-MENTALIDAD_CATEGORIES = ["Hábitos de Alto Rendimiento","Disciplina Extrema","Gestión del Tiempo","Mentalidad Ganadora","Superar el Miedo","Productividad Real","Fuerza Mental","Propósito y Dirección"]
-MENTALIDAD_CATEGORIES_EN = ["High Performance Habits","Extreme Discipline","Time Management","Winning Mindset","Overcoming Fear","Real Productivity","Mental Strength","Purpose and Direction"]
+# Mentalidad & Disciplina (incluye productividad y formación de hábitos)
+MENTALIDAD_CATEGORIES = [
+    "Hábitos de Alto Rendimiento",
+    "Disciplina Extrema",
+    "Gestión del Tiempo",
+    "Mentalidad Ganadora",
+    "Superar el Miedo",
+    "Productividad Real",
+    "Fuerza Mental",
+    "Propósito y Dirección",
+    "Deep Work y Concentración",
+    "Vencer la Procrastinación",
+    "Enfoque en la Era de las Distracciones",
+    "Formación de Hábitos",
+    "Romper Malos Hábitos",
+    "Rutinas Matutinas que Funcionan",
+]
+MENTALIDAD_CATEGORIES_EN = [
+    "High Performance Habits",
+    "Extreme Discipline",
+    "Time Management",
+    "Winning Mindset",
+    "Overcoming Fear",
+    "Real Productivity",
+    "Mental Strength",
+    "Purpose and Direction",
+    "Deep Work and Focus",
+    "Beating Procrastination",
+    "Focus in the Age of Distraction",
+    "Habit Formation",
+    "Breaking Bad Habits",
+    "Morning Routines That Work",
+]
 
 # Historia Épica
 HISTORIA_EPICA_CATEGORIES = ["Batallas Legendarias","Imperios Caídos","Héroes y Traidores","Conquistas Imposibles","Revoluciones que Cambiaron el Mundo","Líderes que Marcaron la Historia","Guerras Olvidadas","Civilizaciones Misteriosas"]
@@ -239,6 +269,13 @@ CIENCIA_FACIL_CATEGORIES = [
     "Tecnología Explicada Fácil",
     "Medio Ambiente y Naturaleza",
     "Experimentos que No Sabías que Hacías",
+    # Psicología conductual y toma de decisiones (divulgación sin tecnicismos)
+    "Psicología Conductual Explicada",
+    "Condicionamiento y Refuerzo",
+    "Por Qué Repetimos lo Mismo",
+    "Sesgos Cognitivos del Día a Día",
+    "Cómo Decidimos de Verdad",
+    "Trampas Mentales al Elegir",
 ]
 CIENCIA_FACIL_CATEGORIES_EN = [
     "How Your Body Works",
@@ -253,4 +290,11 @@ CIENCIA_FACIL_CATEGORIES_EN = [
     "Technology Explained Simply",
     "Environment and Nature",
     "Experiments You Didn't Know You Were Doing",
+    # Behavioral psychology and decision making (jargon-free)
+    "Behavioral Psychology Explained",
+    "Conditioning and Reinforcement",
+    "Why We Repeat the Same Things",
+    "Everyday Cognitive Biases",
+    "How We Really Decide",
+    "Mental Traps When Choosing",
 ]
