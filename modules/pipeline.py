@@ -166,10 +166,22 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not guion_text:
                 log_q.put("ERROR:No se proporcionó texto para el guion libre.")
                 return
-            script = brain.generate_freeform_script(guion_text, lang=pipeline_lang)
-            # Derive topic from first non-empty line for copy/filename
+            # target_total_secs viene del slider "Duracion total del video"
+            script = brain.generate_freeform_script(
+                guion_text, lang=pipeline_lang,
+                target_secs=params.get("target_total_secs", 0) or 0)
+            # Topic para copy/miniatura/nombre de archivo.
+            # Si el autor puso una cabecera "Titulo:", usamos ese valor limpio;
+            # si no, la primera linea no vacia (comportamiento anterior).
+            from modules.brain import parse_freeform_input as _parse_ff
+            _ff    = _parse_ff(guion_text)
             _lines = [l.strip() for l in guion_text.splitlines() if l.strip()]
-            topic  = _lines[0][:70] if _lines else ("Guion Libre" if pipeline_lang == "es" else "Freeform Script")
+            if _ff.get("titulo"):
+                topic = _ff["titulo"][:70]
+            elif _lines:
+                topic = _lines[0][:70]
+            else:
+                topic = "Guion Libre" if pipeline_lang == "es" else "Freeform Script"
             print(f"✍️ Topic derivado: {topic}")
 
         elif pipeline_mode == "podcast":
@@ -216,7 +228,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="true_crime")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "psicologia_oscura":
             topic       = params.get("topic", "").strip()
@@ -230,7 +243,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="psicologia_oscura")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "conspiracion":
             topic       = params.get("topic", "").strip()
@@ -244,7 +258,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="conspiracion")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "ciencia_misterio":
             topic       = params.get("topic", "").strip()
@@ -258,7 +273,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="ciencia_misterio")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "finanzas":
             topic       = params.get("topic", "").strip()
@@ -272,7 +288,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="finanzas")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "mentalidad":
             topic       = params.get("topic", "").strip()
@@ -286,7 +303,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="mentalidad")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "historia_epica":
             topic       = params.get("topic", "").strip()
@@ -300,7 +318,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="historia_epica")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "psicologia_positiva":
             topic       = params.get("topic", "").strip()
@@ -314,7 +333,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="psicologia_positiva")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "mente_masculina":
             topic       = params.get("topic", "").strip()
@@ -328,7 +348,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="mente_masculina")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "mujer_consciente":
             topic       = params.get("topic", "").strip()
@@ -342,7 +363,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="mujer_consciente")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "indignacion":
             topic       = params.get("topic", "").strip()
@@ -356,7 +378,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     topic = brain.get_trending_topic("", lang=pipeline_lang,
                                                      category_hint=category, mode="indignacion")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         elif pipeline_mode == "indignacion_meme":
             category   = params.get("category", "").strip()
@@ -400,7 +423,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                     if not _topic_history.is_duplicate(topic, lang=pipeline_lang): break
                     topic = brain.get_trending_topic("", lang=pipeline_lang, mode="auto")
             script = brain.generate_script(topic, num_scenes=_ai_num_scenes,
-                                           lang=pipeline_lang, chosen_hook=chosen_hook)
+                                           lang=pipeline_lang, chosen_hook=chosen_hook,
+                                           mode=pipeline_mode)
 
         if not script:
             log_q.put("ERROR:Script generation failed.")

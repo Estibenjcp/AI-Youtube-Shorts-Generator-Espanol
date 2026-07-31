@@ -8,6 +8,103 @@ from mutagen.mp3 import MP3
 # Target peak level for all audio clips (dB). -3 leaves headroom without clipping.
 _TARGET_PEAK_DB = -3.0
 
+# Silencio de cabeza/cola que el TTS deja en cada clip. Sin recortarlo, el
+# acrossfade del composer solapa cola-de-N con cabeza-de-N+1 (silencio + silencio)
+# y aparece un bache de silencio digital audible en cada corte de escena.
+_TRIM_THRESHOLD_DB = -45.0   # por debajo de esto se considera silencio
+_TRIM_MIN_SILENCE  = 0.06    # no molestarse si hay menos de 60 ms
+_TRIM_LEAD_CUSHION = 0.03    # deja 30 ms antes de la primera palabra
+_TRIM_TAIL_CUSHION = 0.06    # deja 60 ms tras la ultima palabra
+
+
+def _trim_edge_silence(path: str) -> float:
+    """Recorta el silencio inicial y final de un clip de voz, sobre el mismo archivo.
+
+    Devuelve los segundos eliminados AL PRINCIPIO, para que quien llame pueda
+    desplazar los timings por palabra esa misma cantidad (si no, los subtitulos
+    se desincronizan). Devuelve 0.0 si no habia nada que recortar o si algo
+    fallo: en ese caso el archivo original se deja intacto.
+    """
+    if not path or not os.path.exists(path):
+        return 0.0
+    try:
+        probe = subprocess.run(
+            ['ffmpeg', '-i', path, '-af',
+             f'silencedetect=noise={_TRIM_THRESHOLD_DB}dB:d=0.03', '-f', 'null', '-'],
+            capture_output=True, text=True, errors='replace', timeout=20,
+        )
+        err = probe.stderr
+        dur_m = re.search(r'Duration:\s*(\d+):(\d+):([\d.]+)', err)
+        if not dur_m:
+            return 0.0
+        duration = int(dur_m.group(1)) * 3600 + int(dur_m.group(2)) * 60 + float(dur_m.group(3))
+
+        starts = [float(m) for m in re.findall(r'silence_start:\s*([-\d.]+)', err)]
+        ends   = [float(m) for m in re.findall(r'silence_end:\s*([\d.]+)', err)]
+
+        # Silencio inicial: solo si el primer tramo de silencio arranca pegado al 0.
+        lead = 0.0
+        if starts and ends and starts[0] <= 0.05:
+            lead = max(0.0, ends[0] - _TRIM_LEAD_CUSHION)
+
+        # Silencio final: el ultimo tramo de silencio debe llegar al final del
+        # archivo. Segun la version, ffmpeg lo deja sin cerrar O lo cierra con un
+        # silence_end justo en el EOF — hay que aceptar las dos formas.
+        tail = duration
+        if starts:
+            _sin_cerrar   = (not ends) or (starts[-1] > ends[-1])
+            _cierra_en_eof = (bool(ends) and starts[-1] < ends[-1]
+                              and abs(ends[-1] - duration) <= 0.06)
+            if _sin_cerrar or _cierra_en_eof:
+                tail = min(duration, starts[-1] + _TRIM_TAIL_CUSHION)
+
+        if lead < _TRIM_MIN_SILENCE and (duration - tail) < _TRIM_MIN_SILENCE:
+            return 0.0
+
+        keep = tail - lead
+        if keep <= 0.20:            # clip practicamente vacio: no tocarlo
+            return 0.0
+
+        root, ext = os.path.splitext(path)
+        tmp = f"{root}.trim{ext or '.mp3'}"
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+
+        cmd = ['ffmpeg', '-ss', f'{lead:.3f}', '-t', f'{keep:.3f}', '-i', path]
+        if (ext or '').lower() == '.mp3':
+            cmd += ['-c:a', 'libmp3lame', '-q:a', '2']
+        cmd += ['-y', tmp]
+        proc = subprocess.run(cmd, capture_output=True, timeout=60)
+
+        if proc.returncode == 0 and os.path.exists(tmp) and os.path.getsize(tmp) > 1024:
+            os.replace(tmp, path)
+            if lead > 0.001 or (duration - tail) > 0.001:
+                print(f"      ✂️  Silencio recortado: {lead*1000:.0f} ms inicio / "
+                      f"{(duration - tail)*1000:.0f} ms final")
+            return lead
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+        return 0.0
+    except Exception as e:
+        print(f"      ⚠️ Recorte de silencio omitido: {e}")
+        return 0.0
+
+
+def _shift_word_times(word_times: list, lead: float) -> list:
+    """Desplaza los timings por palabra tras recortar `lead` segundos del inicio."""
+    if not word_times or lead <= 0.001:
+        return word_times
+    for w in word_times:
+        w['start'] = round(max(0.0, w.get('start', 0.0) - lead), 4)
+        w['end']   = round(max(0.0, w.get('end', 0.0) - lead), 4)
+    return word_times
+
 class AudioEngine:
     def __init__(self, voice: str = "en-US-AvaNeural", rate: str = "+10%", voice_b: str = ""):
         self.voice   = voice
@@ -126,6 +223,12 @@ class AudioEngine:
                 _voice = voice_override if voice_override else self.voice
                 communicate = edge_tts.Communicate(text, _voice, rate=effective_rate)
                 word_times = await self._stream_tts(communicate, output_path)
+
+                # Recortar silencio de cabeza/cola ANTES de guardar el timing:
+                # si se quita silencio inicial hay que desplazar los tiempos la
+                # misma cantidad o los subtitulos quedan adelantados.
+                _lead = _trim_edge_silence(output_path)
+                word_times = _shift_word_times(word_times, _lead)
 
                 # Save word timing alongside audio for subtitle sync
                 if word_times:
@@ -377,6 +480,8 @@ class VoxCPMAudioEngine:
 
         wav = model.generate(full_text, **kwargs)
         sf.write(out_path, wav, 48000)
+        # VoxCPM no produce word timing, asi que recortar no desincroniza nada.
+        _trim_edge_silence(out_path)
         return out_path
 
     def get_audio_duration(self, file_path: str) -> float:
@@ -647,6 +752,8 @@ class GoogleTTSAudioEngine:
             r.raise_for_status()
             with open(output_path, "wb") as f:
                 f.write(base64.b64decode(r.json()["audioContent"]))
+            # Sin word timing en esta rama: recortar es seguro, nada que desplazar.
+            _trim_edge_silence(output_path)
             print(f"      ✅  Plain-text fallback succeeded (proportional subtitles)")
             return output_path
 
@@ -655,6 +762,10 @@ class GoogleTTSAudioEngine:
 
         with open(output_path, "wb") as f:
             f.write(base64.b64decode(data["audioContent"]))
+
+        # Recortar silencio de cabeza/cola. El desplazamiento resultante se aplica
+        # a los timepoints mas abajo, antes de escribir el .words.json.
+        _lead = _trim_edge_silence(output_path)
 
         # ── Parse timepoints → save .words.json ──────────────────────────────
         timepoints = data.get("timepoints", [])
@@ -678,6 +789,8 @@ class GoogleTTSAudioEngine:
                 word_times[i]["end"] = word_times[i + 1]["start"]
             if word_times:
                 word_times[-1]["end"] = round(word_times[-1]["start"] + 0.35, 4)
+                # Compensar el silencio inicial recortado arriba
+                word_times = _shift_word_times(word_times, _lead)
                 with open(output_path + ".words.json", "w", encoding="utf-8") as tf:
                     _json.dump(word_times, tf, ensure_ascii=False)
                 print(f"      ⏱️  Word timing saved ({len(word_times)} words)")
