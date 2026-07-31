@@ -1248,40 +1248,59 @@ with st.sidebar:
         st.caption("🎙️ " + ("Motores de voz externos (opcional)" if lang_option == "es"
                             else "External voice engines (optional)"))
 
-        from modules.audio import FishAudioEngine as _FishCfg, ElevenLabsEngine as _ELCfg
+        # Import defensivo: este bloque vive en la barra lateral, que se
+        # renderiza SIEMPRE. Si modules.audio no se puede importar (por ejemplo
+        # por una dependencia ausente en el entorno de despliegue), sin este
+        # try la app entera cae en vez de perder solo estos dos campos.
+        try:
+            from modules.audio import (FishAudioEngine as _FishCfg,
+                                       ElevenLabsEngine as _ELCfg)
+            _ext_tts_ok = True
+        except Exception as _ext_e:
+            _ext_tts_ok = False
+            st.warning(
+                ("Motores de voz externos no disponibles en este entorno: "
+                 f"{type(_ext_e).__name__}. El resto de la app funciona igual.")
+                if lang_option == "es" else
+                ("External voice engines unavailable here: "
+                 f"{type(_ext_e).__name__}. The rest of the app still works.")
+            )
+            fish_key = fish_model = ""
+            el_key = el_model = el_voice_id = ""
 
-        fish_key = st.text_input(
-            "🐟 Fish Audio API Key",
-            value=os.getenv("FISH_API_KEY", ""),
-            type="password", placeholder="clave de api.fish.audio (opcional)",
-        )
-        _fish_models = list(_FishCfg.MODELS.keys())
-        _fish_cur    = os.getenv("FISH_MODEL", "s2.1-pro-free")
-        fish_model = st.selectbox(
-            "🐟 " + ("Modelo de Fish Audio" if lang_option == "es" else "Fish Audio model"),
-            options=_fish_models,
-            index=_fish_models.index(_fish_cur) if _fish_cur in _fish_models else 0,
-            format_func=lambda k: _FishCfg.MODELS[k],
-        )
+        if _ext_tts_ok:
+            fish_key = st.text_input(
+                "🐟 Fish Audio API Key",
+                value=os.getenv("FISH_API_KEY", ""),
+                type="password", placeholder="clave de api.fish.audio (opcional)",
+            )
+            _fish_models = list(_FishCfg.MODELS.keys())
+            _fish_cur    = os.getenv("FISH_MODEL", "s2.1-pro-free")
+            fish_model = st.selectbox(
+                "🐟 " + ("Modelo de Fish Audio" if lang_option == "es" else "Fish Audio model"),
+                options=_fish_models,
+                index=_fish_models.index(_fish_cur) if _fish_cur in _fish_models else 0,
+                format_func=lambda k: _FishCfg.MODELS[k],
+            )
 
-        el_key = st.text_input(
-            "🎧 ElevenLabs API Key",
-            value=os.getenv("ELEVENLABS_API_KEY", ""),
-            type="password", placeholder="xi-api-key (opcional)",
-        )
-        _el_models = list(_ELCfg.MODELS.keys())
-        _el_cur    = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
-        el_model = st.selectbox(
-            "🎧 " + ("Modelo de ElevenLabs" if lang_option == "es" else "ElevenLabs model"),
-            options=_el_models,
-            index=_el_models.index(_el_cur) if _el_cur in _el_models else 0,
-            format_func=lambda k: _ELCfg.MODELS[k],
-        )
-        el_voice_id = st.text_input(
-            "🎧 ElevenLabs voice_id",
-            value=os.getenv("ELEVENLABS_VOICE_ID", ""),
-            placeholder="id de la voz en tu cuenta (opcional)",
-        )
+            el_key = st.text_input(
+                "🎧 ElevenLabs API Key",
+                value=os.getenv("ELEVENLABS_API_KEY", ""),
+                type="password", placeholder="xi-api-key (opcional)",
+            )
+            _el_models = list(_ELCfg.MODELS.keys())
+            _el_cur    = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+            el_model = st.selectbox(
+                "🎧 " + ("Modelo de ElevenLabs" if lang_option == "es" else "ElevenLabs model"),
+                options=_el_models,
+                index=_el_models.index(_el_cur) if _el_cur in _el_models else 0,
+                format_func=lambda k: _ELCfg.MODELS[k],
+            )
+            el_voice_id = st.text_input(
+                "🎧 ElevenLabs voice_id",
+                value=os.getenv("ELEVENLABS_VOICE_ID", ""),
+                placeholder="id de la voz en tu cuenta (opcional)",
+            )
 
         st.markdown("---")
         st.caption("🎬 " + ("Generación de Video con IA (opcional)" if lang_option == "es" else "AI Video Generation (optional)"))
