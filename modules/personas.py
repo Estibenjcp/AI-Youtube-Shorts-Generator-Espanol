@@ -207,35 +207,74 @@ TONOS = {
         "label":      "🧠 Conductual",
         "summary":    "Explica el mecanismo. Alivio de ser entendido.",
         "rompe_voz":  False,
-        "fish_markers": "[calm] [empathetic]",
+        "fish_arco": [
+            # senala -> explica -> te absuelve -> propone -> reencuadra
+            "[curious]",
+            "[calm]",
+            "[empathetic]",
+            "[confident]",
+            "[compassionate]",
+        ],
         "spec":       _TONO_CONDUCTUAL,
     },
     "confrontativo": {
         "label":      "🔥 Confrontativo",
         "summary":    "Nombra la excusa y el coste. Exige decision hoy.",
         "rompe_voz":  True,
-        "fish_markers": "[confident] [determined]",
+        "fish_arco": [
+            # nombra la excusa -> el mecanismo que te atrapa -> el coste ->
+            # exige decision -> cierra sin consolar
+            "[confident]",
+            "[serious]",
+            "[disappointed]",
+            "[determined]",
+            "[determined] [emphasis]",
+        ],
         "spec":       _TONO_CONFRONTATIVO,
     },
     "motivador": {
         "label":      "💪 Motivador",
         "summary":    "Energia y posibilidad. Impulsa a empezar.",
         "rompe_voz":  True,
-        "fish_markers": "[excited] [optimistic]",
+        "fish_arco": [
+            # reconoce el esfuerzo -> abre la posibilidad -> pico de energia ->
+            # la accion concreta -> cierra con impulso
+            "[empathetic]",
+            "[optimistic]",
+            "[excited]",
+            "[determined]",
+            "[proud]",
+        ],
         "spec":       _TONO_MOTIVADOR,
     },
     "emotivo": {
         "label":      "❤️ Emotivo",
         "summary":    "La herida detras de la conducta. Devuelve dignidad.",
         "rompe_voz":  False,
-        "fish_markers": "[compassionate] [soft tone]",
+        "fish_arco": [
+            # nombra el costo silencioso -> el peso que carga -> no estas roto ->
+            # esperanza concreta -> el momento mas sereno
+            "[compassionate]",
+            "[sad]",
+            "[empathetic]",
+            "[hopeful]",
+            "[compassionate] [soft tone]",
+        ],
         "spec":       _TONO_EMOTIVO,
     },
     "urgente": {
         "label":      "⚡ Urgente",
         "summary":    "El coste del tiempo, medido en vida real.",
         "rompe_voz":  True,
-        "fish_markers": "[in a hurry tone] [determined]",
+        "fish_arco": [
+            # el reloj -> lo que se acumula -> lo que ya te costo ->
+            # actua ahora -> cierra
+            "[worried]",
+            "[serious]",
+            "[disappointed]",
+            "[determined] [in a hurry tone]",
+            "[determined] [emphasis]",
+        ],
         "spec":       _TONO_URGENTE,
     },
 }
