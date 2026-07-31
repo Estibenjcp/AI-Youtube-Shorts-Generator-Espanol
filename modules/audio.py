@@ -2,6 +2,7 @@ import os
 import re
 import asyncio
 import subprocess
+from typing import Optional
 import edge_tts
 from mutagen.mp3 import MP3
 
@@ -696,8 +697,11 @@ class GoogleTTSAudioEngine:
             parts.append(f'<mark name="{i}"/>{safe}')
         return '<speak>' + ' '.join(parts) + '</speak>'
 
+    # Optional[float] en vez de "float | None": la union con barra exige
+    # Python 3.10+ y se evalua al definir la funcion, asi que en un runtime
+    # anterior (Streamlit Cloud no fija version) importar este modulo falla.
     def _synthesize(self, text: str, output_path: str,
-                    speaking_rate: float | None = None) -> str:
+                    speaking_rate: Optional[float] = None) -> str:
         """Synthesize audio and save per-word timestamps to {output_path}.words.json.
 
         Tries SSML+marks first (gives exact word timing).
