@@ -3225,6 +3225,69 @@ elif mode == "guion":
     st.caption(_TONOS[_tono_sel]["summary"]
                + ("  ·  cambia el registro de voz" if _TONOS[_tono_sel]["rompe_voz"] else ""))
 
+    # ── Previsualizar el guion tal como lo recibe el motor de voz ──────────
+    # Una sola llamada al LLM, sin audio ni video, para poder ajustar el tono
+    # antes de gastar un render completo.
+    _pv_c1, _pv_c2 = st.columns([1, 2])
+    with _pv_c1:
+        _pv_go = st.button(
+            "👁️ Previsualizar guion" if lang_option == "es" else "👁️ Preview script",
+            key="guion_preview_btn", use_container_width=True,
+            disabled=not guion_raw.strip(),
+        )
+    with _pv_c2:
+        st.caption(
+            "Genera el guion y muestra el texto exacto que recibiria el motor de voz."
+            if lang_option == "es" else
+            "Generates the script and shows the exact text the voice engine receives."
+        )
+
+    if _pv_go:
+        with st.spinner("Generando guion..." if lang_option == "es" else "Generating script..."):
+            try:
+                from modules.brain import ContentBrain as _PvBrain
+                _pv_scenes = _PvBrain().generate_freeform_script(
+                    guion_raw,
+                    lang=lang_option,
+                    target_secs=st.session_state.get("target_total_secs", 60),
+                    tono_key=_tono_sel,
+                )
+                st.session_state["guion_preview"] = _pv_scenes
+            except Exception as _pv_e:
+                st.session_state["guion_preview"] = None
+                st.error(f"{_pv_e}")
+
+    _pv_scenes = st.session_state.get("guion_preview")
+    if _pv_scenes:
+        _pv_engine = st.session_state.get("tts_engine", "edge_tts")
+        _pv_marcas = _TONOS[_tono_sel].get("fish_markers", "")
+
+        if _pv_engine == "fish_audio":
+            from modules.audio import FishAudioEngine as _PvFish
+            _pv_eng = _PvFish(api_key="", emotion_markers=_pv_marcas)
+            _pv_lineas = [_pv_eng._build_text(s) for s in _pv_scenes]
+            _pv_nota = ("Texto literal que recibe Fish Audio. Los corchetes son "
+                        "marcadores de emocion, no se leen en voz alta.")
+        else:
+            _pv_lineas = [(s.get("text") or "") for s in _pv_scenes]
+            _pv_nota = (f"El motor activo es {_pv_engine}, que no usa marcadores. "
+                        f"Con Fish Audio se anadiria {_pv_marcas} al inicio de cada escena.")
+
+        _pv_pal = sum(len((s.get("text") or "").split()) for s in _pv_scenes)
+        st.success(
+            f"{len(_pv_scenes)} escenas · {_pv_pal} palabras · "
+            f"~{_pv_pal / 2.3:.0f}s estimados"
+        )
+        st.caption(_pv_nota)
+        st.code("\n\n".join(f"{i}. {t}" for i, t in enumerate(_pv_lineas, 1)),
+                language="text")
+
+        with st.expander("🎨 " + ("Visuales por escena" if lang_option == "es"
+                                 else "Visuals per scene"), expanded=False):
+            for _i, _s in enumerate(_pv_scenes, 1):
+                st.caption(f"{_i}. [{_s.get('mood','')}] "
+                           f"{_s.get('visual_1','')}  |  {_s.get('visual_2','')}")
+
     if guion_raw.strip():
         _first_guion_line = next((l.strip() for l in guion_raw.splitlines() if l.strip()), "")
         final_topic = _first_guion_line[:60]
