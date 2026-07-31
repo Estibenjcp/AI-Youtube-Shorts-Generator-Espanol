@@ -159,6 +159,89 @@ def parse_freeform_input(raw_text: str) -> dict:
     return out
 
 
+# ── Sustitucion de la letra ñ por sinonimos ─────────────────────────────────
+# Los motores de voz pronuncian mal la ñ, y convertirla en "n" es peor todavia:
+# "año" pasaria a "ano", que es otra palabra. La solucion es cambiar la palabra
+# entera por un sinonimo.
+#
+# Este diccionario es la red DETERMINISTA: se aplica sin depender de ninguna
+# llamada a la API. Cubre las palabras con ñ mas frecuentes en contenido de
+# psicologia y productividad, conservando genero y numero. Lo que no aparezca
+# aqui se consulta al modelo, y solo si eso tambien falla queda la conversion
+# ñ→n de audio.py como ultimo recurso.
+# REGLA DE ESTE DICCIONARIO: el sinonimo debe ser UNA palabra, sin articulo, y
+# del MISMO genero y numero que la original. Si no, el articulo que la precede
+# deja de concordar ("el diseño" -> "el estructura") o se duplica ("por la
+# mañana" -> "por la el dia siguiente"). Todo lo que necesite reescribir la
+# frase se deja fuera a proposito: eso lo resuelve el modelo en el paso 2.
+_SIN_ENIE = {
+    # tiempo  (masculinos, para que concuerden con "el/un/este")
+    "año": "periodo", "años": "periodos",
+    # disenio y estructura — el termino clave del nicho
+    "diseña": "organiza", "diseñas": "organizas", "diseñan": "organizan",
+    "diseñar": "organizar", "diseñe": "organice",
+    "diseñado": "organizado", "diseñada": "organizada",
+    "diseñados": "organizados", "diseñadas": "organizadas",
+    "diseño": "esquema", "diseños": "esquemas",          # ambos masculinos
+    "diseñador": "organizador", "diseñadora": "organizadora",
+    # senializacion  (femeninos)
+    "señal": "pista", "señales": "pistas",
+    "señala": "indica", "señalan": "indican", "señalar": "indicar",
+    "señalado": "indicado", "señalada": "indicada",
+    # tamanio
+    "pequeño": "minimo", "pequeña": "minima",
+    "pequeños": "minimos", "pequeñas": "minimas",
+    # personas
+    "compañero": "colega", "compañera": "colega",        # colega vale para ambos
+    "compañeros": "colegas", "compañeras": "colegas",
+    "niño": "chico", "niña": "chica", "niños": "chicos", "niñas": "chicas",
+    "dueño": "propietario", "dueña": "propietaria",
+    "dueños": "propietarios", "dueñas": "propietarias",
+    # ensenianza
+    "enseña": "explica", "enseñas": "explicas", "enseñan": "explican",
+    "enseñar": "explicar", "enseñado": "explicado",
+    "enseñanza": "leccion", "enseñanzas": "lecciones",   # ambos femeninos
+    # conducta y emociones  (mismo genero que el original)
+    "sueño": "descanso", "sueños": "objetivos",
+    "soñar": "imaginar", "sueña": "imagina",
+    "extraño": "raro", "extraña": "rara",
+    "extraños": "raros", "extrañas": "raras",
+    "daño": "perjuicio", "daños": "perjuicios",
+    "engaño": "truco", "engaños": "trucos",              # ambos masculinos
+    "cariño": "afecto", "empeño": "esfuerzo",
+    "desempeño": "rendimiento",
+    "añade": "suma", "añaden": "suman", "añadir": "sumar",
+    "añadido": "sumado", "añadida": "sumada",
+    "montaña": "colina", "montañas": "colinas",          # ambos femeninos
+    "peldaño": "escalon", "peldaños": "escalones",
+    "bañar": "lavar", "baña": "lava",
+}
+
+
+def _sustituir_enie(texto: str) -> tuple:
+    """Cambia por sinonimo las palabras con ñ que estan en el diccionario.
+
+    Devuelve (texto_nuevo, pendientes) donde `pendientes` son las palabras con
+    ñ que el diccionario no cubre y hay que resolver de otra forma.
+    Respeta la mayuscula inicial de la palabra original.
+    """
+    if not texto or ("ñ" not in texto and "Ñ" not in texto):
+        return texto, []
+
+    def _reemplazo(m):
+        palabra = m.group(0)
+        nuevo = _SIN_ENIE.get(palabra.lower())
+        if not nuevo:
+            return palabra
+        return nuevo.capitalize() if palabra[0].isupper() else nuevo
+
+    nuevo_texto = _re_mod.sub(r"[\wáéíóúÁÉÍÓÚüÜñÑ]*[ñÑ][\wáéíóúÁÉÍÓÚüÜñÑ]*",
+                             _reemplazo, texto)
+    pendientes = _re_mod.findall(r"[\wáéíóúÁÉÍÓÚüÜñÑ]*[ñÑ][\wáéíóúÁÉÍÓÚüÜñÑ]*",
+                                 nuevo_texto)
+    return nuevo_texto, sorted(set(pendientes))
+
+
 def _ff_missing_key_terms(beats: list, scenes: list) -> list:
     """Comprueba que los terminos distintivos del autor sobrevivieron a la re-voz.
 
@@ -1709,9 +1792,24 @@ Respond ONLY with the JSON, no explanations."""
         guion entero. Si la reparacion falla, se devuelven las escenas intactas:
         audio.py convertira la ñ en n como ultima red.
         """
+        # PASO 1 — diccionario determinista. No depende de la API, asi que
+        # resuelve la mayoria de los casos aunque el modelo falle.
+        _cambiadas = []
+        for s in scenes:
+            antes = s.get("text", "")
+            despues, _ = _sustituir_enie(antes)
+            if despues != antes:
+                s["text"] = despues
+                _cambiadas.append(s.get("id", "?"))
+        if _cambiadas:
+            print(f"   🔤 Sinonimos aplicados por diccionario en escena(s): "
+                  f"{', '.join(str(i) for i in _cambiadas)}")
+
+        # PASO 2 — lo que el diccionario no cubre se consulta al modelo.
         palabras = sorted({w for s in scenes
                            for w in _re_mod.findall(r"[\w'\-]*[ñÑ][\w'\-]*", s.get("text", ""))})
         if not palabras:
+            print("   ✅ Guion sin ninguna ñ (resuelto con el diccionario)")
             return scenes
 
         print(f"   🔤 Reparando {len(palabras)} palabra(s) con ñ: {', '.join(palabras)}")
