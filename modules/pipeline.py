@@ -166,10 +166,12 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not guion_text:
                 log_q.put("ERROR:No se proporcionó texto para el guion libre.")
                 return
-            # target_total_secs viene del slider "Duracion total del video"
+            # target_total_secs viene del slider "Duracion total del video";
+            # guion_tono del selector de tono del panel de Guion.
             script = brain.generate_freeform_script(
                 guion_text, lang=pipeline_lang,
-                target_secs=params.get("target_total_secs", 0) or 0)
+                target_secs=params.get("target_total_secs", 0) or 0,
+                tono_key=params.get("guion_tono", ""))
             # Topic para copy/miniatura/nombre de archivo.
             # Si el autor puso una cabecera "Titulo:", usamos ese valor limpio;
             # si no, la primera linea no vacia (comportamiento anterior).
@@ -486,6 +488,33 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 pitch        = params.get("gtts_pitch", 0.0),
             )
             log_q.put(f"🔵 [Google TTS] Voz: {params.get('gtts_voice_name')} · rate={params.get('gtts_rate', 1.0):.2f}×")
+        elif _tts_choice == "fish_audio":
+            from modules.audio import FishAudioEngine
+            from modules.personas import get_tono
+            # El tono del guion decide los marcadores de emocion que Fish Audio
+            # lee entre corchetes dentro del texto.
+            _tono   = get_tono(params.get("guion_tono", ""))
+            _marcas = _tono.get("fish_markers", "")
+            audio_engine = FishAudioEngine(
+                api_key         = params.get("fish_api_key", ""),
+                model           = params.get("fish_model", "s2.1-pro-free"),
+                reference_id    = params.get("fish_reference_id", ""),
+                speed           = params.get("fish_speed", 1.0),
+                emotion_markers = _marcas,
+                lang            = pipeline_lang,
+            )
+            log_q.put(f"🐟 [Fish Audio] {params.get('fish_model')} · "
+                      f"tono {_tono['label']} → {_marcas or 'sin marcadores'}")
+        elif _tts_choice == "elevenlabs":
+            from modules.audio import ElevenLabsEngine
+            audio_engine = ElevenLabsEngine(
+                api_key  = params.get("el_api_key", ""),
+                voice_id = params.get("el_voice_id", ""),
+                model    = params.get("el_model", "eleven_multilingual_v2"),
+                tono     = params.get("guion_tono", "conductual"),
+                lang     = pipeline_lang,
+            )
+            log_q.put("🎧 [ElevenLabs] Motor sin probar contra la API real.")
         else:
             audio_engine = AudioEngine(
                 voice   = params.get("voice", "es-ES-AlvaroNeural"),
