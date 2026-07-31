@@ -83,9 +83,18 @@ _FF_BULLET_RE = _re_mod.compile(r"^\s*(?:[.\-•·*–—>]+|\d+[.)])\s+")
 
 
 def _ff_normalize(s: str) -> str:
-    """Minusculas sin acentos, para comparar etiquetas de forma tolerante."""
-    s = _ud.normalize("NFD", s.strip().lower())
-    return "".join(c for c in s if _ud.category(c) != "Mn")
+    """Minusculas sin acentos ni espacios sobrantes, para comparar etiquetas.
+
+    Colapsa el espaciado interno y el que rodea a las barras, porque una
+    cabecera escrita "Visual / Interfaz sugerida" debe reconocerse igual que
+    "Visual/Interfaz sugerida". Sin esto la linea entera se cuela en el guion
+    y acaba narrada como si fuera texto hablado.
+    """
+    s = _ud.normalize("NFD", (s or "").strip().lower())
+    s = "".join(c for c in s if _ud.category(c) != "Mn")
+    s = _re_mod.sub(r"\s*/\s*", "/", s)   # "visual / interfaz" -> "visual/interfaz"
+    s = _re_mod.sub(r"\s+", " ", s)
+    return s.strip()
 
 
 def _ff_strip_bullet(line: str) -> str:
