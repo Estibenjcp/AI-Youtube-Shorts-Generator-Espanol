@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, TOPIC_CATEGORIES
-from modules.personas import DEFAULT_PERSONA, get_persona
+from modules.personas import (DEFAULT_PERSONA, DEFAULT_TONO,
+                              get_persona, get_tono, build_voice_block)
 
 
 def _get_secret(key: str, default: str = "") -> str:
@@ -1576,7 +1577,8 @@ JSON RULES:
             ]
 
     def generate_freeform_script(self, raw_text: str, lang: str = "es",
-                                 target_secs: float = 0) -> list:
+                                 target_secs: float = 0,
+                                 tono_key: str = None) -> list:
         """Convierte texto libre en un guion de YouTube Shorts.
 
         Dos caminos:
@@ -1594,7 +1596,8 @@ JSON RULES:
 
         if _authored:
             return self._generate_authored_script(parsed, lang=lang,
-                                                  target_secs=target_secs)
+                                                  target_secs=target_secs,
+                                                  tono_key=tono_key)
 
         label = "Adaptando texto libre a guion viral" if lang == "es" else "Adapting freeform text to viral script"
         print(f"✍️ {label}...")
@@ -1743,7 +1746,8 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
 
     def _generate_authored_script(self, parsed: dict, lang: str = "es",
                                   persona_key: str = None,
-                                  target_secs: float = 0) -> list:
+                                  target_secs: float = 0,
+                                  tono_key: str = None) -> list:
         """Reescribe un guion del usuario con la voz de una persona narradora.
 
         El autor aporta el CONTENIDO (sus ideas y sus terminos); la persona aporta
@@ -1792,27 +1796,21 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
         if _persona and _persona.get("lang") != lang:
             _persona = None
 
-        if _persona:
-            _persona_block = _persona["spec"]
-            _cta_block     = _persona.get("cta", "")
-        else:
-            _persona_block = (
-                "### VOZ:\n"
-                "- Segunda persona, cercana y adulta. Como alguien que domina el tema\n"
-                "  y te lo explica de tu, sin sensacionalismo ni tono de coach.\n"
-                "- Frases naturales de longitud media, ritmo tranquilo.\n"
-            )
-            _cta_block = (
-                "### CIERRE:\n"
-                "- Si el autor trae un cierre o llamada a la accion, respetalo.\n"
-                "- Si no, no inventes productos ni enlaces.\n"
-            )
+        # El tono decide a que apunta el guion y si mantiene el registro calmado
+        # de la persona o lo sustituye por el suyo.
+        _tono = get_tono(tono_key or DEFAULT_TONO)
+        _persona_block = build_voice_block(_persona, _tono)
+        _cta_block = (_persona.get("cta", "") if _persona else
+                      "### CIERRE:\n"
+                      "- Si el autor trae un cierre o llamada a la accion, respetalo.\n"
+                      "- Si no, no inventes productos ni enlaces.\n")
 
         print(f"✍️ Guion autorado: {n_ideas} ideas → {n} escenas"
               + (f" · ~{target_secs:.0f}s" if target_secs else "")
               + (f" · voz: {_persona['label']}" if _persona else " · voz neutra")
-              + (f" · {titulo}" if titulo else "")
-              + (f" · {categoria}" if categoria else ""))
+              + f" · tono: {_tono['label']}"
+              + (" (rompe registro)" if _tono.get("rompe_voz") else "")
+              + (f" · {titulo}" if titulo else ""))
 
         beats_block = "\n".join(f"{i}. {b}" for i, b in enumerate(beats, 1))
         _ctx_es, _ctx_en = "", ""

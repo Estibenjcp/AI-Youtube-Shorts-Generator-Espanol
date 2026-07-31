@@ -1226,6 +1226,49 @@ with st.sidebar:
                 "Only needed if using Google TTS as voice engine. Get it at console.cloud.google.com"
             ),
         )
+        # ── Motores de voz de pago (clave + modelo aquí para que se guarden
+        #    con el resto de la configuracion y entren en exportar/importar).
+        #    La VOZ concreta se elige en el expander "Voz y velocidad", porque
+        #    es una decision creativa que cambia de un video a otro.
+        st.markdown("---")
+        st.caption("🎙️ " + ("Motores de voz externos (opcional)" if lang_option == "es"
+                            else "External voice engines (optional)"))
+
+        from modules.audio import FishAudioEngine as _FishCfg, ElevenLabsEngine as _ELCfg
+
+        fish_key = st.text_input(
+            "🐟 Fish Audio API Key",
+            value=os.getenv("FISH_API_KEY", ""),
+            type="password", placeholder="clave de api.fish.audio (opcional)",
+        )
+        _fish_models = list(_FishCfg.MODELS.keys())
+        _fish_cur    = os.getenv("FISH_MODEL", "s2.1-pro-free")
+        fish_model = st.selectbox(
+            "🐟 " + ("Modelo de Fish Audio" if lang_option == "es" else "Fish Audio model"),
+            options=_fish_models,
+            index=_fish_models.index(_fish_cur) if _fish_cur in _fish_models else 0,
+            format_func=lambda k: _FishCfg.MODELS[k],
+        )
+
+        el_key = st.text_input(
+            "🎧 ElevenLabs API Key",
+            value=os.getenv("ELEVENLABS_API_KEY", ""),
+            type="password", placeholder="xi-api-key (opcional)",
+        )
+        _el_models = list(_ELCfg.MODELS.keys())
+        _el_cur    = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+        el_model = st.selectbox(
+            "🎧 " + ("Modelo de ElevenLabs" if lang_option == "es" else "ElevenLabs model"),
+            options=_el_models,
+            index=_el_models.index(_el_cur) if _el_cur in _el_models else 0,
+            format_func=lambda k: _ELCfg.MODELS[k],
+        )
+        el_voice_id = st.text_input(
+            "🎧 ElevenLabs voice_id",
+            value=os.getenv("ELEVENLABS_VOICE_ID", ""),
+            placeholder="id de la voz en tu cuenta (opcional)",
+        )
+
         st.markdown("---")
         st.caption("🎬 " + ("Generación de Video con IA (opcional)" if lang_option == "es" else "AI Video Generation (optional)"))
         _vid_providers = ["fal", "kling", "runway", "luma", "pika", "otro"]
@@ -1269,6 +1312,14 @@ with st.sidebar:
         set_key(ENV_PATH, "PEXELS_API_KEY", pexels_key)
         if google_tts_key:
             set_key(ENV_PATH, "GOOGLE_TTS_KEY", google_tts_key)
+        if fish_key:
+            set_key(ENV_PATH, "FISH_API_KEY", fish_key)
+        set_key(ENV_PATH, "FISH_MODEL", fish_model)
+        if el_key:
+            set_key(ENV_PATH, "ELEVENLABS_API_KEY", el_key)
+        set_key(ENV_PATH, "ELEVENLABS_MODEL", el_model)
+        if el_voice_id:
+            set_key(ENV_PATH, "ELEVENLABS_VOICE_ID", el_voice_id)
         set_key(ENV_PATH, "AI_VIDEO_PROVIDER", ai_video_provider)
         if ai_video_key:
             set_key(ENV_PATH, "AI_VIDEO_KEY",  ai_video_key)
@@ -1544,6 +1595,12 @@ with st.sidebar:
         "AI_MODEL":          cfg["AI_MODEL"],
         "PEXELS_API_KEY":    cfg["PEXELS_API_KEY"],
         "GOOGLE_TTS_KEY":    os.getenv("GOOGLE_TTS_KEY", ""),
+        "FISH_API_KEY":        os.getenv("FISH_API_KEY", ""),
+        "FISH_MODEL":          os.getenv("FISH_MODEL", ""),
+        "FISH_VOICE_ID":       os.getenv("FISH_VOICE_ID", ""),
+        "ELEVENLABS_API_KEY":  os.getenv("ELEVENLABS_API_KEY", ""),
+        "ELEVENLABS_MODEL":    os.getenv("ELEVENLABS_MODEL", ""),
+        "ELEVENLABS_VOICE_ID": os.getenv("ELEVENLABS_VOICE_ID", ""),
         "AI_VIDEO_PROVIDER": os.getenv("AI_VIDEO_PROVIDER", ""),
         "AI_VIDEO_KEY":      os.getenv("AI_VIDEO_KEY", ""),
         "AI_VIDEO_MODEL":    os.getenv("AI_VIDEO_MODEL", ""),
@@ -1571,6 +1628,10 @@ with st.sidebar:
             set_key(ENV_PATH, "PEXELS_API_KEY", imported.get("PEXELS_API_KEY", ""))
             if imported.get("GOOGLE_TTS_KEY"):
                 set_key(ENV_PATH, "GOOGLE_TTS_KEY",    imported.get("GOOGLE_TTS_KEY", ""))
+            for _k in ("FISH_API_KEY", "FISH_MODEL", "FISH_VOICE_ID",
+                       "ELEVENLABS_API_KEY", "ELEVENLABS_MODEL", "ELEVENLABS_VOICE_ID"):
+                if imported.get(_k):
+                    set_key(ENV_PATH, _k, imported.get(_k, ""))
             if imported.get("AI_VIDEO_PROVIDER"):
                 set_key(ENV_PATH, "AI_VIDEO_PROVIDER", imported.get("AI_VIDEO_PROVIDER", ""))
             if imported.get("AI_VIDEO_KEY"):
@@ -2012,12 +2073,16 @@ with st.expander(voice_label_hint, expanded=False):
         ("edge_tts",   "☁️ Edge TTS",    "Nube · rápido"    if lang_option == "es" else "Cloud · fast"),
         ("google_tts", "🔵 Google TTS",  "Neural2 / Studio"),
         ("voxcpm",     "🤖 VoxCPM 2B",   "Local · GPU"),
+        ("fish_audio", "🐟 Fish Audio",  "Emociones por tono"
+                                          if lang_option == "es" else "Tone-driven emotion"),
+        ("elevenlabs", "🎧 ElevenLabs",  "Sin probar" if lang_option == "es" else "Untested"),
     ]
     _cur_tts = st.session_state.get("tts_engine", "edge_tts")
 
     st.caption("Motor TTS" if lang_option == "es" else "TTS Engine")
     _tc1, _tc2, _tc3 = st.columns(3, gap="small")
-    for _col, (_key, _label, _sub) in zip([_tc1, _tc2, _tc3], _tts_buttons):
+    _tc4, _tc5, _tc6 = st.columns(3, gap="small")
+    for _col, (_key, _label, _sub) in zip([_tc1, _tc2, _tc3, _tc4, _tc5], _tts_buttons):
         _active = (_cur_tts == _key)
         with _col:
             st.markdown(
@@ -2273,6 +2338,179 @@ with st.expander(voice_label_hint, expanded=False):
                                 st.audio(_ve_out, format="audio/mp3")
                             except Exception as _vee:
                                 st.error(str(_vee))
+
+    elif tts_engine == "fish_audio":
+        # ── Fish Audio ────────────────────────────────────────────────────
+        # El modelo va en una cabecera HTTP; la voz es un reference_id aparte.
+        # Las emociones las inyecta el motor a partir del tono del guion.
+        from modules.audio import FishAudioEngine as _Fish
+
+        selected_voice = ""      # no aplica: la voz es el reference_id
+        rate_str       = "+0%"
+
+        # La clave y el modelo viven en el formulario de API de la barra lateral,
+        # para que se guarden en .env y entren en exportar/importar.
+        _fa_key   = os.getenv("FISH_API_KEY", "")
+        _fa_model = os.getenv("FISH_MODEL", "s2.1-pro-free")
+
+        if not _fa_key:
+            st.warning(
+                "Falta la clave de Fish Audio. Ponla en ⚙️ Configuración de API, "
+                "en la barra lateral, y pulsa Guardar."
+                if lang_option == "es" else
+                "Missing Fish Audio key. Set it in the sidebar API settings and save."
+            )
+        else:
+            st.caption(f"🐟 {_Fish.MODELS.get(_fa_model, _fa_model)}")
+
+        _fa_voices = list(_Fish.VOICES_ES.keys())
+        _fa_cur_v  = os.getenv("FISH_VOICE_ID", _fa_voices[0])
+        _fa_voice = st.selectbox(
+            "Voz" if lang_option == "es" else "Voice",
+            options=_fa_voices,
+            index=_fa_voices.index(_fa_cur_v) if _fa_cur_v in _fa_voices else 0,
+            format_func=lambda k: _Fish.VOICES_ES[k],
+            key="fish_voice_select",
+        )
+
+        _fa_custom = st.text_input(
+            "reference_id propio (opcional)" if lang_option == "es"
+            else "Custom reference_id (optional)",
+            value="", key="fish_voice_custom",
+            placeholder="pega aqui el id de una voz clonada tuya",
+            help="Si lo rellenas, tiene prioridad sobre la voz de la lista."
+                 if lang_option == "es" else
+                 "If set, overrides the voice picked above.",
+        )
+
+        _fa_speed = st.slider(
+            "Velocidad" if lang_option == "es" else "Speed",
+            min_value=0.5, max_value=2.0,
+            value=float(st.session_state.get("fish_speed", 1.0)),
+            step=0.05, format="%.2f×", key="fish_speed",
+        )
+
+        _fa_ref = (_fa_custom.strip() or _fa_voice)
+        st.session_state["fish_api_key"]      = _fa_key
+        st.session_state["fish_model"]        = _fa_model
+        st.session_state["fish_reference_id"] = _fa_ref
+
+        # ── Escuchar la voz elegida, con el tono actual ────────────────────
+        from modules.personas import get_tono as _get_tono
+        _fa_tono = _get_tono(st.session_state.get("guion_tono", "conductual"))
+        _fa_marcas = _fa_tono.get("fish_markers", "")
+
+        _pc1, _pc2 = st.columns([1, 2])
+        with _pc1:
+            _fa_prev = st.button(
+                "▶ Escuchar" if lang_option == "es" else "▶ Listen",
+                key="fish_preview_btn", use_container_width=True,
+                disabled=not bool(_fa_key),
+            )
+        with _pc2:
+            st.caption(f"🎭 {_fa_tono['label']} → {_fa_marcas or 'sin marcadores'}")
+
+        if _fa_prev:
+            _fa_txt = ("No es debilidad tuya. Tu entorno te esta ganando, "
+                       "y eso si lo puedes cambiar hoy."
+                       if lang_option == "es" else
+                       "This is not weakness. Your environment is winning, "
+                       "and that you can change today.")
+            with st.spinner("Generando muestra..." if lang_option == "es" else "Generating sample..."):
+                try:
+                    _fa_eng = _Fish(api_key=_fa_key, model=_fa_model,
+                                    reference_id=_fa_ref, speed=_fa_speed,
+                                    emotion_markers=_fa_marcas, lang=lang_option)
+                    _fa_out = os.path.join(os.getcwd(), "assets", "audio_clips",
+                                           "_preview_fish.mp3")
+                    os.makedirs(os.path.dirname(_fa_out), exist_ok=True)
+                    _fa_eng._synthesize(f"{_fa_marcas} {_fa_txt}".strip(), _fa_out)
+                    st.audio(_fa_out, format="audio/mp3")
+                except Exception as _fa_e:
+                    st.error(f"{_fa_e}")
+
+        st.caption(
+            ("Las emociones se toman del 🎭 Tono del guion. "
+             "Este motor no devuelve timing por palabra: los subtitulos usan "
+             "sincronia estimada.")
+            if lang_option == "es" else
+            ("Emotion comes from the script tone. This engine returns no word "
+             "timing, so subtitles use estimated sync.")
+        )
+
+    elif tts_engine == "elevenlabs":
+        # ── ElevenLabs (preparado, sin probar) ────────────────────────────
+        from modules.audio import ElevenLabsEngine as _EL
+
+        selected_voice = ""
+        rate_str       = "+0%"
+
+        st.warning(
+            "Motor preparado pero NUNCA probado contra la API real. "
+            "Espera fallos de detalle en el primer intento."
+            if lang_option == "es" else
+            "Engine implemented but never tested against the live API."
+        )
+
+        # Clave, modelo y voz viven en el formulario de API de la barra lateral.
+        _el_key   = os.getenv("ELEVENLABS_API_KEY", "")
+        _el_model = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+        _el_voice = os.getenv("ELEVENLABS_VOICE_ID", "")
+
+        if not _el_key or not _el_voice:
+            st.info(
+                "Pon la clave, el modelo y el voice_id en ⚙️ Configuración de API, "
+                "en la barra lateral, y pulsa Guardar."
+                if lang_option == "es" else
+                "Set key, model and voice_id in the sidebar API settings and save."
+            )
+        else:
+            st.caption(f"🎧 {_EL.MODELS.get(_el_model, _el_model)} · voz {_el_voice}")
+
+        st.session_state["el_api_key"]  = _el_key
+        st.session_state["el_model"]    = _el_model
+        st.session_state["el_voice_id"] = _el_voice
+
+        # ── Escuchar la voz elegida ───────────────────────────────────────
+        from modules.personas import get_tono as _get_tono_el
+        _el_tono = _get_tono_el(st.session_state.get("guion_tono", "conductual"))
+
+        _elc1, _elc2 = st.columns([1, 2])
+        with _elc1:
+            _el_prev = st.button(
+                "▶ Escuchar" if lang_option == "es" else "▶ Listen",
+                key="el_preview_btn", use_container_width=True,
+                disabled=not (bool(_el_key) and bool(_el_voice)),
+            )
+        with _elc2:
+            _elset = _EL.TONE_SETTINGS.get(
+                st.session_state.get("guion_tono", "conductual"),
+                _EL.TONE_SETTINGS["conductual"])
+            st.caption(f"🎭 {_el_tono['label']} → stability {_elset['stability']:.2f} · "
+                       f"style {_elset['style']:.2f}")
+
+        if _el_prev:
+            with st.spinner("Generando muestra..." if lang_option == "es" else "Generating sample..."):
+                try:
+                    _el_eng = _EL(api_key=_el_key, voice_id=_el_voice, model=_el_model,
+                                  tono=st.session_state.get("guion_tono", "conductual"),
+                                  lang=lang_option)
+                    _el_out = os.path.join(os.getcwd(), "assets", "audio_clips",
+                                           "_preview_el.mp3")
+                    os.makedirs(os.path.dirname(_el_out), exist_ok=True)
+                    _el_eng._synthesize(
+                        "No es debilidad tuya. Tu entorno te esta ganando, "
+                        "y eso si lo puedes cambiar hoy.", _el_out)
+                    st.audio(_el_out, format="audio/mp3")
+                except Exception as _el_e:
+                    st.error(f"{_el_e}")
+
+        st.caption(
+            "La expresividad se ajusta con voice_settings segun el 🎭 Tono del "
+            "guion, porque ElevenLabs no usa marcadores en corchetes."
+            if lang_option == "es" else
+            "Expressiveness maps from the script tone to voice_settings."
+        )
 
     else:
         # ── VoxCPM controls ───────────────────────────────────────────────
@@ -2963,6 +3201,30 @@ elif mode == "guion":
         label_visibility="collapsed",
     )
 
+    # ── Tono del guion ────────────────────────────────────────────────────
+    # Decide a que apunta el guion. Los tonos marcados como rompe_voz
+    # sustituyen el registro calmado de la persona por el suyo.
+    from modules.personas import TONOS as _TONOS, DEFAULT_TONO as _DEF_TONO
+
+    st.markdown(
+        "<div class='step-header'>🎭 "
+        + ("Tono del guion" if lang_option == "es" else "Script tone")
+        + "</div>", unsafe_allow_html=True)
+
+    _tono_keys = list(_TONOS.keys())
+    _tono_sel = st.radio(
+        "guion_tono",
+        options=_tono_keys,
+        format_func=lambda k: _TONOS[k]["label"],
+        index=_tono_keys.index(st.session_state.get("guion_tono", _DEF_TONO))
+              if st.session_state.get("guion_tono", _DEF_TONO) in _tono_keys else 0,
+        key="guion_tono",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    st.caption(_TONOS[_tono_sel]["summary"]
+               + ("  ·  cambia el registro de voz" if _TONOS[_tono_sel]["rompe_voz"] else ""))
+
     if guion_raw.strip():
         _first_guion_line = next((l.strip() for l in guion_raw.splitlines() if l.strip()), "")
         final_topic = _first_guion_line[:60]
@@ -3518,6 +3780,16 @@ def _launch_pipeline():
         "chosen_hook": st.session_state.get("chosen_hook", ""),
         "job_offer_text": st.session_state.get("job_offer_input", ""),
         "guion_raw_text": st.session_state.get("guion_raw_input", ""),
+        "guion_tono":     st.session_state.get("guion_tono", "conductual"),
+        # ── Fish Audio ──
+        "fish_api_key":      st.session_state.get("fish_api_key", os.getenv("FISH_API_KEY", "")),
+        "fish_model":        st.session_state.get("fish_model", os.getenv("FISH_MODEL", "s2.1-pro-free")),
+        "fish_reference_id": st.session_state.get("fish_reference_id", os.getenv("FISH_VOICE_ID", "")),
+        "fish_speed":        st.session_state.get("fish_speed", 1.0),
+        # ── ElevenLabs ──
+        "el_api_key":  st.session_state.get("el_api_key", os.getenv("ELEVENLABS_API_KEY", "")),
+        "el_model":    st.session_state.get("el_model", "eleven_multilingual_v2"),
+        "el_voice_id": st.session_state.get("el_voice_id", os.getenv("ELEVENLABS_VOICE_ID", "")),
         "tts_engine":       st.session_state.get("tts_engine", "edge_tts"),
         "vox_voice_desc":   st.session_state.get("vox_voice_desc", ""),
         "vox_mood_enabled": st.session_state.get("vox_mood_enabled", True),

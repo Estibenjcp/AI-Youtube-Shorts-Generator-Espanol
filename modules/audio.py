@@ -885,3 +885,344 @@ class GoogleTTSAudioEngine:
 
         await asyncio.gather(*[_one(idx, scene) for idx, scene in enumerate(script_data)])
         return script_data
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FISH AUDIO
+# ══════════════════════════════════════════════════════════════════════════════
+
+class FishAudioEngine:
+    """TTS por API de Fish Audio (https://api.fish.audio/v1/tts).
+
+    Dos particularidades frente a los otros motores:
+
+    1. El modelo va en una CABECERA HTTP obligatoria (`model`), no en el cuerpo.
+       El modelo NO es la voz: la voz se elige con `reference_id`.
+
+    2. Las emociones se controlan con marcadores en corchetes DENTRO del texto
+       ([calm], [confident], [soft tone]...). Aqui se inyectan a partir del tono
+       del guion, de modo que el tono elegido en la UI llega hasta la locucion.
+
+    No devuelve timing por palabra, asi que los subtitulos caen en el modo
+    proporcional de composer.py (igual que Chirp3-HD y Journey de Google).
+    """
+
+    API_URL = "https://api.fish.audio/v1/tts"
+
+    # La clave es lo que va en la cabecera `model`.
+    MODELS = {
+        "s2.1-pro-free": "s2.1-pro-free  (gratis - pruebas y proyectos pequenios)",
+        "s2.1-pro":      "s2.1-pro       (produccion - mejor latencia y calidad)",
+        "s2-pro":        "s2-pro         (generacion anterior - default de la API)",
+        "s1":            "s1             (legado - emociones entre parentesis)",
+    }
+
+    # Voces en espanol de la Voice Library. reference_id -> etiqueta.
+    VOICES_ES = {
+        "13d17017d63340a0b9751ffb04561c8d": "Mujer latina *",
+        "edbe850c6b7d40f195edd8c043b18748": "Voz de mujer muy real y no artificial",
+        "a1070fc5bc824bb79dfa0007c00dfd0f": "Locutora mujer",
+        "22550e2d849b44e18c7df57f61e666f9": "Mujer Voz Venezuela",
+        "35199d5438854f5d9157c500479ab684": "Narrador v2 (masculina)",
+        "dfa5b230c8054f429e434f4a6e9bbdec": "Farid Dieck (masculina)",
+    }
+
+    # El guion ya trae un `mood` por escena. Se traduce a un marcador, pero hay
+    # que distinguir dos clases: los de EMOCION chocan con los del tono (pedir
+    # [determined] y [calm] a la vez da un resultado incoherente), mientras que
+    # los de ENTREGA solo afectan al enfasis y se pueden apilar sin conflicto.
+    MOOD_EMOCION = {
+        "calm":       "[calm]",
+        "exciting":   "[excited]",
+        "energetic":  "[excited]",
+        "mysterious": "[curious]",
+        "intriguing": "[curious]",
+        "fun":        "[relaxed]",
+    }
+    MOOD_ENTREGA = {
+        "dramatic": "[emphasis]",
+    }
+
+    def __init__(self, api_key: str, model: str = "s2.1-pro-free",
+                 reference_id: str = "", speed: float = 1.0,
+                 emotion_markers: str = "", lang: str = "es"):
+        self.api_key         = (api_key or "").strip()
+        self.model           = (model or "s2.1-pro-free").strip()
+        self.reference_id    = (reference_id or "").strip()
+        self.speed           = max(0.5, min(2.0, float(speed or 1.0)))
+        self.emotion_markers = (emotion_markers or "").strip()
+        self.lang            = lang
+        self.output_dir      = os.path.join(os.getcwd(), "assets", "audio_clips")
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    # ── utilidades ────────────────────────────────────────────────────────
+    @staticmethod
+    def _clean_text(text: str) -> str:
+        """Limpia el texto sin tocar los corchetes de emocion."""
+        text = re.sub(r"[\r\n\t]+", " ", text or "").strip()
+        text = re.sub(r"\s{2,}", " ", text)
+        # Red de seguridad heredada del resto de motores: varios TTS pronuncian
+        # mal la letra n con tilde. El guion ya la evita con sinonimos; esto es
+        # el ultimo recurso por si alguna se cuela.
+        return text.replace("ñ", "n").replace("Ñ", "N")
+
+    def _build_text(self, scene: dict) -> str:
+        """Antepone los marcadores de emocion al texto de la escena.
+
+        El TONO manda sobre el mood: si el tono ya fija una direccion emocional,
+        el mood no puede contradecirla. Solo los marcadores de entrega ([emphasis])
+        se apilan sobre el tono, porque afectan al enfasis y no a la emocion.
+        """
+        cuerpo = self._clean_text(scene.get("text", ""))
+        if not cuerpo:
+            return ""
+
+        mood   = scene.get("mood", "")
+        marcas = []
+
+        if self.emotion_markers:
+            marcas.append(self.emotion_markers)
+            # Con tono activo, solo se anade el matiz de entrega.
+            extra = self.MOOD_ENTREGA.get(mood, "")
+        else:
+            # Sin tono, el mood de la escena es la unica fuente de emocion.
+            extra = self.MOOD_EMOCION.get(mood, "") or self.MOOD_ENTREGA.get(mood, "")
+
+        if extra and extra not in (self.emotion_markers or ""):
+            marcas.append(extra)
+
+        prefijo = " ".join(marcas)
+        return f"{prefijo} {cuerpo}".strip() if prefijo else cuerpo
+
+    def get_audio_duration(self, file_path: str) -> float:
+        try:
+            out = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "csv=p=0", file_path],
+                capture_output=True, text=True, timeout=20,
+            ).stdout.strip()
+            return float(out) if out else 0.0
+        except Exception:
+            return 0.0
+
+    def _normalize(self, path: str) -> None:
+        """Iguala el pico a _TARGET_PEAK_DB, como el resto de motores."""
+        try:
+            result = subprocess.run(
+                ["ffmpeg", "-i", path, "-af", "volumedetect", "-f", "null", "-"],
+                capture_output=True, text=True, errors="replace",
+            )
+            m = re.search(r"max_volume:\s*([-\d.]+)\s*dB", result.stderr)
+            if not m:
+                return
+            gain = _TARGET_PEAK_DB - float(m.group(1))
+            if abs(gain) < 0.3:
+                return
+            tmp = path + ".norm.mp3"
+            if os.path.exists(tmp):
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+            proc = subprocess.run(
+                ["ffmpeg", "-i", path, "-af", f"volume={gain:.2f}dB", "-y", tmp],
+                capture_output=True,
+            )
+            if proc.returncode == 0 and os.path.exists(tmp) and os.path.getsize(tmp) > 1024:
+                os.replace(tmp, path)
+            elif os.path.exists(tmp):
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"      warning: normalizacion omitida: {e}")
+
+    # ── sintesis ──────────────────────────────────────────────────────────
+    def _synthesize(self, text: str, out_path: str) -> None:
+        import requests
+        payload = {
+            "text":        text,
+            "format":      "mp3",
+            "mp3_bitrate": 128,
+            "normalize":   True,
+            "latency":     "normal",   # mas estable que balanced para render offline
+            "prosody":     {"speed": self.speed, "volume": 0},
+        }
+        if self.reference_id:
+            payload["reference_id"] = self.reference_id
+
+        r = requests.post(
+            self.API_URL,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type":  "application/json",
+                "model":         self.model,   # OBLIGATORIA en cada peticion
+            },
+            json=payload, timeout=120,
+        )
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:180]}")
+        if len(r.content) < 1024:
+            raise RuntimeError(f"respuesta demasiado corta ({len(r.content)} bytes)")
+        with open(out_path, "wb") as f:
+            f.write(r.content)
+
+    async def process_script(self, script_data: list) -> list:
+        total = len(script_data)
+        _voz = self.VOICES_ES.get(self.reference_id) or self.reference_id or "por defecto"
+        print(f"[Fish Audio] Generando audio para {total} escenas "
+              f"(model={self.model}, voz={_voz})")
+        if self.emotion_markers:
+            print(f"   Marcadores de tono: {self.emotion_markers}")
+        sem = asyncio.Semaphore(3)
+
+        async def _one(idx, scene):
+            scene_id = scene["id"]
+            texto = self._build_text(scene)
+            if not texto:
+                print(f"   warning: escena {scene_id} sin texto, se omite.")
+                return
+            out_path = os.path.join(self.output_dir, f"voice_{scene_id}.mp3")
+
+            async with sem:
+                try:
+                    def _work():
+                        self._synthesize(texto, out_path)
+                        # Mismo recorte que el resto de motores: sin esto vuelve
+                        # el bache de silencio en cada corte de escena.
+                        _trim_edge_silence(out_path)
+                        self._normalize(out_path)
+                        return self.get_audio_duration(out_path)
+                    duration = await asyncio.to_thread(_work)
+                    if duration <= 0:
+                        print(f"   error: escena {scene_id} audio invalido, se omite.")
+                        return
+                    scene["audio_path"] = out_path
+                    scene["duration"]   = duration
+                    print(f"   OK escena {scene_id}: {duration:.2f}s")
+                except Exception as e:
+                    print(f"   error escena {scene_id}: {e}")
+
+        await asyncio.gather(*[_one(i, s) for i, s in enumerate(script_data)])
+        return script_data
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ELEVENLABS  (preparado, SIN PROBAR: no hay clave disponible todavia)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ElevenLabsEngine:
+    """TTS por API de ElevenLabs.
+
+    ADVERTENCIA: esta clase esta escrita segun la API documentada de ElevenLabs
+    pero NO se ha ejecutado nunca contra el servicio real, porque no habia clave
+    disponible al implementarla. Espera fallos de detalle en la primera prueba
+    (nombres de campo, rangos de voice_settings, formato de salida).
+
+    Diferencias con Fish Audio:
+    - La voz va en la URL, no en el cuerpo.
+    - La clave va en la cabecera `xi-api-key`, no como Bearer.
+    - No hay marcadores de emocion en corchetes: la expresividad se ajusta con
+      voice_settings (stability / similarity_boost / style). Por eso el tono del
+      guion se traduce aqui a valores de esos parametros, no a etiquetas.
+    """
+
+    API_BASE = "https://api.elevenlabs.io/v1/text-to-speech"
+
+    MODELS = {
+        "eleven_multilingual_v2": "eleven_multilingual_v2  (calidad, 29 idiomas)",
+        "eleven_turbo_v2_5":      "eleven_turbo_v2_5       (rapido, buen espanol)",
+        "eleven_flash_v2_5":      "eleven_flash_v2_5       (minima latencia)",
+    }
+
+    # El tono del guion se traduce a ajustes de voz en lugar de a etiquetas.
+    # stability bajo = mas variacion expresiva; alto = mas monotono y estable.
+    TONE_SETTINGS = {
+        "conductual":    {"stability": 0.55, "similarity_boost": 0.80, "style": 0.15},
+        "confrontativo": {"stability": 0.40, "similarity_boost": 0.80, "style": 0.45},
+        "motivador":     {"stability": 0.30, "similarity_boost": 0.75, "style": 0.60},
+        "emotivo":       {"stability": 0.65, "similarity_boost": 0.85, "style": 0.25},
+        "urgente":       {"stability": 0.40, "similarity_boost": 0.80, "style": 0.50},
+    }
+
+    def __init__(self, api_key: str, voice_id: str = "",
+                 model: str = "eleven_multilingual_v2",
+                 tono: str = "conductual", lang: str = "es"):
+        self.api_key    = (api_key or "").strip()
+        self.voice_id   = (voice_id or "").strip()
+        self.model      = (model or "eleven_multilingual_v2").strip()
+        self.settings   = self.TONE_SETTINGS.get(tono, self.TONE_SETTINGS["conductual"])
+        self.lang       = lang
+        self.output_dir = os.path.join(os.getcwd(), "assets", "audio_clips")
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    @staticmethod
+    def _clean_text(text: str) -> str:
+        text = re.sub(r"[\r\n\t]+", " ", text or "").strip()
+        text = re.sub(r"\s{2,}", " ", text)
+        return text.replace("ñ", "n").replace("Ñ", "N")
+
+    def get_audio_duration(self, file_path: str) -> float:
+        try:
+            out = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "csv=p=0", file_path],
+                capture_output=True, text=True, timeout=20,
+            ).stdout.strip()
+            return float(out) if out else 0.0
+        except Exception:
+            return 0.0
+
+    def _synthesize(self, text: str, out_path: str) -> None:
+        import requests
+        if not self.voice_id:
+            raise RuntimeError("falta el voice_id de ElevenLabs")
+        r = requests.post(
+            f"{self.API_BASE}/{self.voice_id}",
+            headers={"xi-api-key": self.api_key,
+                     "Content-Type": "application/json",
+                     "Accept": "audio/mpeg"},
+            json={"text": text, "model_id": self.model,
+                  "voice_settings": {**self.settings, "use_speaker_boost": True}},
+            timeout=120,
+        )
+        if r.status_code != 200:
+            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:180]}")
+        if len(r.content) < 1024:
+            raise RuntimeError(f"respuesta demasiado corta ({len(r.content)} bytes)")
+        with open(out_path, "wb") as f:
+            f.write(r.content)
+
+    async def process_script(self, script_data: list) -> list:
+        total = len(script_data)
+        print(f"[ElevenLabs] Generando audio para {total} escenas "
+              f"(model={self.model}, voz={self.voice_id or 'sin definir'})")
+        print("   NOTA: motor sin probar contra la API real.")
+        sem = asyncio.Semaphore(3)
+
+        async def _one(scene):
+            scene_id = scene["id"]
+            texto = self._clean_text(scene.get("text", ""))
+            if not texto:
+                print(f"   warning: escena {scene_id} sin texto, se omite.")
+                return
+            out_path = os.path.join(self.output_dir, f"voice_{scene_id}.mp3")
+            async with sem:
+                try:
+                    def _work():
+                        self._synthesize(texto, out_path)
+                        _trim_edge_silence(out_path)
+                        return self.get_audio_duration(out_path)
+                    duration = await asyncio.to_thread(_work)
+                    if duration <= 0:
+                        print(f"   error: escena {scene_id} audio invalido, se omite.")
+                        return
+                    scene["audio_path"] = out_path
+                    scene["duration"]   = duration
+                    print(f"   OK escena {scene_id}: {duration:.2f}s")
+                except Exception as e:
+                    print(f"   error escena {scene_id}: {e}")
+
+        await asyncio.gather(*[_one(s) for s in script_data])
+        return script_data
