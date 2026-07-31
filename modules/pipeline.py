@@ -493,18 +493,18 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             from modules.personas import get_tono
             # El tono del guion decide los marcadores de emocion que Fish Audio
             # lee entre corchetes dentro del texto.
-            _tono   = get_tono(params.get("guion_tono", ""))
-            _marcas = _tono.get("fish_markers", "")
+            _tono  = get_tono(params.get("guion_tono", ""))
+            _arco  = _tono.get("fish_arco", [])
             audio_engine = FishAudioEngine(
-                api_key         = params.get("fish_api_key", ""),
-                model           = params.get("fish_model", "s2.1-pro-free"),
-                reference_id    = params.get("fish_reference_id", ""),
-                speed           = params.get("fish_speed", 1.0),
-                emotion_markers = _marcas,
-                lang            = pipeline_lang,
+                api_key      = params.get("fish_api_key", ""),
+                model        = params.get("fish_model", "s2.1-pro-free"),
+                reference_id = params.get("fish_reference_id", ""),
+                speed        = params.get("fish_speed", 1.0),
+                emotion_arc  = _arco,
+                lang         = pipeline_lang,
             )
-            log_q.put(f"🐟 [Fish Audio] {params.get('fish_model')} · "
-                      f"tono {_tono['label']} → {_marcas or 'sin marcadores'}")
+            log_q.put(f"🐟 [Fish Audio] {params.get('fish_model')} · tono {_tono['label']} · "
+                      f"arco: {' → '.join(_arco) if _arco else 'sin arco'}")
         elif _tts_choice == "elevenlabs":
             from modules.audio import ElevenLabsEngine
             audio_engine = ElevenLabsEngine(

@@ -3282,18 +3282,26 @@ elif mode == "guion":
     _pv_scenes = st.session_state.get("guion_preview")
     if _pv_scenes:
         _pv_engine = st.session_state.get("tts_engine", "edge_tts")
-        _pv_marcas = _TONOS[_tono_sel].get("fish_markers", "")
+        _pv_arco   = _TONOS[_tono_sel].get("fish_arco", [])
+        _pv_n      = len(_pv_scenes)
 
         if _pv_engine == "fish_audio":
             from modules.audio import FishAudioEngine as _PvFish
-            _pv_eng = _PvFish(api_key="", emotion_markers=_pv_marcas)
-            _pv_lineas = [_pv_eng._build_text(s) for s in _pv_scenes]
+            _pv_eng = _PvFish(api_key="", emotion_arc=_pv_arco)
+            _pv_lineas = [_pv_eng._build_text(s, _i, _pv_n)
+                          for _i, s in enumerate(_pv_scenes)]
             _pv_nota = ("Texto literal que recibe Fish Audio. Los corchetes son "
-                        "marcadores de emocion, no se leen en voz alta.")
+                        "marcadores de emocion, no se leen en voz alta. "
+                        "La emocion cambia segun la fase del video.")
         else:
             _pv_lineas = [(s.get("text") or "") for s in _pv_scenes]
             _pv_nota = (f"El motor activo es {_pv_engine}, que no usa marcadores. "
-                        f"Con Fish Audio se anadiria {_pv_marcas} al inicio de cada escena.")
+                        f"Con Fish Audio la emocion recorreria: "
+                        f"{' → '.join(_pv_arco)}")
+
+        if _pv_arco:
+            st.caption("🎭 " + ("Recorrido emocional del tono: " if lang_option == "es"
+                               else "Emotional arc: ") + "  →  ".join(_pv_arco))
 
         _pv_pal = sum(len((s.get("text") or "").split()) for s in _pv_scenes)
         st.success(

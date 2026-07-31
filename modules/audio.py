@@ -945,15 +945,31 @@ class FishAudioEngine:
 
     def __init__(self, api_key: str, model: str = "s2.1-pro-free",
                  reference_id: str = "", speed: float = 1.0,
-                 emotion_markers: str = "", lang: str = "es"):
-        self.api_key         = (api_key or "").strip()
-        self.model           = (model or "s2.1-pro-free").strip()
-        self.reference_id    = (reference_id or "").strip()
-        self.speed           = max(0.5, min(2.0, float(speed or 1.0)))
-        self.emotion_markers = (emotion_markers or "").strip()
-        self.lang            = lang
-        self.output_dir      = os.path.join(os.getcwd(), "assets", "audio_clips")
+                 emotion_arc: list = None, lang: str = "es"):
+        self.api_key      = (api_key or "").strip()
+        self.model        = (model or "s2.1-pro-free").strip()
+        self.reference_id = (reference_id or "").strip()
+        self.speed        = max(0.5, min(2.0, float(speed or 1.0)))
+        # Recorrido emocional del tono: una lista de fases. Se reparte entre las
+        # escenas para que la voz no suene igual del principio al final.
+        self.emotion_arc  = [m for m in (emotion_arc or []) if m]
+        self.lang         = lang
+        self.output_dir   = os.path.join(os.getcwd(), "assets", "audio_clips")
         os.makedirs(self.output_dir, exist_ok=True)
+
+    def marker_for(self, idx: int, total: int) -> str:
+        """Fase del arco que corresponde a la escena `idx` de `total`.
+
+        Reparte las fases proporcionalmente, pero la ultima escena SIEMPRE recibe
+        la fase de cierre: con pocas escenas el reparto proporcional se quedaria
+        corto y el cierre no llegaria a sonar nunca.
+        """
+        if not self.emotion_arc:
+            return ""
+        n_fases = len(self.emotion_arc)
+        if total <= 1 or idx >= total - 1:
+            return self.emotion_arc[-1]
+        return self.emotion_arc[min(n_fases - 1, idx * n_fases // total)]
 
     # ── utilidades ────────────────────────────────────────────────────────
     @staticmethod
@@ -966,29 +982,33 @@ class FishAudioEngine:
         # el ultimo recurso por si alguna se cuela.
         return text.replace("ñ", "n").replace("Ñ", "N")
 
-    def _build_text(self, scene: dict) -> str:
+    def _build_text(self, scene: dict, idx: int = 0, total: int = 1) -> str:
         """Antepone los marcadores de emocion al texto de la escena.
 
-        El TONO manda sobre el mood: si el tono ya fija una direccion emocional,
+        La emocion la fija la fase del arco que toca a esta escena, no un valor
+        constante: asi la voz recorre el tono en vez de repetirlo.
+
+        El ARCO manda sobre el mood: si la fase ya fija una direccion emocional,
         el mood no puede contradecirla. Solo los marcadores de entrega ([emphasis])
-        se apilan sobre el tono, porque afectan al enfasis y no a la emocion.
+        se apilan, porque afectan al enfasis y no a la emocion.
         """
         cuerpo = self._clean_text(scene.get("text", ""))
         if not cuerpo:
             return ""
 
-        mood   = scene.get("mood", "")
+        mood  = scene.get("mood", "")
+        fase  = self.marker_for(idx, total)
         marcas = []
 
-        if self.emotion_markers:
-            marcas.append(self.emotion_markers)
-            # Con tono activo, solo se anade el matiz de entrega.
+        if fase:
+            marcas.append(fase)
+            # Con arco activo, solo se anade el matiz de entrega.
             extra = self.MOOD_ENTREGA.get(mood, "")
         else:
-            # Sin tono, el mood de la escena es la unica fuente de emocion.
+            # Sin arco, el mood de la escena es la unica fuente de emocion.
             extra = self.MOOD_EMOCION.get(mood, "") or self.MOOD_ENTREGA.get(mood, "")
 
-        if extra and extra not in (self.emotion_markers or ""):
+        if extra and extra not in fase:
             marcas.append(extra)
 
         prefijo = " ".join(marcas)
@@ -1073,13 +1093,14 @@ class FishAudioEngine:
         _voz = self.VOICES_ES.get(self.reference_id) or self.reference_id or "por defecto"
         print(f"[Fish Audio] Generando audio para {total} escenas "
               f"(model={self.model}, voz={_voz})")
-        if self.emotion_markers:
-            print(f"   Marcadores de tono: {self.emotion_markers}")
+        if self.emotion_arc:
+            print(f"   Arco emocional ({len(self.emotion_arc)} fases): "
+                  f"{' -> '.join(self.emotion_arc)}")
         sem = asyncio.Semaphore(3)
 
         async def _one(idx, scene):
             scene_id = scene["id"]
-            texto = self._build_text(scene)
+            texto = self._build_text(scene, idx, total)
             if not texto:
                 print(f"   warning: escena {scene_id} sin texto, se omite.")
                 return
