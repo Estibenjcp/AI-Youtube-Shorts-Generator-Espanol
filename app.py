@@ -27,7 +27,32 @@ import importlib
 import shutil
 import io
 
-from modules.config import load_config, check_config, PROVIDER_DEFAULTS, get_secret
+from modules.config import load_config, check_config, PROVIDER_DEFAULTS
+
+# get_secret se importa aparte y con respaldo a proposito.
+#
+# Streamlit Cloud recarga app.py cuando cambia el codigo, pero NO reinicia el
+# interprete: los modulos de modules/ siguen en sys.modules con su version
+# anterior. Al anadir un nombre nuevo a un modulo, el app.py nuevo pide algo que
+# el modulo viejo en memoria todavia no tiene, y como este import es de nivel
+# superior la aplicacion entera muere con ImportError hasta que alguien reinicia
+# a mano.
+#
+# Con este respaldo la app arranca igual: si el modulo cacheado no trae
+# get_secret, se usa esta copia local, que hace lo mismo.
+try:
+    from modules.config import get_secret
+except ImportError:
+    def get_secret(key: str, default: str = "") -> str:
+        """Copia de emergencia de config.get_secret (ver comentario de arriba)."""
+        val = os.getenv(key, "")
+        if val:
+            return val
+        try:
+            return st.secrets.get(key, default)
+        except Exception:
+            return default
+
 import modules.topic_history as _topic_history
 from modules.categories import (
     TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN,
