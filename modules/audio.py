@@ -922,13 +922,26 @@ class FishAudioEngine:
     }
 
     # Voces en espanol de la Voice Library. reference_id -> etiqueta.
+    # El numero entre parentesis son los "likes" de la libreria: no garantiza
+    # que encaje con tu contenido, pero sirve de senial de calidad general.
     VOICES_ES = {
-        "13d17017d63340a0b9751ffb04561c8d": "Mujer latina *",
-        "edbe850c6b7d40f195edd8c043b18748": "Voz de mujer muy real y no artificial",
-        "a1070fc5bc824bb79dfa0007c00dfd0f": "Locutora mujer",
-        "22550e2d849b44e18c7df57f61e666f9": "Mujer Voz Venezuela",
-        "35199d5438854f5d9157c500479ab684": "Narrador v2 (masculina)",
-        "dfa5b230c8054f429e434f4a6e9bbdec": "Farid Dieck (masculina)",
+        # ── Calmadas / explicativas (tonos conductual y emotivo) ──
+        "13d17017d63340a0b9751ffb04561c8d": "F · Mujer latina",
+        "edbe850c6b7d40f195edd8c043b18748": "F · Mujer muy real, poco artificial",
+        "a1070fc5bc824bb79dfa0007c00dfd0f": "F · Locutora mujer",
+        "22550e2d849b44e18c7df57f61e666f9": "F · Mujer Venezuela",
+        # ── Con cuerpo y autoridad (tonos confrontativo y urgente) ──
+        "35199d5438854f5d9157c500479ab684": "M · Narrador v2  (3.8k likes)",
+        "3f45a7fd7a614655a61eb7027b955783": "M · Locutor K  (3.4k likes)",
+        "c87656721dda48a7906f990f036ce76f": "M · Narrador documental  (883)",
+        "def180b161a3498db94025d5124fcb2a": "M · Nestor G, locutor  (419)",
+        "9e65aa72e2694588aa42fab31a10c482": "M · Ivan Loscher, narrativa  (66)",
+        "3a42f62c3af240438066d7e927414dea": "M · Voz grave de hombre  (37)",
+        # ── Energicas (tono motivador) ──
+        "04f2aef28cc74b2eba42650f3aae47de": "M · Narracion motivacional  (19)",
+        "b84a444b669e4ea3ae90767dcadda3a9": "M · J.A. Castillo, animada  (243)",
+        "b59c354bd0f34008a906feb15e558e74": "M · Voz comercial  (19)",
+        "dfa5b230c8054f429e434f4a6e9bbdec": "M · Farid Dieck",
     }
 
     # El guion ya trae un `mood` por escena. Se traduce a un marcador, pero hay
