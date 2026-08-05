@@ -2,6 +2,7 @@ import os
 import time
 import random
 import threading
+from typing import Optional
 import requests
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
@@ -81,7 +82,7 @@ class AssetManager:
             _SEARCH_CACHE[query] = videos
         return videos
 
-    def search_video(self, query: str, duration_min: int = 4, _depth: int = 0) -> str | None:
+    def search_video(self, query: str, duration_min: int = 4, _depth: int = 0) -> Optional[str]:
         """
         Searches Pexels for a portrait video matching the query.
         Returns the download URL or None.
@@ -109,7 +110,7 @@ class AssetManager:
 
     # ── Download ──────────────────────────────────────────────────────────────
 
-    def download_video(self, url: str, filename: str, retries: int = 3) -> str | None:
+    def download_video(self, url: str, filename: str, retries: int = 3) -> Optional[str]:
         """
         Downloads a video with retry + exponential backoff.
         """

@@ -3267,46 +3267,66 @@ elif mode == "guion":
     # ── Objetivo en el embudo ─────────────────────────────────────────────
     # Eje independiente del tono: el tono dice COMO suena, el objetivo dice
     # PARA QUE sirve el video (captar, generar confianza o convertir).
-    from modules.personas import OBJETIVOS as _OBJS, DEFAULT_OBJETIVO as _DEF_OBJ
-
-    st.markdown(
-        "<div class='step-header'>🎬 "
-        + ("Objetivo del video" if lang_option == "es" else "Video objective")
-        + "</div>", unsafe_allow_html=True)
-
-    _obj_keys = list(_OBJS.keys())
-    _obj_cur  = st.session_state.get("guion_objetivo", _DEF_OBJ)
-    _obj_sel = st.radio(
-        "guion_objetivo",
-        options=_obj_keys,
-        format_func=lambda k: f"{_OBJS[k]['label']}  ({_OBJS[k]['proporcion']})",
-        index=_obj_keys.index(_obj_cur) if _obj_cur in _obj_keys else 0,
-        key="guion_objetivo",
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-    _obj = _OBJS[_obj_sel]
-    st.caption(f"{_obj['summary']}  ·  duracion recomendada "
-               f"{_obj['secs_min']}-{_obj['secs_max']}s")
-
-    # Aviso si el slider se aleja de lo recomendado para este objetivo.
-    _obj_secs = st.session_state.get("target_total_secs", 60)
-    if not (_obj["secs_min"] <= _obj_secs <= _obj["secs_max"]):
-        st.warning(
-            f"Tienes la duracion en {_obj_secs}s. Para {_obj['label']} lo "
-            f"recomendado son {_obj['secs_min']}-{_obj['secs_max']}s "
-            f"(ajustable en 📐 Duracion y escenas)."
+    #
+    # Import defensivo: en Streamlit Cloud el proceso sobrevive entre reruns, de
+    # modo que tras publicar codigo nuevo puede quedar en sys.modules una version
+    # antigua de personas.py sin estos nombres. Sin este try la app entera cae
+    # con ImportError hasta que alguien reinicia a mano. Con el, se pierde solo
+    # este selector y se explica que hacer.
+    try:
+        from modules.personas import OBJETIVOS as _OBJS, DEFAULT_OBJETIVO as _DEF_OBJ
+        _obj_ok = True
+    except ImportError:
+        _obj_ok = False
+        _obj_sel = "confianza"
+        st.info(
+            "El selector de objetivo no esta disponible porque el servidor tiene "
+            "una version antigua del modulo en memoria. Reinicia la app "
+            "(en Streamlit Cloud: Manage app -> Reboot) y volvera a aparecer."
             if lang_option == "es" else
-            f"Duration is {_obj_secs}s; {_obj['secs_min']}-{_obj['secs_max']}s "
-            f"is recommended for this objective."
+            "Objective selector unavailable: the server has a stale module in "
+            "memory. Reboot the app and it will come back."
         )
 
-    st.caption(
-        ("Proporcion sugerida en tu calendario: 50% atencion, 30% confianza, "
-         "20% conversion.")
-        if lang_option == "es" else
-        "Suggested mix: 50% attention, 30% trust, 20% conversion."
-    )
+    if _obj_ok:
+        st.markdown(
+            "<div class='step-header'>🎬 "
+            + ("Objetivo del video" if lang_option == "es" else "Video objective")
+            + "</div>", unsafe_allow_html=True)
+
+        _obj_keys = list(_OBJS.keys())
+        _obj_cur  = st.session_state.get("guion_objetivo", _DEF_OBJ)
+        _obj_sel = st.radio(
+            "guion_objetivo",
+            options=_obj_keys,
+            format_func=lambda k: f"{_OBJS[k]['label']}  ({_OBJS[k]['proporcion']})",
+            index=_obj_keys.index(_obj_cur) if _obj_cur in _obj_keys else 0,
+            key="guion_objetivo",
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+        _obj = _OBJS[_obj_sel]
+        st.caption(f"{_obj['summary']}  ·  duracion recomendada "
+                   f"{_obj['secs_min']}-{_obj['secs_max']}s")
+
+        # Aviso si el slider se aleja de lo recomendado para este objetivo.
+        _obj_secs = st.session_state.get("target_total_secs", 60)
+        if not (_obj["secs_min"] <= _obj_secs <= _obj["secs_max"]):
+            st.warning(
+                f"Tienes la duracion en {_obj_secs}s. Para {_obj['label']} lo "
+                f"recomendado son {_obj['secs_min']}-{_obj['secs_max']}s "
+                f"(ajustable en 📐 Duracion y escenas)."
+                if lang_option == "es" else
+                f"Duration is {_obj_secs}s; {_obj['secs_min']}-{_obj['secs_max']}s "
+                f"is recommended for this objective."
+            )
+
+        st.caption(
+            ("Proporcion sugerida en tu calendario: 50% atencion, 30% confianza, "
+             "20% conversion.")
+            if lang_option == "es" else
+            "Suggested mix: 50% attention, 30% trust, 20% conversion."
+        )
 
     # ── Previsualizar el guion tal como lo recibe el motor de voz ──────────
     # Una sola llamada al LLM, sin audio ni video, para poder ajustar el tono
