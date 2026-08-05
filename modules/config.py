@@ -15,6 +15,37 @@ PROVIDER_DEFAULTS = {
 }
 
 
+_dotenv_cargado = False
+
+
+def get_secret(key: str, default: str = "") -> str:
+    """Lee una clave del entorno y, si no esta, de st.secrets.
+
+    En local los valores viven en .env; en Streamlit Cloud, en st.secrets. Sin
+    esta funcion, cualquier clave leida solo con os.getenv queda vacia en el
+    despliegue y la app pide credenciales que el usuario ya habia configurado.
+
+    Carga el .env por su cuenta la primera vez: si dependiera de que alguien
+    llamase antes a load_config(), devolveria vacio segun el orden de ejecucion.
+    """
+    global _dotenv_cargado
+    if not _dotenv_cargado:
+        try:
+            load_dotenv(ENV_PATH)
+        except Exception:
+            pass
+        _dotenv_cargado = True
+
+    val = os.getenv(key, "")
+    if val:
+        return val
+    try:
+        import streamlit as st
+        return st.secrets.get(key, default)
+    except Exception:
+        return default
+
+
 def _streamlit_secrets() -> dict:
     """Lee st.secrets si estamos en Streamlit Cloud."""
     try:

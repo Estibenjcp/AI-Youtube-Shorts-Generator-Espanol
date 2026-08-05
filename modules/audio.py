@@ -921,6 +921,11 @@ class FishAudioEngine:
         "s1":            "s1             (legado - emociones entre parentesis)",
     }
 
+    # Voz por defecto cuando no hay FISH_VOICE_ID configurado. Vive aqui, en
+    # codigo, para que el despliegue arranque con la misma voz que en local
+    # aunque alli no exista .env.
+    DEFAULT_VOICE_ID = "3f45a7fd7a614655a61eb7027b955783"   # Locutor K
+
     # Voces en espanol de la Voice Library. reference_id -> etiqueta.
     # El numero entre parentesis son los "likes" de la libreria: no garantiza
     # que encaje con tu contenido, pero sirve de senial de calidad general.
