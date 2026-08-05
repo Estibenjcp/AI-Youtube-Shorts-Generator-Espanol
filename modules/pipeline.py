@@ -171,7 +171,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             script = brain.generate_freeform_script(
                 guion_text, lang=pipeline_lang,
                 target_secs=params.get("target_total_secs", 0) or 0,
-                tono_key=params.get("guion_tono", ""))
+                tono_key=params.get("guion_tono", ""),
+                objetivo_key=params.get("guion_objetivo", ""))
             # Topic para copy/miniatura/nombre de archivo.
             # Si el autor puso una cabecera "Titulo:", usamos ese valor limpio;
             # si no, la primera linea no vacia (comportamiento anterior).

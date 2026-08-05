@@ -8,8 +8,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from modules.categories import TOPIC_CATEGORIES_ES, TOPIC_CATEGORIES_EN, TOPIC_CATEGORIES
-from modules.personas import (DEFAULT_PERSONA, DEFAULT_TONO,
-                              get_persona, get_tono, build_voice_block)
+from modules.personas import (DEFAULT_PERSONA, DEFAULT_TONO, DEFAULT_OBJETIVO,
+                              get_persona, get_tono, get_objetivo,
+                              build_voice_block)
 
 
 def _get_secret(key: str, default: str = "") -> str:
@@ -1670,7 +1671,8 @@ JSON RULES:
 
     def generate_freeform_script(self, raw_text: str, lang: str = "es",
                                  target_secs: float = 0,
-                                 tono_key: str = None) -> list:
+                                 tono_key: str = None,
+                                 objetivo_key: str = None) -> list:
         """Convierte texto libre en un guion de YouTube Shorts.
 
         Dos caminos:
@@ -1689,7 +1691,8 @@ JSON RULES:
         if _authored:
             return self._generate_authored_script(parsed, lang=lang,
                                                   target_secs=target_secs,
-                                                  tono_key=tono_key)
+                                                  tono_key=tono_key,
+                                                  objetivo_key=objetivo_key)
 
         label = "Adaptando texto libre a guion viral" if lang == "es" else "Adapting freeform text to viral script"
         print(f"✍️ {label}...")
@@ -1854,7 +1857,8 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
     def _generate_authored_script(self, parsed: dict, lang: str = "es",
                                   persona_key: str = None,
                                   target_secs: float = 0,
-                                  tono_key: str = None) -> list:
+                                  tono_key: str = None,
+                                  objetivo_key: str = None) -> list:
         """Reescribe un guion del usuario con la voz de una persona narradora.
 
         El autor aporta el CONTENIDO (sus ideas y sus terminos); la persona aporta
@@ -1907,6 +1911,15 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
         # de la persona o lo sustituye por el suyo.
         _tono = get_tono(tono_key or DEFAULT_TONO)
         _persona_block = build_voice_block(_persona, _tono)
+
+        # El objetivo dice PARA QUE sirve el video en el embudo. Se anade
+        # despues de la voz y del tono, y su bloque va DESPUES del CTA de la
+        # persona a proposito: en conversion sus instrucciones de cierre deben
+        # poder mandar sobre el "nunca suenes a vendedora" generico, que existe
+        # para que no invente productos, no para prohibir el CTA del autor.
+        _objetivo = get_objetivo(objetivo_key or DEFAULT_OBJETIVO)
+        _obj_block = _objetivo["spec"]
+
         _cta_block = (_persona.get("cta", "") if _persona else
                       "### CIERRE:\n"
                       "- Si el autor trae un cierre o llamada a la accion, respetalo.\n"
@@ -1917,7 +1930,17 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
               + (f" · voz: {_persona['label']}" if _persona else " · voz neutra")
               + f" · tono: {_tono['label']}"
               + (" (rompe registro)" if _tono.get("rompe_voz") else "")
+              + f" · objetivo: {_objetivo['label']}"
               + (f" · {titulo}" if titulo else ""))
+
+        # Aviso si la duracion pedida se aleja de lo recomendado para el objetivo:
+        # un video de captacion de 90s o uno de confianza de 15s desaprovechan
+        # su funcion en el embudo. Es un aviso, no se corrige nada.
+        if target_secs:
+            _smin, _smax = _objetivo["secs_min"], _objetivo["secs_max"]
+            if not (_smin <= target_secs <= _smax):
+                print(f"   ⚠️ {target_secs:.0f}s para un video de "
+                      f"{_objetivo['label']}: lo recomendado son {_smin}-{_smax}s")
 
         beats_block = "\n".join(f"{i}. {b}" for i, b in enumerate(beats, 1))
         _ctx_es, _ctx_en = "", ""
@@ -1981,6 +2004,7 @@ a como la escribio el autor, si asi suena mas como esa voz.
 - Contradecir al autor ni suavizar su conclusion.
 
 {_cta_block}
+{_obj_block}
 ### FORMATO:
 - Espanol latino neutro.
 - CERO PALABRAS CON LA LETRA ñ. El motor de voz la pronuncia mal, asi que ninguna

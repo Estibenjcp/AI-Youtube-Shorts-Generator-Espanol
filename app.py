@@ -3264,6 +3264,50 @@ elif mode == "guion":
     st.caption(_TONOS[_tono_sel]["summary"]
                + ("  ·  cambia el registro de voz" if _TONOS[_tono_sel]["rompe_voz"] else ""))
 
+    # ── Objetivo en el embudo ─────────────────────────────────────────────
+    # Eje independiente del tono: el tono dice COMO suena, el objetivo dice
+    # PARA QUE sirve el video (captar, generar confianza o convertir).
+    from modules.personas import OBJETIVOS as _OBJS, DEFAULT_OBJETIVO as _DEF_OBJ
+
+    st.markdown(
+        "<div class='step-header'>🎬 "
+        + ("Objetivo del video" if lang_option == "es" else "Video objective")
+        + "</div>", unsafe_allow_html=True)
+
+    _obj_keys = list(_OBJS.keys())
+    _obj_cur  = st.session_state.get("guion_objetivo", _DEF_OBJ)
+    _obj_sel = st.radio(
+        "guion_objetivo",
+        options=_obj_keys,
+        format_func=lambda k: f"{_OBJS[k]['label']}  ({_OBJS[k]['proporcion']})",
+        index=_obj_keys.index(_obj_cur) if _obj_cur in _obj_keys else 0,
+        key="guion_objetivo",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    _obj = _OBJS[_obj_sel]
+    st.caption(f"{_obj['summary']}  ·  duracion recomendada "
+               f"{_obj['secs_min']}-{_obj['secs_max']}s")
+
+    # Aviso si el slider se aleja de lo recomendado para este objetivo.
+    _obj_secs = st.session_state.get("target_total_secs", 60)
+    if not (_obj["secs_min"] <= _obj_secs <= _obj["secs_max"]):
+        st.warning(
+            f"Tienes la duracion en {_obj_secs}s. Para {_obj['label']} lo "
+            f"recomendado son {_obj['secs_min']}-{_obj['secs_max']}s "
+            f"(ajustable en 📐 Duracion y escenas)."
+            if lang_option == "es" else
+            f"Duration is {_obj_secs}s; {_obj['secs_min']}-{_obj['secs_max']}s "
+            f"is recommended for this objective."
+        )
+
+    st.caption(
+        ("Proporcion sugerida en tu calendario: 50% atencion, 30% confianza, "
+         "20% conversion.")
+        if lang_option == "es" else
+        "Suggested mix: 50% attention, 30% trust, 20% conversion."
+    )
+
     # ── Previsualizar el guion tal como lo recibe el motor de voz ──────────
     # Una sola llamada al LLM, sin audio ni video, para poder ajustar el tono
     # antes de gastar un render completo.
@@ -3296,6 +3340,7 @@ elif mode == "guion":
                         lang=lang_option,
                         target_secs=st.session_state.get("target_total_secs", 60),
                         tono_key=_tono_sel,
+                        objetivo_key=_obj_sel,
                     )
                 st.session_state["guion_preview"]     = _pv_scenes
                 st.session_state["guion_preview_log"] = _pv_log.getvalue()
@@ -3905,6 +3950,7 @@ def _launch_pipeline():
         "job_offer_text": st.session_state.get("job_offer_input", ""),
         "guion_raw_text": st.session_state.get("guion_raw_input", ""),
         "guion_tono":     st.session_state.get("guion_tono", "conductual"),
+        "guion_objetivo": st.session_state.get("guion_objetivo", "confianza"),
         # ── Fish Audio ──
         "fish_api_key":      st.session_state.get("fish_api_key", os.getenv("FISH_API_KEY", "")),
         "fish_model":        st.session_state.get("fish_model", os.getenv("FISH_MODEL", "s2.1-pro-free")),

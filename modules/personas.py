@@ -313,3 +313,115 @@ def build_voice_block(persona: dict, tono: dict) -> str:
         )
     partes.append(tono["spec"])
     return "\n".join(partes)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# OBJETIVOS  (tercer eje: para que sirve el video en el embudo)
+# ══════════════════════════════════════════════════════════════════════════
+#
+# Independiente de persona y tono:
+#   persona  -> QUIEN habla
+#   tono     -> CON QUE INTENCION emocional
+#   objetivo -> PARA QUE sirve el video
+#
+# Un mismo tema puede necesitar los tres: uno corto que capte a quien no te
+# conoce, uno largo que demuestre que sabes, y uno que cierre la venta.
+# Se combinan libremente: Atencion + Confrontativo es un gancho que incomoda;
+# Confianza + Conductual es una explicacion completa del mecanismo.
+#
+# La duracion de cada objetivo es una RECOMENDACION que se muestra en la UI.
+# El slider del usuario sigue mandando: no se sobreescribe su eleccion.
+
+DEFAULT_OBJETIVO = "confianza"
+
+
+_OBJ_ATENCION = """\
+### OBJETIVO EN EL EMBUDO — CAPTAR A QUIEN NO TE CONOCE:
+Este video lo vera alguien que no sabe quien eres y que no te buscaba. Su
+unica funcion es que se detenga.
+
+- El GANCHO lo es todo. Los primeros 3 segundos deciden si sigue o pasa.
+- UNA sola idea en todo el video. Si hay dos, sobra una.
+- Sin contexto previo ni presentaciones: entra directo al golpe.
+- El pago llega rapido: no hagas esperar la parte interesante.
+- Cierra dejando curiosidad o una idea que rebota, no cerrando el tema.
+
+### PROHIBIDO EN ESTE OBJETIVO:
+- Vender, promocionar o pedir nada. Esta persona todavia no te conoce.
+- Explicaciones que se demoran antes de llegar al punto.
+- Cierres que resumen: resumir mata la curiosidad.
+"""
+
+_OBJ_CONFIANZA = """\
+### OBJETIVO EN EL EMBUDO — QUE TE CREA Y VUELVA:
+Este video lo vera alguien que ya te encontro. Su funcion es que piense
+"esta persona sabe de lo que habla" y decida volver.
+
+- Explica el MECANISMO completo, no la version resumida. Aqui si hay espacio.
+- Un ejemplo concreto y reconocible que aterrice la idea.
+- Entrega valor real y aplicable, gratis y sin condiciones.
+- Deja claro el porque antes del que hacer: eso es lo que demuestra criterio.
+- Cierra con la sensacion de haber aprendido algo util.
+
+### PROHIBIDO EN ESTE OBJETIVO:
+- Quedarse en la superficie. Si no explicas el mecanismo, no generas confianza.
+- Vender o empujar hacia un producto. Este video regala, no cobra.
+- Guardarse lo bueno para el final como cebo.
+"""
+
+_OBJ_CONVERSION = """\
+### OBJETIVO EN EL EMBUDO — QUE DE EL PASO:
+Este video lo vera alguien que ya te sigue y ya te cree. Su funcion es
+ayudarle a decidir.
+
+### ESTRUCTURA:
+1. Nombra el problema que esa persona YA reconoce como suyo.
+2. Muestra como se resuelve, concreto y sin misterio.
+3. Aporta la prueba que el autor haya dado: un caso, un resultado, una demo.
+4. Cierra con la llamada a la accion, dicha con claridad.
+
+### LA LLAMADA A LA ACCION:
+- Usa la que trae el guion del autor, TAL CUAL. No la suavices, no la escondas
+  al final entre otras frases, no la conviertas en una insinuacion.
+- Si el autor NO puso ninguna, NO te la inventes: cierra reforzando el
+  beneficio y ya. Inventar un producto o un enlace es peor que no cerrar.
+- Que se entienda exactamente que tiene que hacer la persona a continuacion.
+
+### PROHIBIDO EN ESTE OBJETIVO:
+- Inventar promesas, cifras, plazos, testimonios o casos de exito.
+- Urgencia falsa ("ultimas plazas", "solo hoy") que el autor no haya escrito.
+- Hablar del producto mas que del problema de la persona.
+"""
+
+
+OBJETIVOS = {
+    "atencion": {
+        "label":       "🎯 Atencion",
+        "summary":     "Para quien no te conoce. Gancho, una idea, cierre con curiosidad.",
+        "proporcion":  "50%",
+        "secs_min":    15,
+        "secs_max":    30,
+        "spec":        _OBJ_ATENCION,
+    },
+    "confianza": {
+        "label":       "🤝 Confianza",
+        "summary":     "Para quien ya te vio. Mecanismo completo y valor gratis.",
+        "proporcion":  "30%",
+        "secs_min":    60,
+        "secs_max":    90,
+        "spec":        _OBJ_CONFIANZA,
+    },
+    "conversion": {
+        "label":       "💰 Conversion",
+        "summary":     "Para quien ya te cree. Problema, prueba y llamada a la accion.",
+        "proporcion":  "20%",
+        "secs_min":    30,
+        "secs_max":    45,
+        "spec":        _OBJ_CONVERSION,
+    },
+}
+
+
+def get_objetivo(key):
+    """Devuelve el objetivo pedido. Cae al de por defecto si no existe."""
+    return OBJETIVOS.get(key or DEFAULT_OBJETIVO, OBJETIVOS[DEFAULT_OBJETIVO])
