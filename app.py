@@ -2431,7 +2431,7 @@ with st.expander(voice_label_hint, expanded=False):
         # ── Escuchar la voz elegida, con el tono actual ────────────────────
         from modules.personas import get_tono as _get_tono
         _fa_tono = _get_tono(st.session_state.get("guion_tono", "conductual"))
-        _fa_marcas = _fa_tono.get("fish_markers", "")
+        _fa_arco = _fa_tono.get("fish_arco", [])
 
         _pc1, _pc2 = st.columns([1, 2])
         with _pc1:
@@ -2441,7 +2441,11 @@ with st.expander(voice_label_hint, expanded=False):
                 disabled=not bool(_fa_key),
             )
         with _pc2:
-            st.caption(f"🎭 {_fa_tono['label']} → {_fa_marcas or 'sin marcadores'}")
+            # Se escucha la fase de APERTURA del arco, que es la primera que
+            # oiria el espectador del video.
+            st.caption(f"🎭 {_fa_tono['label']} → "
+                       + (f"{_fa_arco[0]} (fase de apertura)" if _fa_arco
+                          else "sin marcadores"))
 
         if _fa_prev:
             _fa_txt = ("No es debilidad tuya. Tu entorno te esta ganando, "
@@ -2453,11 +2457,13 @@ with st.expander(voice_label_hint, expanded=False):
                 try:
                     _fa_eng = _Fish(api_key=_fa_key, model=_fa_model,
                                     reference_id=_fa_ref, speed=_fa_speed,
-                                    emotion_markers=_fa_marcas, lang=lang_option)
+                                    emotion_arc=_fa_arco, lang=lang_option)
                     _fa_out = os.path.join(os.getcwd(), "assets", "audio_clips",
                                            "_preview_fish.mp3")
                     os.makedirs(os.path.dirname(_fa_out), exist_ok=True)
-                    _fa_eng._synthesize(f"{_fa_marcas} {_fa_txt}".strip(), _fa_out)
+                    # marker_for(0, N) devuelve la fase de apertura del arco
+                    _fa_fase = _fa_eng.marker_for(0, max(2, len(_fa_arco)))
+                    _fa_eng._synthesize(f"{_fa_fase} {_fa_txt}".strip(), _fa_out)
                     st.audio(_fa_out, format="audio/mp3")
                 except Exception as _fa_e:
                     st.error(f"{_fa_e}")
