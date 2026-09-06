@@ -39,9 +39,11 @@ services:
       #   sudo mkdir -p /srv/autoshorts/salida
       - ${SALIDA_DIR:-/srv/autoshorts/salida}:/app/assets/salida
       - historial:/app/assets
-    # Techo de memoria. Tu servidor ya va al 61%: esto impide que un render
-    # desbocado se lleve por delante el resto de servicios de la maquina.
-    mem_limit: 1500m
+    # Techo de memoria. Medido en el servidor: 7,6 Gi totales, 3,0 Gi
+    # disponibles. Los dos topes juntos (0,75 + 2 = 2,75 Gi) caben en esos 3 Gi,
+    # asi que un render no puede llevarse por delante lo demas que corre ahi.
+    # La interfaz apenas consume: quien renderiza es el worker.
+    mem_limit: 768m
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
       interval: 30s
@@ -80,8 +82,8 @@ services:
       #   sudo mkdir -p /srv/autoshorts/salida
       - ${SALIDA_DIR:-/srv/autoshorts/salida}:/app/assets/salida
       - historial:/app/assets
-    # El worker es quien renderiza, asi que se lleva la parte grande de la
-    # memoria libre. Nunca hace dos videos a la vez: los encadena uno tras otro.
+    # El worker es quien renderiza: se lleva la parte grande de los 3 Gi libres.
+    # Nunca hace dos videos a la vez, los encadena uno tras otro.
     mem_limit: 2g
 
 volumes:
