@@ -43,6 +43,12 @@ services:
       # POST. El limite por defecto de n8n es demasiado bajo para eso; sin
       # subir esto el webhook fallaria con el video adjunto.
       N8N_PAYLOAD_SIZE_MAX: "128"
+
+      # Limite explicito de heap para Node. Sin esto, con 512 MB de tope el
+      # contenedor murio en el arranque con "JavaScript heap out of memory" —
+      # n8n carga todos sus nodos y paquetes al iniciar y necesita mas margen
+      # incluso en reposo. Se deja por debajo del mem_limit del contenedor.
+      NODE_OPTIONS: "--max-old-space-size=768"
     volumes:
       # Workflows, credenciales y config — debe sobrevivir a un redeploy.
       - n8n_data:/home/node/.n8n
@@ -50,9 +56,11 @@ services:
       # esperan tu respuesta en Telegram. Nadie mas lo toca; no se comparte
       # con el stack de AutoShorts.
       - n8n_pendientes:/data
-    # n8n en reposo consume poco. El techo evita que una ejecucion pesada se
-    # coma la memoria que el worker de AutoShorts necesita para renderizar.
-    mem_limit: 512m
+    # n8n necesita mas de lo que parece solo para arrancar (512 MB murio con
+    # OOM en el primer inicio). 1 GB es el piso razonable; el techo sigue
+    # evitando que una ejecucion pesada le quite memoria al worker cuando
+    # ambos coinciden (justo cuando un render termina y dispara el webhook).
+    mem_limit: 1g
 
 volumes:
   n8n_data:
