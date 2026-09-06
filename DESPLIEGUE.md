@@ -69,6 +69,24 @@ docker cp temas.ejemplo.txt   autoshorts-worker:/datos/temas.txt
 - **`temas.txt`** — un tema por linea. Las lineas con `#` son notas y se ignoran.
   Un tema que ya se uso no se repite; uno que fallo se reintenta manana.
 
+### Como convierte un tema en video
+
+El preset viene en modo **Guion**, que es el que usas tu. Ese modo no acepta un
+tema suelto: espera un guion escrito. Asi que el worker lo hace en dos pasos.
+
+1. **Borrador.** Con el tema de la lista escribe un esqueleto en tu formato
+   (`Titulo:` / `Categoria:` / vinietas), una vinieta por escena.
+2. **Voz.** Ese borrador entra en el modo Guion por el camino *autorado*, que es
+   el que respeta las ideas una a una y les pone encima la voz de Andrea, el
+   tono Conductual y el objetivo Confianza.
+
+La division es a proposito: el paso 1 decide **que** se dice, el paso 2 decide
+**como suena**. Si el borrador sale mal formado, el worker lo tira y no gasta
+render.
+
+El numero de vinietas se calcula igual que lo hace la app, con tope de 12, para
+que la lista de temas no acabe generando 15 escenas y se coma la memoria.
+
 ## 5. Probar antes de esperar a mañana
 
 ```bash

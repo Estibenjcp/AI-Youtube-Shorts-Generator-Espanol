@@ -31,6 +31,7 @@ import time
 import unicodedata
 from datetime import datetime, timedelta
 
+from modules.brain import ContentBrain
 from modules.pipeline import run_pipeline
 from modules import topic_history
 
@@ -113,6 +114,69 @@ def temas_pendientes(limite: int) -> list:
 
 # ── Generacion ───────────────────────────────────────────────────────────────
 
+def desarrollar_tema(tema: str, preset: dict) -> str:
+    """Convierte un tema suelto en un guion estructurado con el formato del autor.
+
+    POR QUE HACE FALTA ESTE PASO:
+    El modo Guion tiene dos caminos dentro de brain.generate_freeform_script.
+    Si el texto trae cabecera "Titulo:" o tres o mas vinietas, lo trata como
+    GUION DEL AUTOR: lo respeta idea por idea y solo le pone encima la voz de la
+    persona, el tono y el objetivo. Si le llega una linea suelta cae en el otro
+    camino, cuyo prompt dice literalmente "SIN inventar informacion nueva" — con
+    un tema de una sola frase eso da un guion famelico.
+
+    Asi que el worker escribe primero el borrador de ideas y deja que el camino
+    autorado le ponga la voz. La division queda limpia: aqui el QUE se dice,
+    alli el COMO suena (Andrea, tono conductual, objetivo del embudo).
+    """
+    # Mismo calculo que hace brain para decidir cuantas escenas salen, para que
+    # el numero de vinietas que pido sea el numero de escenas que acabara habiendo
+    # y no me lleve una sorpresa. El tope de 12 es la barrera de memoria: 15
+    # escenas es lo que reventó el render en la nube.
+    n = max(int(preset.get("num_scenes", 9)),
+            round(float(preset.get("target_total_secs", 60)) / 5.5))
+    n = min(n, 12)
+
+    prompt = f"""Eres guionista de contenido corto sobre psicologia conductual,
+habitos y productividad, en espanol latino.
+
+TEMA: {tema}
+
+Escribe el ESQUELETO del video. Solo las ideas: la voz se la pone otro despues.
+
+FORMATO EXACTO, sin nada antes ni despues:
+
+Titulo: <titulo corto y concreto, maximo 60 caracteres>
+Categoria: psicologia conductual
+Guion:
+- <idea 1>
+- <idea 2>
+(y asi hasta {n})
+
+REGLAS:
+- Exactamente {n} vinietas. Ni una mas ni una menos.
+- Cada vinieta es UNA idea completa, de 12 a 20 palabras.
+- La primera nombra la conducta concreta que el espectador reconoce en si mismo.
+- Las del medio explican el MECANISMO de por que ocurre, no dan consejos.
+- La ultima aterriza en un cambio pequeno y realista del ENTORNO.
+- Prohibido: listas tipo "5 tips", promesas de resultados, plazos inventados,
+  frases de cartel motivacional y apelar a la fuerza de voluntad.
+- No escribas parrafos. Solo la cabecera y las vinietas."""
+
+    borrador = ContentBrain()._generate(prompt).strip()
+
+    # Red de seguridad: si el modelo devuelve algo sin la estructura esperada,
+    # el camino autorado no se activaria y el guion saldria pobre sin avisar.
+    _vinietas = borrador.count(chr(10) + "-")
+    if "Titulo:" not in borrador or _vinietas < 2:
+        raise RuntimeError(
+            "el borrador del tema salio sin la estructura esperada "
+            "(cabecera 'Titulo:' y vinietas); no lo mando al render")
+
+    log(f"   Borrador: {_vinietas} ideas")
+    return borrador
+
+
 def generar(tema: str, preset: dict) -> tuple:
     """Genera un video. Devuelve (ok, mensaje_error, datos_copy).
 
@@ -121,7 +185,14 @@ def generar(tema: str, preset: dict) -> tuple:
     de escupirlo todo de golpe al final.
     """
     params = dict(preset)
-    params["topic"] = tema
+
+    # Cada modo lee el tema de un sitio distinto, y esto no es un detalle: el
+    # modo Guion NO mira "topic". Lee "guion_raw_text" y, si llega vacio, aborta
+    # con "No se proporciono texto para el guion libre" antes de hacer nada.
+    if preset.get("mode") == "guion":
+        params["guion_raw_text"] = desarrollar_tema(tema, preset)
+    else:
+        params["topic"] = tema
 
     cola = queue.Queue()
     hilo = threading.Thread(target=run_pipeline, args=(cola, params), daemon=True)

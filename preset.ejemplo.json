@@ -1,39 +1,32 @@
 {
-  "mode": "mentalidad",
-  "video_mode": "mentalidad",
+  "mode": "guion",
+  "video_mode": "guion",
   "lang": "es",
   "category": "",
-
   "num_scenes": 9,
   "target_total_secs": 60,
   "rate": "+0%",
-
   "tts_engine": "fish_audio",
   "fish_reference_id": "3f45a7fd7a614655a61eb7027b955783",
   "fish_speed": 1.0,
   "voice": "",
-
   "guion_tono": "conductual",
   "guion_objetivo": "confianza",
   "guion_raw_text": "",
-
   "video_source": "pexels",
   "ai_video_provider": "fal",
   "ai_video_model": "",
   "ai_video_style": "cinematic",
   "ai_video_num_scenes": 6,
   "ai_video_clip_duration": 5,
-
   "use_subtitles": true,
   "subtitle_style": "default",
-
   "use_music": false,
   "music_file_path": "",
   "music_volume": 0.15,
   "music_fade_in": 1.0,
   "music_fade_out": 2.0,
   "music_loop": true,
-
   "fx_ken_burns": false,
   "fx_color_grade": true,
   "fx_progress_bar": false,
@@ -41,11 +34,9 @@
   "fx_hook_card": false,
   "fx_hook_text": "",
   "fx_hook_duration": 2.5,
-
   "use_avatar": false,
   "chosen_hook": "",
   "webhook_url": "",
-
   "el_model": "eleven_multilingual_v2",
   "el_voice_id": "",
   "gtts_voice_name": "es-US-Neural2-B",
