@@ -1,5 +1,12 @@
 # Stack de n8n para el flujo de aprobacion por Telegram.
 #
+# name: fija el nombre de proyecto de Compose explicitamente. SIN esto,
+# Compose usa el nombre de la CARPETA como proyecto — y "n8n" es un nombre
+# generico que ya choco una vez con otra instalacion de n8n de este mismo
+# servidor: Compose la trato como "el mismo servicio" y la reemplazo por
+# esta. Con el nombre fijo aqui, este stack queda namespaced pase lo que
+# pase con la carpeta o con otros stacks de n8n en la maquina.
+#
 # Va SEPARADO del stack de AutoShorts a proposito: n8n no depende de AutoShorts
 # para vivir (solo recibe un POST suyo), y asi un `docker compose up` de uno no
 # reinicia el otro. Se comunican por HTTP publico, no por red de Docker interna.
@@ -7,6 +14,8 @@
 # El proxy inverso (Nginx Proxy Manager) y Cloudflare ya existen en este
 # servidor — no se montan aqui. Este stack solo publica el puerto 5678 para
 # que NPM lo reparta con su propio certificado.
+
+name: autoshorts-n8n
 
 services:
   n8n:
@@ -64,4 +73,6 @@ services:
 
 volumes:
   n8n_data:
+    name: n8n_n8n_data
   n8n_pendientes:
+    name: n8n_n8n_pendientes
