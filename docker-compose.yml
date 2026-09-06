@@ -3,8 +3,12 @@
 # Dos contenedores, una sola imagen:
 #   app     -> la interfaz de siempre, en el puerto 8501. Para trabajar a mano,
 #              probar voces y dejar preparado el preset del worker.
-#   worker  -> el generador automatico. Duerme hasta la hora fijada, hace la
-#              tanda del dia y vuelve a dormir.
+#   worker  -> --serve: expone POST /generar en el puerto 8600 para que n8n
+#              (AppFlowy -> n8n -> aqui) pida un render bajo demanda. Nunca
+#              corre dos a la vez: un solo candado interno los encadena.
+#              El modo --daemon (tanda diaria desde temas.txt) sigue en el
+#              codigo y se puede volver a el cambiando el "command" de abajo,
+#              pero con --serve activo no corre en paralelo.
 #
 # En Portainer:  Stacks -> Add stack -> Repository (apunta a tu repo de GitHub)
 # y rellena las variables de entorno abajo en "Environment variables".
@@ -63,7 +67,12 @@ services:
     image: autoshorts-ai:latest
     container_name: autoshorts-worker
     restart: unless-stopped
-    command: ["python", "worker.py", "--daemon"]
+    command: ["python", "worker.py", "--serve"]
+    ports:
+      # Solo LAN, sin TLS: el token en WORKER_HTTP_TOKEN es la unica proteccion,
+      # igual que otros paneles de este servidor (Portainer, Beszel) que ya se
+      # exponen asi puertas adentro de la red. No publicar esto hacia internet.
+      - "8600:8600"
     environment:
       TZ: ${TZ:-America/Bogota}
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
@@ -86,6 +95,9 @@ services:
       WORKER_PRESET_FILE:   /datos/preset.json
       WORKER_TEMAS_FILE:    /datos/temas.txt
       WORKER_SALIDA_DIR:    /app/assets/salida
+      # ── Endpoint HTTP para n8n (modo --serve) ──
+      WORKER_HTTP_TOKEN: ${WORKER_HTTP_TOKEN}
+      WORKER_HTTP_PORT:  ${WORKER_HTTP_PORT:-8600}
       # ── Aviso cuando termina (opcional) ──
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID:   ${TELEGRAM_CHAT_ID:-}

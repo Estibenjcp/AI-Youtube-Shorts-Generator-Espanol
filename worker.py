@@ -19,6 +19,11 @@ Uso:
     python worker.py --daemon     duerme hasta WORKER_HORA y repite cada dia
     python worker.py --ahora      hace una tanda ya mismo y sale (para probar)
     python worker.py --uno "tema" genera un solo video de ese tema y sale
+    python worker.py --serve      levanta el endpoint HTTP /generar para n8n
+
+--serve es para cuando el guion no sale de temas.txt sino de otro sitio
+(AppFlowy vía n8n): expone POST /generar y deja de correr la tanda diaria
+automatica. Los otros tres modos no cambian.
 """
 
 import json
@@ -30,6 +35,15 @@ import threading
 import time
 import unicodedata
 from datetime import datetime, timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+# Sin esto, cualquier emoji en un log() revienta con UnicodeEncodeError en
+# consolas cp1252 (Windows) y mata el hilo que lo llama a media ejecucion —
+# me paso en pruebas locales: el hilo del render moría en el primer log()
+# ANTES de tocar el pipeline, y el candado de concurrencia se soltaba de
+# inmediato sin haber generado nada. app.py ya se protege igual arriba de todo.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from modules.brain import ContentBrain
 from modules.pipeline import run_pipeline
@@ -177,23 +191,15 @@ REGLAS:
     return borrador
 
 
-def generar(tema: str, preset: dict) -> tuple:
-    """Genera un video. Devuelve (ok, mensaje_error, datos_copy).
+def _ejecutar_pipeline(params: dict) -> tuple:
+    """Corre run_pipeline y devuelve (ok, mensaje_error, datos_copy).
 
-    run_pipeline se ejecuta en un hilo solo para poder ir leyendo su cola de
-    mensajes en vivo: asi 'docker logs' muestra el avance en tiempo real en vez
-    de escupirlo todo de golpe al final.
+    Compartido por las dos formas de generar (tema suelto o guion ya escrito):
+    la unica diferencia entre ellas es como se rellena params antes de llegar
+    aqui. run_pipeline se ejecuta en un hilo solo para poder ir leyendo su cola
+    de mensajes en vivo: asi 'docker logs' muestra el avance en tiempo real en
+    vez de escupirlo todo de golpe al final.
     """
-    params = dict(preset)
-
-    # Cada modo lee el tema de un sitio distinto, y esto no es un detalle: el
-    # modo Guion NO mira "topic". Lee "guion_raw_text" y, si llega vacio, aborta
-    # con "No se proporciono texto para el guion libre" antes de hacer nada.
-    if preset.get("mode") == "guion":
-        params["guion_raw_text"] = desarrollar_tema(tema, preset)
-    else:
-        params["topic"] = tema
-
     cola = queue.Queue()
     hilo = threading.Thread(target=run_pipeline, args=(cola, params), daemon=True)
     hilo.start()
@@ -229,6 +235,35 @@ def generar(tema: str, preset: dict) -> tuple:
         error = "el pipeline termino sin avisar (revisa el log de arriba)"
 
     return ok, error, copy_data
+
+
+def generar(tema: str, preset: dict) -> tuple:
+    """Genera un video a partir de un TEMA suelto (lista temas.txt).
+
+    Cada modo lee el tema de un sitio distinto, y esto no es un detalle: el
+    modo Guion NO mira "topic". Lee "guion_raw_text" y, si llega vacio, aborta
+    con "No se proporciono texto para el guion libre" antes de hacer nada.
+    """
+    params = dict(preset)
+    if preset.get("mode") == "guion":
+        params["guion_raw_text"] = desarrollar_tema(tema, preset)
+    else:
+        params["topic"] = tema
+    return _ejecutar_pipeline(params)
+
+
+def generar_desde_guion(guion_completo: str, preset: dict) -> tuple:
+    """Genera un video a partir de un GUION YA ESCRITO (AppFlowy via n8n).
+
+    A diferencia de generar(), aqui NO se pasa por desarrollar_tema(): el
+    guion ya viene completo con su cabecera 'Titulo:/Categoria:/Guion:', asi
+    que entra directo al camino autorado (respeta las ideas del autor). Pasarlo
+    por el borrador de IA otra vez seria reescribir lo que la persona ya
+    redacto a mano en AppFlowy — justo lo que no queremos.
+    """
+    params = dict(preset)
+    params["guion_raw_text"] = guion_completo
+    return _ejecutar_pipeline(params)
 
 
 def _slug(texto: str, largo: int = 60) -> str:
@@ -367,11 +402,114 @@ def daemon():
         time.sleep(90)
 
 
+# ── Servidor HTTP para n8n ────────────────────────────────────────────────────
+#
+# Un solo candado global: nunca dos renders a la vez. El servidor solo acepta
+# el trabajo y contesta al momento (202); el resultado real (video + copy)
+# sigue llegando por el webhook_url que YA manda pipeline.py, el mismo que
+# alimenta la aprobacion por Telegram. Este endpoint no reemplaza eso, solo
+# resuelve "como entra un guion nuevo", que antes solo podia venir de
+# temas.txt o de la interfaz.
+
+_RENDER_LOCK  = threading.Lock()
+_HTTP_TOKEN   = os.getenv("WORKER_HTTP_TOKEN", "")
+_HTTP_PORT    = int(os.getenv("WORKER_HTTP_PORT", "8600"))
+
+
+def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: dict):
+    guion_completo = f"Titulo: {titulo}\nCategoria: {categoria}\nGuion:\n{guion}"
+    try:
+        log(f"▶ Generando (HTTP): {titulo}")
+        ok, error, copy_data = generar_desde_guion(guion_completo, preset)
+        if ok:
+            destino = archivar(titulo, copy_data)
+            log(f"   ✅ Listo → {destino}")
+        else:
+            log(f"   ❌ Fallo: {error}")
+            avisar(f"AutoShorts: fallo generando \"{titulo}\".\n{error}")
+    except Exception as e:
+        log(f"   ❌ Excepcion inesperada: {e}")
+        avisar(f"AutoShorts: excepcion generando \"{titulo}\".\n{e}")
+    finally:
+        _RENDER_LOCK.release()
+
+
+class _Handler(BaseHTTPRequestHandler):
+    def log_message(self, fmt, *a):
+        log("HTTP " + (fmt % a))
+
+    def _json(self, status: int, payload: dict):
+        cuerpo = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(cuerpo)))
+        self.end_headers()
+        self.wfile.write(cuerpo)
+
+    def do_GET(self):
+        if self.path == "/salud":
+            self._json(200, {"ocupado": _RENDER_LOCK.locked()})
+        else:
+            self._json(404, {"error": "ruta desconocida"})
+
+    def do_POST(self):
+        if self.path != "/generar":
+            self._json(404, {"error": "ruta desconocida"})
+            return
+
+        if not _HTTP_TOKEN or self.headers.get("X-Worker-Token", "") != _HTTP_TOKEN:
+            self._json(401, {"error": "token invalido"})
+            return
+
+        try:
+            largo = int(self.headers.get("Content-Length", "0"))
+            body  = json.loads(self.rfile.read(largo) or b"{}")
+        except Exception:
+            self._json(400, {"error": "cuerpo no es JSON valido"})
+            return
+
+        titulo    = (body.get("titulo") or "").strip()
+        categoria = (body.get("categoria") or "").strip()
+        guion     = (body.get("guion") or "").strip()
+        if not titulo or not guion:
+            self._json(400, {"error": "faltan 'titulo' o 'guion'"})
+            return
+
+        if not _RENDER_LOCK.acquire(blocking=False):
+            # No es un error: n8n debe interpretarlo como "reintenta en la
+            # proxima vuelta del schedule", nunca como fallo del item.
+            self._json(409, {"error": "ya hay un render en curso"})
+            return
+
+        preset = cargar_preset()
+        hilo = threading.Thread(
+            target=_generar_en_segundo_plano,
+            args=(titulo, categoria, guion, preset),
+            daemon=True,
+        )
+        hilo.start()
+        self._json(202, {"aceptado": True, "titulo": titulo})
+
+
+def servir():
+    if not _HTTP_TOKEN:
+        raise SystemExit(
+            "Falta WORKER_HTTP_TOKEN. --serve no arranca sin el a proposito: "
+            "sin un token, cualquiera en la red interna podria disparar "
+            "renders (y gastar las claves de pago) llamando al endpoint."
+        )
+    cargar_preset()  # falla rapido si el preset no existe, antes de escuchar
+    log(f"Sirviendo en :{_HTTP_PORT} — POST /generar (token requerido), GET /salud")
+    ThreadingHTTPServer(("0.0.0.0", _HTTP_PORT), _Handler).serve_forever()
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
 
     if "--daemon" in args:
         daemon()
+    elif "--serve" in args:
+        servir()
     elif "--ahora" in args:
         hacer_tanda()
     elif "--uno" in args:
