@@ -30,6 +30,13 @@ services:
       FISH_API_KEY:  ${FISH_API_KEY}
       FISH_MODEL:    ${FISH_MODEL:-s2.1-pro-free}
       FISH_VOICE_ID: ${FISH_VOICE_ID}
+      # ── Voz alternativa y video por IA ──
+      GOOGLE_TTS_KEY:      ${GOOGLE_TTS_KEY:-}
+      ELEVENLABS_API_KEY:  ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+      AI_VIDEO_PROVIDER:   ${AI_VIDEO_PROVIDER:-fal}
+      AI_VIDEO_KEY:        ${AI_VIDEO_KEY:-}
+      AI_VIDEO_MODEL:      ${AI_VIDEO_MODEL:-}
       # ── Acceso a la interfaz ──
       APP_PASSWORD: ${APP_PASSWORD}
     volumes:
@@ -66,6 +73,13 @@ services:
       FISH_API_KEY:  ${FISH_API_KEY}
       FISH_MODEL:    ${FISH_MODEL:-s2.1-pro-free}
       FISH_VOICE_ID: ${FISH_VOICE_ID}
+      # ── Voz alternativa y video por IA ──
+      GOOGLE_TTS_KEY:      ${GOOGLE_TTS_KEY:-}
+      ELEVENLABS_API_KEY:  ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+      AI_VIDEO_PROVIDER:   ${AI_VIDEO_PROVIDER:-fal}
+      AI_VIDEO_KEY:        ${AI_VIDEO_KEY:-}
+      AI_VIDEO_MODEL:      ${AI_VIDEO_MODEL:-}
       # ── Programacion de la tanda diaria ──
       WORKER_HORA:          ${WORKER_HORA:-06:00}
       WORKER_VIDEOS_TANDA:  ${WORKER_VIDEOS_TANDA:-3}
