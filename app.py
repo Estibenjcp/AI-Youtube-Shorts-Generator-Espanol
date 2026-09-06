@@ -799,11 +799,13 @@ hr {
 # ── Autenticación ─────────────────────────────────────────────────────────────
 
 def _check_auth():
-    app_password = (
-        st.secrets.get("APP_PASSWORD", None)
-        if hasattr(st, "secrets")
-        else None
-    ) or os.getenv("APP_PASSWORD", "")
+    # get_secret lee primero el entorno y solo despues st.secrets, con el acceso
+    # envuelto en try/except. Aqui es obligatorio: en un servidor propio no hay
+    # secrets.toml, y con solo TOCAR st.secrets Streamlit lanza
+    # StreamlitSecretNotFoundError y tumba la app entera en el login.
+    # hasattr(st, "secrets") no protegia de nada, porque el atributo SI existe:
+    # lo que revienta es leerlo.
+    app_password = get_secret("APP_PASSWORD", "")
 
     if not app_password or st.session_state.get("authenticated"):
         return
