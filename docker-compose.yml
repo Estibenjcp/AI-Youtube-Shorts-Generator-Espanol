@@ -1,0 +1,92 @@
+# Stack de AutoShorts AI para Portainer.
+#
+# Dos contenedores, una sola imagen:
+#   app     -> la interfaz de siempre, en el puerto 8501. Para trabajar a mano,
+#              probar voces y dejar preparado el preset del worker.
+#   worker  -> el generador automatico. Duerme hasta la hora fijada, hace la
+#              tanda del dia y vuelve a dormir.
+#
+# En Portainer:  Stacks -> Add stack -> Repository (apunta a tu repo de GitHub)
+# y rellena las variables de entorno abajo en "Environment variables".
+
+services:
+
+  app:
+    build: .
+    image: autoshorts-ai:latest
+    container_name: autoshorts-app
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      # ── IA que escribe el guion ──
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_API_KEY:  ${AI_API_KEY}
+      AI_MODEL:    ${AI_MODEL:-gemini-2.0-flash-exp}
+      # ── Banco de video ──
+      PEXELS_API_KEY: ${PEXELS_API_KEY}
+      # ── Voz ──
+      FISH_API_KEY:  ${FISH_API_KEY}
+      FISH_MODEL:    ${FISH_MODEL:-s2.1-pro-free}
+      FISH_VOICE_ID: ${FISH_VOICE_ID}
+      # ── Acceso a la interfaz ──
+      APP_PASSWORD: ${APP_PASSWORD}
+    volumes:
+      - datos:/datos
+      # Carpeta real del servidor donde caen los mp4 terminados, para que puedas
+      # abrirlos por SMB/SFTP sin entrar al contenedor. Creala antes de arrancar:
+      #   sudo mkdir -p /srv/autoshorts/salida
+      - ${SALIDA_DIR:-/srv/autoshorts/salida}:/app/assets/salida
+      - historial:/app/assets
+    # Techo de memoria. Tu servidor ya va al 61%: esto impide que un render
+    # desbocado se lleve por delante el resto de servicios de la maquina.
+    mem_limit: 1500m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    build: .
+    image: autoshorts-ai:latest
+    container_name: autoshorts-worker
+    restart: unless-stopped
+    command: ["python", "worker.py", "--daemon"]
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_API_KEY:  ${AI_API_KEY}
+      AI_MODEL:    ${AI_MODEL:-gemini-2.0-flash-exp}
+      PEXELS_API_KEY: ${PEXELS_API_KEY}
+      FISH_API_KEY:  ${FISH_API_KEY}
+      FISH_MODEL:    ${FISH_MODEL:-s2.1-pro-free}
+      FISH_VOICE_ID: ${FISH_VOICE_ID}
+      # ── Programacion de la tanda diaria ──
+      WORKER_HORA:          ${WORKER_HORA:-06:00}
+      WORKER_VIDEOS_TANDA:  ${WORKER_VIDEOS_TANDA:-3}
+      WORKER_PRESET_FILE:   /datos/preset.json
+      WORKER_TEMAS_FILE:    /datos/temas.txt
+      WORKER_SALIDA_DIR:    /app/assets/salida
+      # ── Aviso cuando termina (opcional) ──
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID:   ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - datos:/datos
+      # Carpeta real del servidor donde caen los mp4 terminados, para que puedas
+      # abrirlos por SMB/SFTP sin entrar al contenedor. Creala antes de arrancar:
+      #   sudo mkdir -p /srv/autoshorts/salida
+      - ${SALIDA_DIR:-/srv/autoshorts/salida}:/app/assets/salida
+      - historial:/app/assets
+    # El worker es quien renderiza, asi que se lleva la parte grande de la
+    # memoria libre. Nunca hace dos videos a la vez: los encadena uno tras otro.
+    mem_limit: 2g
+
+volumes:
+  # preset.json y temas.txt — lo que tu configuras.
+  datos:
+  # assets/ del pipeline, incluido used_topics.json, para que el historial de
+  # temas sobreviva a los reinicios y no se repitan videos.
+  historial:

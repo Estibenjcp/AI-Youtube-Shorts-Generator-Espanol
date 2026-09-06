@@ -1,0 +1,22 @@
+# Nunca deben entrar en la imagen: las claves.
+.env
+.streamlit/secrets.toml
+
+# Basura que solo engorda la imagen.
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+*.md
+!README.md
+
+# Material generado. En el servidor vive en volumenes, no dentro de la imagen.
+assets/temp/
+assets/final/
+assets/salida/
+assets/audio_clips/
+assets/video_clips/
+
+# Cosas de Windows que no pintan nada en Linux.
+start.bat

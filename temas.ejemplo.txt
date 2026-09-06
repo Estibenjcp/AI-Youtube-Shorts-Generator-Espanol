@@ -1,0 +1,21 @@
+# Lista de temas para el worker.
+#
+# Un tema por linea. Las lineas vacias y las que empiezan por # se ignoran,
+# asi puedes dejarte notas aqui dentro.
+#
+# El worker coge los primeros que aun no haya usado, los convierte en video y
+# los marca como usados. Un tema que falle NO se marca: vuelve a intentarlo
+# en la tanda siguiente.
+#
+# Copia este fichero al volumen 'datos' como temas.txt y escribe los tuyos.
+
+Por que te cuesta empezar aunque sepas exactamente que tienes que hacer
+La ilusion de progreso: por que consumir contenido se siente como avanzar
+El telefono boca abajo sigue llamandote y esto explica por que
+Que es el reforzamiento intermitente y por que te tiene enganchado
+Por que la fuerza de voluntad falla y el diseno del entorno funciona
+La trampa de esperar a tener ganas para hacer algo
+Por que te distraes justo cuando la tarea se pone dificil
+El coste real de revisar el movil cada diez minutos
+Por que los habitos pequenos ganan a los propositos grandes
+Que pasa en tu cabeza cuando pospones algo importante

@@ -58,7 +58,24 @@ class Composer:
 
     # ── Subtitle helpers ──────────────────────────────────────────────────────
 
-    _WINDOWS_FONT = r'C:\Windows\Fonts\arial.ttf'
+    # Fuente para drawtext (subtitulos y hook card).
+    #
+    # En Windows existe arial.ttf. En un contenedor Linux NO, y si a drawtext no
+    # se le pasa 'fontfile' ffmpeg aborta con "Cannot find a valid font for the
+    # family Sans" — el render entero muere en el ultimo paso. Por eso se resuelve
+    # aqui la primera fuente que exista de verdad.
+    #
+    # SUBTITLE_FONT va primero para poder cambiar la tipografia desde el entorno
+    # (variable del stack en Portainer) sin tocar el codigo.
+    #
+    # La lista es un literal dentro de la comprension a proposito: asi el iterable
+    # se evalua en el ambito de la clase y no depende de nombres de clase.
+    _FONT_FILE = ([f for f in [
+        os.getenv("SUBTITLE_FONT", ""),
+        r'C:\Windows\Fonts\arial.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+    ] if f and os.path.exists(f)] + [''])[0].replace('\\', '/')
 
     # Default subtitle style — all keys can be overridden via the style dict
     _DEFAULT_STYLE = {
@@ -142,8 +159,8 @@ class Composer:
             kwargs["box"]        = 1
             kwargs["boxcolor"]   = s["boxcolor"]
             kwargs["boxborderw"] = 8
-        if os.path.exists(self._WINDOWS_FONT):
-            kwargs['fontfile'] = self._WINDOWS_FONT.replace('\\', '/')
+        if self._FONT_FILE:
+            kwargs['fontfile'] = self._FONT_FILE
         return kwargs
 
     # ── Proportional-fallback helpers ────────────────────────────────────────
@@ -427,8 +444,8 @@ class Composer:
             boxborderw=16,
             enable=enable_expr,
         )
-        if os.path.exists(self._WINDOWS_FONT):
-            kwargs['fontfile'] = self._WINDOWS_FONT.replace('\\', '/')
+        if self._FONT_FILE:
+            kwargs['fontfile'] = self._FONT_FILE
 
         return stream.drawtext(**kwargs)
 
