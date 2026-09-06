@@ -1,0 +1,59 @@
+# Stack de n8n para el flujo de aprobacion por Telegram.
+#
+# Va SEPARADO del stack de AutoShorts a proposito: n8n no depende de AutoShorts
+# para vivir (solo recibe un POST suyo), y asi un `docker compose up` de uno no
+# reinicia el otro. Se comunican por HTTP publico, no por red de Docker interna.
+#
+# El proxy inverso (Nginx Proxy Manager) y Cloudflare ya existen en este
+# servidor — no se montan aqui. Este stack solo publica el puerto 5678 para
+# que NPM lo reparta con su propio certificado.
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      # Publicado en el host para que NPM (su propio contenedor o proceso) lo
+      # alcance por la IP del servidor. Si NPM corre en la misma maquina fuera
+      # de Docker, tambien funciona apuntando a 127.0.0.1:5678.
+      - "5678:5678"
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      GENERIC_TIMEZONE: ${TZ:-America/Bogota}
+
+      # Como llega el trafico real: por HTTPS, vía NPM, a este dominio.
+      # WEBHOOK_URL es lo que n8n imprime cuando creas un nodo Webhook — si esto
+      # esta mal, los webhooks que generes apuntaran a la URL equivocada.
+      N8N_HOST: ${N8N_HOST}
+      N8N_PROTOCOL: https
+      N8N_PORT: "5678"
+      WEBHOOK_URL: https://${N8N_HOST}/
+      # NPM esta delante como proxy: sin esto n8n no confia en la cabecera
+      # X-Forwarded-Proto y puede detectar mal http/https.
+      N8N_PROXY_HOPS: "1"
+
+      # Protege los workflows y credenciales guardados (el token de Telegram,
+      # mas adelante el de YouTube) dentro del volumen. Generala tu mismo con
+      # `openssl rand -hex 32` y ponla en el .env de esta carpeta — asi nunca
+      # pasa por este chat ni por mis manos.
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+
+      # El webhook de AutoShorts manda el video entero en base64 dentro del
+      # POST. El limite por defecto de n8n es demasiado bajo para eso; sin
+      # subir esto el webhook fallaria con el video adjunto.
+      N8N_PAYLOAD_SIZE_MAX: "128"
+    volumes:
+      # Workflows, credenciales y config — debe sobrevivir a un redeploy.
+      - n8n_data:/home/node/.n8n
+      # Almacen propio para los videos "pendientes de aprobar" mientras
+      # esperan tu respuesta en Telegram. Nadie mas lo toca; no se comparte
+      # con el stack de AutoShorts.
+      - n8n_pendientes:/data
+    # n8n en reposo consume poco. El techo evita que una ejecucion pesada se
+    # coma la memoria que el worker de AutoShorts necesita para renderizar.
+    mem_limit: 512m
+
+volumes:
+  n8n_data:
+  n8n_pendientes:
