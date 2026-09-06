@@ -689,7 +689,14 @@ class Composer:
             except Exception as e:
                 print(f"⚠️ Could not normalize outro: {e} — skipping.")
 
-        # Merge user style with defaults
+        # Merge user style with defaults. subtitle_style llega desde fuera (UI o
+        # un preset externo del worker) — un valor mal formado aqui (ej. la
+        # cadena "default" en vez de {}) rompia con 'str' object is not a
+        # mapping en vez de decir claramente cual parametro esta mal.
+        if subtitle_style and not isinstance(subtitle_style, dict):
+            print(f"⚠️ subtitle_style deberia ser un diccionario, llego "
+                  f"{type(subtitle_style).__name__}={subtitle_style!r} — se ignora.")
+            subtitle_style = {}
         _style = {**self._DEFAULT_STYLE, **(subtitle_style or {})}
 
         # Collect raw scene texts + audio paths (indexed by original video position)

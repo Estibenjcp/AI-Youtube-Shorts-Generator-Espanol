@@ -20,7 +20,7 @@
   "ai_video_num_scenes": 6,
   "ai_video_clip_duration": 5,
   "use_subtitles": true,
-  "subtitle_style": "default",
+  "subtitle_style": {},
   "use_music": false,
   "music_file_path": "",
   "music_volume": 0.15,
