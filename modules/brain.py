@@ -1911,6 +1911,15 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
             n = max(n_ideas, min(n_ideas * 3,
                                  max(1, round(target_secs / _SECS_POR_ESCENA_IDEAL))))
             wpsc = max(8, total_palabras // n)
+            # Estructura de retencion (gancho -> contexto -> mecanismo ->
+            # reencuadre -> cierre), como % del guion. El mecanismo es el
+            # bloque mas grande a proposito: es la parte que hace que la
+            # gente se quede, no el consejo final.
+            _w_gancho    = max(6,  int(total_palabras * 0.06))
+            _w_contexto  = max(10, int(total_palabras * 0.15))
+            _w_mecanismo = max(15, int(total_palabras * 0.38))
+            _w_reencuadre= max(10, int(total_palabras * 0.21))
+            _w_cierre    = max(8,  int(total_palabras * 0.20))
             _dur_block = f"""
 ### DURACION OBJETIVO — {target_secs:.0f} SEGUNDOS (obligatorio):
 - El guion completo debe rondar las {total_palabras} palabras. Es el dato que
@@ -1922,6 +1931,21 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
 - Desarrollar NO es rellenar: prohibido repetir lo mismo con otras palabras,
   prohibido anadir frases de adorno. Si no tienes con que llenar {total_palabras}
   palabras de contenido real, entrega menos y mejor.
+
+### ARCO OBLIGATORIO (en este orden, aunque el autor haya escrito las ideas en
+### otro orden — REORDENA para que encajen aqui):
+1. GANCHO (~{_w_gancho} palabras): identificacion inmediata o dato que golpea.
+   La primera frase del video. Nada de contexto todavia.
+2. CONTEXTO (~{_w_contexto} palabras): explica que esta pasando de forma simple,
+   sin todavia explicar el mecanismo.
+3. MECANISMO (~{_w_mecanismo} palabras): la parte mas valiosa. Como funciona
+   REALMENTE el cerebro o el habito detras de lo que describio el autor. Aqui
+   va la mayoria de las ideas del autor desarrolladas a fondo.
+4. REENCUADRE (~{_w_reencuadre} palabras): cambia como el espectador ve el
+   problema — de "me falta disciplina/voluntad" a "asi funciona mi sistema".
+   Tiene que haber un giro de perspectiva explicito, no solo un resumen.
+5. CIERRE + CTA (~{_w_cierre} palabras): instruccion concreta de que hacer
+   ahora (ver bloque de cierre mas abajo).
 """
         else:
             n    = n_ideas
@@ -1987,14 +2011,36 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
             f"  las primeras escenas muestran el 'antes' y las ultimas el 'despues')."
             if visual else
             "- Elige visuales literales y cotidianos que el espectador reconozca al instante."
-        )
+        ) + """
+- PROHIBIDO en la escena 1 (el gancho debe tener movimiento o contraste fuerte
+  desde el primer frame): persona en cama, luz de ventana, manos quietas con
+  el telefono, meditacion. Son los planos mas usados del nicho y no detienen
+  el scroll.
+- Para conceptos abstractos (piloto automatico, costo mental, decision
+  consciente, habito) usa una metafora visual concreta en vez de un plano
+  literal de "persona pensando": caminos/carreteras, interruptores o
+  engranajes, baterias o energia, una accion repetida, o el contraste entre
+  caos y orden.
+- Evita stock demasiado bonito, aspiracional o sin tension (gente sonriendo
+  en camara lenta, oficinas perfectas): no comunica el mecanismo que se esta
+  explicando."""
         _visual_rule_en = (
             f"- The AUTHOR VISUAL DIRECTION rules: translate it into Pexels terms and spread it\n"
             f"  across the scenes following its progression (if it describes a before and an after,\n"
             f"  early scenes show the 'before' and final scenes the 'after')."
             if visual else
             "- Choose literal, everyday visuals the viewer recognizes instantly."
-        )
+        ) + """
+- FORBIDDEN in scene 1 (the hook needs motion or strong contrast from frame
+  one): person in bed, window light, still hands holding a phone, meditation.
+  These are the niche's most overused shots and do not stop the scroll.
+- For abstract concepts (autopilot, mental cost, conscious decision, habit)
+  use a concrete visual metaphor instead of a literal "person thinking"
+  shot: roads/paths, switches or gears, batteries or energy, a repeated
+  action, or a chaos-vs-order contrast.
+- Avoid overly pretty, aspirational, tension-free stock (people smiling in
+  slow motion, perfect offices): it does not communicate the mechanism being
+  explained."""
 
         if lang == "es":
             prompt = f"""Vas a reescribir un guion para un Short vertical en espanol latino.
@@ -2029,6 +2075,11 @@ a como la escribio el autor, si asi suena mas como esa voz.
   investigadores. Si necesitas respaldo y no lo tienes, dilo en cualitativo
   ("la evidencia apunta a que...") o no lo digas.
 - Contradecir al autor ni suavizar su conclusion.
+- Usar lenguaje motivacional generico: "tu puedes", "cree en ti", "se la mejor
+  version de ti misma", "todo esta en tu mente". Suena a coach y baja la
+  retencion. Explica el MECANISMO, no arengues.
+- Dar solo un consejo sin explicar antes por que ocurre el comportamiento: el
+  "que hacer" viene siempre despues del "por que pasa".
 
 {_cta_block}
 {_obj_block}
@@ -2144,10 +2195,10 @@ Respond ONLY with the JSON."""
         # Piso de duracion minima. El bloque de arriba permite explicitamente
         # "si no tienes con que llenar {total_palabras} palabras, entrega menos":
         # eso es correcto para no rellenar con paja, pero puede dejar el video
-        # por debajo del minimo de negocio (35s). En vez de rechazar el render,
-        # se le pide al modelo 1-2 escenas MAS que profundicen (mecanismo o
-        # ejemplo) sin tocar lo que ya escribio el autor.
-        _MIN_SECS = 35
+        # por debajo del minimo de negocio (38s, guia de retencion). En vez de
+        # rechazar el render, se le pide al modelo 1-2 escenas MAS que
+        # profundicen (mecanismo o ejemplo) sin tocar lo que ya escribio el autor.
+        _MIN_SECS = 38
         if target_secs and target_secs > 0:
             _dur_actual = sum(len((s.get('text') or '').split()) for s in scenes) / _WPS
             if _dur_actual < _MIN_SECS:

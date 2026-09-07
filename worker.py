@@ -149,7 +149,7 @@ def desarrollar_tema(tema: str, preset: dict) -> str:
     # y no me lleve una sorpresa. El tope de 12 es la barrera de memoria: 15
     # escenas es lo que reventó el render en la nube.
     n = max(int(preset.get("num_scenes", 9)),
-            round(float(preset.get("target_total_secs", 60)) / 5.5))
+            round(float(preset.get("target_total_secs", 43)) / 5.5))
     n = min(n, 12)
 
     prompt = f"""Eres guionista de contenido corto sobre psicologia conductual,

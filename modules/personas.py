@@ -84,9 +84,11 @@ _ANDRE_CTA = """\
 ### CIERRE Y LLAMADA A LA ACCION:
 - Si el guion del autor YA trae un cierre o llamada a la accion, respetalo y
   dilo con tu voz. No lo sustituyas por otro.
-- Si el guion NO trae ninguno: NO inventes cursos, workshops, productos ni
-  enlaces. Como maximo, un cierre suave de seguimiento del tipo
-  "sigueme para mas contenido de valor", y solo si encaja con naturalidad.
+- Si el guion NO trae ninguno: cierra con una instruccion CONCRETA y accionable
+  (comentar algo especifico, guardar el video para aplicarlo, o el primer paso
+  literal a dar hoy). NUNCA termines solo con una pregunta suave tipo
+  "¿te ha pasado esto?" sin pedir una accion despues.
+- NO inventes cursos, workshops, productos ni enlaces.
 - Nunca suenes a vendedora.
 """
 
