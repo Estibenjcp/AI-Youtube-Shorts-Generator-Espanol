@@ -164,8 +164,22 @@ def parse_freeform_input(raw_text: str) -> dict:
     out["guion"] = body
     # Un beat solo cuenta si contiene texto real: descarta restos de puntuacion
     # como el '.' o '."' que suelen quedar al final de un guion pegado.
-    out["beats"] = [b for b in (_ff_strip_bullet(l) for l in body.splitlines())
-                    if any(c.isalnum() for c in b)]
+    _line_beats = [b for b in (_ff_strip_bullet(l) for l in body.splitlines())
+                   if any(c.isalnum() for c in b)]
+
+    # Si el autor escribio el guion como un parrafo corrido (sin vinietas ni
+    # saltos de linea, comun cuando se pega desde AppFlowy), partir solo por
+    # lineas deja 1-2 beats aunque el texto tenga varias ideas. Eso limita el
+    # numero de escenas a ~2 sin importar la duracion objetivo (ver
+    # _generate_authored_script: n <= n_ideas*2), asi que el video sale con
+    # clips larguisimos y poco dinamicos. Partiendo por oraciones se preserva
+    # el mismo contenido, solo con mas granularidad para calcular escenas.
+    if len(_line_beats) >= 3:
+        out["beats"] = _line_beats
+    else:
+        _sentence_beats = [s.strip() for s in _re_mod.split(r'(?<=[.!?])\s+', body)
+                           if len(s.strip()) > 3]
+        out["beats"] = _sentence_beats if len(_sentence_beats) > len(_line_beats) else _line_beats
     return out
 
 
@@ -1887,10 +1901,14 @@ Responde SOLO un objeto JSON {{"palabra_original": "sustituto"}}, sin markdown."
         # Con una duracion objetivo repartimos el guion en mas escenas que ideas
         # si hace falta, para que ninguna escena se alargue sobre un solo visual.
         _WPS = 2.3
-        _SECS_POR_ESCENA_IDEAL = 5.5
+        # Contenido corto vertical corta cada 3-5s para sentirse dinamico; 5.5s
+        # y un tope de *2 dejaban escenas larguisimas (2 escenas para 60s)
+        # cuando el autor escribe pocas ideas — ver parse_freeform_input, que
+        # ahora al menos parte por oraciones si no hay vinietas.
+        _SECS_POR_ESCENA_IDEAL = 4.5
         if target_secs and target_secs > 0:
             total_palabras = int(target_secs * _WPS)
-            n = max(n_ideas, min(n_ideas * 2,
+            n = max(n_ideas, min(n_ideas * 3,
                                  max(1, round(target_secs / _SECS_POR_ESCENA_IDEAL))))
             wpsc = max(8, total_palabras // n)
             _dur_block = f"""
