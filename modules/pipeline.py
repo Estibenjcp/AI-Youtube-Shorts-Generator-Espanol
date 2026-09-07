@@ -642,12 +642,26 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 shutil.rmtree(p)
                 os.makedirs(p, exist_ok=True)
 
-        copy_data    = brain.generate_copy(topic, script, lang=pipeline_lang, mode=pipeline_mode)
-        thumb_prompt = brain.generate_thumbnail_prompt(
-            topic, script, lang=pipeline_lang,
-            mode=pipeline_mode,
-            offer_text=params.get("job_offer_text", ""),
-        )
+        # El video YA esta guardado en disco a esta altura. copy_data y
+        # thumb_prompt son metadatos (titulo/descripcion/miniatura) — utiles,
+        # pero no pueden costar el video si la IA falla o tarda: sin este
+        # blindaje, un error aqui dejaba el render completo sin archivar y
+        # sin avisar ni exito ni fallo (encontrado en el primer render
+        # end-to-end en el servidor).
+        try:
+            copy_data = brain.generate_copy(topic, script, lang=pipeline_lang, mode=pipeline_mode)
+        except Exception as _ce:
+            print(f"⚠️ No se pudo generar el copy ({_ce}); el video se archiva igual.")
+            copy_data = {}
+        try:
+            thumb_prompt = brain.generate_thumbnail_prompt(
+                topic, script, lang=pipeline_lang,
+                mode=pipeline_mode,
+                offer_text=params.get("job_offer_text", ""),
+            )
+        except Exception as _te:
+            print(f"⚠️ No se pudo generar el prompt de miniatura ({_te}).")
+            thumb_prompt = ""
 
         log_q.put(f"COPY:{__import__('json').dumps(copy_data)}")
         log_q.put(f"THUMB:{thumb_prompt}")

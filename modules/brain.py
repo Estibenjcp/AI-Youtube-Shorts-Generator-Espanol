@@ -37,13 +37,22 @@ def _get_client():
     api_key   = _get_secret("AI_API_KEY", "")
     model     = _get_secret("AI_MODEL", "")
 
+    # Sin timeout, una llamada que se cuelga (red inestable, proveedor caido)
+    # bloquea el hilo del pipeline para siempre: no imprime error, no llega a
+    # archivar el video ya renderizado, y el worker se queda "vivo" sin avisar
+    # ni exito ni fallo. Encontrado en el primer render end-to-end en el
+    # servidor: el video quedaba listo en disco pero brain.generate_copy()
+    # (llamada sin proteger, justo despues de guardar el video) se quedaba
+    # colgada y nunca se llegaba a archivarlo ni a decir DONE/ERROR.
     if provider == "openrouter":
         from openai import OpenAI
-        client        = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
+        client        = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key, timeout=45.0)
         default_model = "google/gemini-flash-1.5"
     else:
         from google import genai
-        client        = genai.Client(api_key=api_key)
+        from google.genai import types
+        client        = genai.Client(api_key=api_key,
+                                     http_options=types.HttpOptions(timeout=45_000))
         default_model = "gemini-2.0-flash-exp"
 
     return client, provider, model or default_model
