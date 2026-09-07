@@ -30,6 +30,7 @@ import json
 import os
 import queue
 import re
+import shutil
 import sys
 import threading
 import time
@@ -287,7 +288,14 @@ def archivar(tema: str, copy_data: dict) -> str:
     base    = f"{datetime.now():%Y-%m-%d_%H%M}_{_slug(tema)}"
     destino = os.path.join(SALIDA_DIR, base + ".mp4")
 
-    os.replace(VIDEO_RECIEN_HECHO, destino)
+    # os.replace/os.rename exigen el MISMO sistema de archivos. VIDEO_RECIEN_HECHO
+    # vive en la capa interna del contenedor y SALIDA_DIR es un volumen montado
+    # del host — son dispositivos distintos, y os.replace revienta con
+    # "OSError: [Errno 18] Invalid cross-device link". shutil.move detecta ese
+    # caso y cae solo a copiar + borrar. Encontrado en el primer render
+    # end-to-end: el video quedaba listo mas nunca llegaba a la carpeta de
+    # salida, sin avisar exito ni fallo (la excepcion escapaba sin log()).
+    shutil.move(VIDEO_RECIEN_HECHO, destino)
 
     # El copy (titulo, descripcion, hashtags) que genera el pipeline se guarda al
     # lado del video: es lo que hara falta para publicarlo, a mano o automatico.
@@ -520,7 +528,13 @@ if __name__ == "__main__":
         preset = cargar_preset()
         ok, error, copy_data = generar(tema, preset)
         if ok:
-            log(f"✅ {archivar(tema, copy_data)}")
+            try:
+                log(f"✅ {archivar(tema, copy_data)}")
+            except Exception as e:
+                # El video ya esta bien generado en este punto; que archivar()
+                # falle no puede desaparecer en silencio como paso la vez
+                # anterior (el proceso terminaba sin log ni traceback visible).
+                raise SystemExit(f"❌ El video se genero pero no se pudo archivar: {e}")
         else:
             raise SystemExit(f"❌ {error}")
     else:
