@@ -253,7 +253,7 @@ def generar(tema: str, preset: dict) -> tuple:
     return _ejecutar_pipeline(params)
 
 
-def generar_desde_guion(guion_completo: str, preset: dict) -> tuple:
+def generar_desde_guion(guion_completo: str, preset: dict, copy: str = "") -> tuple:
     """Genera un video a partir de un GUION YA ESCRITO (AppFlowy via n8n).
 
     A diferencia de generar(), aqui NO se pasa por desarrollar_tema(): el
@@ -261,9 +261,14 @@ def generar_desde_guion(guion_completo: str, preset: dict) -> tuple:
     que entra directo al camino autorado (respeta las ideas del autor). Pasarlo
     por el borrador de IA otra vez seria reescribir lo que la persona ya
     redacto a mano en AppFlowy — justo lo que no queremos.
+
+    Lo mismo aplica al copy: si el autor ya escribio uno en la columna "Copy"
+    de AppFlowy, se usa tal cual (via copy_override) en vez del generado por IA.
     """
     params = dict(preset)
     params["guion_raw_text"] = guion_completo
+    if copy.strip():
+        params["copy_override"] = copy.strip()
     return _ejecutar_pipeline(params)
 
 
@@ -424,11 +429,11 @@ _HTTP_TOKEN   = os.getenv("WORKER_HTTP_TOKEN", "")
 _HTTP_PORT    = int(os.getenv("WORKER_HTTP_PORT", "8600"))
 
 
-def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: dict):
+def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: dict, copy: str = ""):
     guion_completo = f"Titulo: {titulo}\nCategoria: {categoria}\nGuion:\n{guion}"
     try:
         log(f"▶ Generando (HTTP): {titulo}")
-        ok, error, copy_data = generar_desde_guion(guion_completo, preset)
+        ok, error, copy_data = generar_desde_guion(guion_completo, preset, copy)
         if ok:
             destino = archivar(titulo, copy_data)
             log(f"   ✅ Listo → {destino}")
@@ -479,6 +484,7 @@ class _Handler(BaseHTTPRequestHandler):
         titulo    = (body.get("titulo") or "").strip()
         categoria = (body.get("categoria") or "").strip()
         guion     = (body.get("guion") or "").strip()
+        copy      = (body.get("copy") or "").strip()
         if not titulo or not guion:
             self._json(400, {"error": "faltan 'titulo' o 'guion'"})
             return
@@ -492,7 +498,7 @@ class _Handler(BaseHTTPRequestHandler):
         preset = cargar_preset()
         hilo = threading.Thread(
             target=_generar_en_segundo_plano,
-            args=(titulo, categoria, guion, preset),
+            args=(titulo, categoria, guion, preset, copy),
             daemon=True,
         )
         hilo.start()

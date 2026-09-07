@@ -648,11 +648,23 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         # blindaje, un error aqui dejaba el render completo sin archivar y
         # sin avisar ni exito ni fallo (encontrado en el primer render
         # end-to-end en el servidor).
-        try:
-            copy_data = brain.generate_copy(topic, script, lang=pipeline_lang, mode=pipeline_mode)
-        except Exception as _ce:
-            print(f"⚠️ No se pudo generar el copy ({_ce}); el video se archiva igual.")
-            copy_data = {}
+        copy_override = (params.get("copy_override") or "").strip()
+        if copy_override:
+            # El autor ya escribio el copy a mano (columna "Copy" en AppFlowy):
+            # se respeta tal cual, igual que ya se hace con el guion, en vez
+            # de pisarlo con el generado por IA.
+            copy_data = {
+                "youtube_title": topic,
+                "youtube_description": copy_override,
+                "tiktok_caption": copy_override,
+                "facebook_caption": copy_override,
+            }
+        else:
+            try:
+                copy_data = brain.generate_copy(topic, script, lang=pipeline_lang, mode=pipeline_mode)
+            except Exception as _ce:
+                print(f"⚠️ No se pudo generar el copy ({_ce}); el video se archiva igual.")
+                copy_data = {}
         try:
             thumb_prompt = brain.generate_thumbnail_prompt(
                 topic, script, lang=pipeline_lang,
