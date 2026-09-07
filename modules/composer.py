@@ -811,7 +811,11 @@ class Composer:
                 pix_fmt='yuv420p',
                 movflags='faststart',
                 preset='ultrafast',
-                crf=26,
+                # crf 30 (not 26): Telegram bots can only download files up to
+                # 20MB via getFile (used by the aprobar->publicar workflow to
+                # fetch the video back for Facebook) — crf 26 was landing
+                # around 22-24MB for a ~50s short, over that limit.
+                crf=30,
                 threads=_FFMPEG_THREADS,
             ).run(overwrite_output=True, quiet=False)
 
