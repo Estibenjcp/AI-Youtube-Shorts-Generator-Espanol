@@ -2123,7 +2123,130 @@ Respond ONLY with the JSON."""
         else:
             print("✅ Todos los terminos clave del autor estan presentes")
 
+        # Piso de duracion minima. El bloque de arriba permite explicitamente
+        # "si no tienes con que llenar {total_palabras} palabras, entrega menos":
+        # eso es correcto para no rellenar con paja, pero puede dejar el video
+        # por debajo del minimo de negocio (35s). En vez de rechazar el render,
+        # se le pide al modelo 1-2 escenas MAS que profundicen (mecanismo o
+        # ejemplo) sin tocar lo que ya escribio el autor.
+        _MIN_SECS = 35
+        if target_secs and target_secs > 0:
+            _dur_actual = sum(len((s.get('text') or '').split()) for s in scenes) / _WPS
+            if _dur_actual < _MIN_SECS:
+                scenes = self._expand_short_script(scenes, lang=lang,
+                                                   persona_block=_persona_block,
+                                                   min_secs=_MIN_SECS, wps=_WPS)
+
         print(f"✅ {len(scenes)} escenas listas")
+        return scenes
+
+    def _expand_short_script(self, scenes: list, lang: str = "es",
+                             persona_block: str = "", min_secs: float = 35,
+                             wps: float = 2.3) -> list:
+        """Anade 1-2 escenas cuando el guion autorado quedo mas corto que el
+        minimo de duracion, sin tocar ninguna escena existente.
+
+        Se insertan antes de la ULTIMA escena, no al final: por convencion de
+        este pipeline la ultima escena suele ser el cierre/CTA (ver
+        _generate_authored_script), y el desarrollo nuevo debe ir antes de esa
+        conclusion, no despues.
+        """
+        _dur_actual = sum(len((s.get('text') or '').split()) for s in scenes) / wps
+        _faltan_palabras = max(1, int((min_secs - _dur_actual) * wps))
+        _resumen = "\n".join(f"{i}. {s.get('text', '')}" for i, s in enumerate(scenes, 1))
+
+        label = "Guion corto, pidiendo 1-2 escenas mas" if lang == "es" else "Script too short, requesting 1-2 more scenes"
+        print(f"⏱️ {label} (~{_dur_actual:.0f}s de {min_secs:.0f}s minimo)...")
+
+        if lang == "es":
+            prompt = f"""Este guion para un Short quedo mas corto de lo necesario.
+
+{persona_block}
+GUION ACTUAL (no lo toques, ya esta cerrado):
+{_resumen}
+
+TAREA:
+Anade 1 o 2 escenas NUEVAS que vayan DESPUES de la ultima idea de desarrollo,
+profundizando el mecanismo (el porque real de lo que ya se conto) o sumando un
+ejemplo cotidiano concreto que lo ilustre. Necesitas sumar unas {_faltan_palabras}
+palabras en total. Si el guion de arriba termina con un cierre o llamada a la
+accion, tus escenas nuevas van ANTES de ese cierre, no despues.
+
+NO PUEDES:
+- Repetir lo que ya dice el guion con otras palabras.
+- Inventar cifras, estudios ni nombres.
+- Escribir el cierre de nuevo ni cambiar su idea.
+
+FORMATO:
+- Espanol latino neutro, cero letra ñ, maximo 22 palabras por escena.
+- visual_1 y visual_2 en ingles, 2-4 palabras.
+
+Responde SOLO un JSON con la(s) escena(s) nueva(s):
+[{{"text":"...","visual_1":"...","visual_2":"...","mood":"informative|calm|exciting|dramatic|mysterious|fun"}}]"""
+        else:
+            prompt = f"""This Short script came out shorter than needed.
+
+CURRENT SCRIPT (do not touch, it is already final):
+{_resumen}
+
+TASK:
+Add 1 or 2 NEW scenes that go AFTER the last development idea, going deeper
+into the mechanism (the real why behind what was already said) or adding a
+concrete everyday example that illustrates it. Add about {_faltan_palabras}
+words total. If the script above ends with a closing line or call to action,
+your new scenes go BEFORE that closing, not after.
+
+YOU MAY NOT:
+- Repeat what the script already says in other words.
+- Invent figures, studies or names.
+- Rewrite the closing line or change its point.
+
+FORMAT:
+- Maximum 22 words per scene.
+- visual_1 and visual_2 in English, 2-4 words.
+
+Respond ONLY with a JSON array of the new scene(s):
+[{{"text":"...","visual_1":"...","visual_2":"...","mood":"informative|calm|exciting|dramatic|mysterious|fun"}}]"""
+
+        try:
+            raw   = self._generate(prompt)
+            clean = raw.replace('```json', '').replace('```', '').strip()
+            nuevas = json.loads(clean)
+            if not isinstance(nuevas, list) or not nuevas:
+                raise ValueError("respuesta vacia o no es lista")
+        except Exception as e:
+            print(f"   ⚠️ No se pudo expandir el guion corto ({e}); se deja tal cual.")
+            return scenes
+
+        added = []
+        for s in nuevas[:2]:
+            if not isinstance(s, dict) or not (s.get('text') or '').strip():
+                continue
+            added.append({
+                'text': self._sanitize(s.get('text', '').strip()),
+                'visual_1': s.get('visual_1', 'person thinking indoors'),
+                'visual_2': s.get('visual_2', 'focused person close up'),
+                'mood': s.get('mood', 'informative'),
+            })
+
+        if not added:
+            print("   ⚠️ El modelo no devolvio escenas nuevas utilizables; se deja el guion tal cual.")
+            return scenes
+
+        # Insertar antes del cierre (ultima escena) si hay al menos 2 escenas;
+        # si el guion original es solo 1 escena no hay cierre que respetar.
+        if len(scenes) >= 2:
+            scenes = scenes[:-1] + added + scenes[-1:]
+        else:
+            scenes = scenes + added
+        for i, s in enumerate(scenes):
+            s['id'] = i + 1
+
+        if lang == "es":
+            scenes = self._repair_enie(scenes, lang=lang)
+
+        _dur_nueva = sum(len((s.get('text') or '').split()) for s in scenes) / wps
+        print(f"   ✅ Guion expandido: +{len(added)} escena(s), ~{_dur_nueva:.0f}s")
         return scenes
 
     def generate_script(self, topic: str, num_scenes: int = 9, lang: str = "es",
