@@ -81,7 +81,11 @@ class Composer:
     _DEFAULT_STYLE = {
         "fontsize":    44,
         "fontcolor":   "white",
-        "y":           "h*0.82",
+        # h*0.82 quedaba pegado al borde inferior: con 2-3 lineas de texto
+        # se metia en la zona donde Instagram/TikTok/YouTube dibujan su
+        # propia UI (usuario, caption, botones), y el subtitulo se perdia
+        # al publicar. h*0.74 deja mas margen sin subir el texto al centro.
+        "y":           "h*0.74",
         "borderw":     3,
         "bordercolor": "black",
         "box":         0,
