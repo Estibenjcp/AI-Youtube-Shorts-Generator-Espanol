@@ -3099,6 +3099,12 @@ Finally, a short contextual subtitle relevant to the topic."
         # Facebook / YouTube: solo los 3 del nicho
         hashtags_es = _niche_es
         hashtags_en = _niche_en
+        # Facebook: nicho + geo-targeting fijo para posicionar en México y
+        # público latino de Estados Unidos (la audiencia que Vinkly Nicaragua
+        # busca alcanzar con estos reels).
+        _region_tags = "#Mexico #LatinosEnUSA #Hispanos"
+        hashtags_fb_es = f"{_niche_es} {_region_tags}"
+        hashtags_fb_en = f"{_niche_en} {_region_tags}"
 
         if lang == "es":
             prompt = f"""
@@ -3128,17 +3134,15 @@ Genera copy optimizado para cada plataforma en español latino.
 - HASHTAGS: Usa EXACTAMENTE estos (ya optimizados para el nicho): {hashtags_tiktok_es}
 
 ### 4. CAPTION DE FACEBOOK REELS:
-- LÍNEA 1: afirmación impactante con la palabra clave principal (sin preguntas).
-- LÍNEA 2: 1 oración conversacional de contexto.
-- LÍNEA 3: CTA — pregunta que invite a comentar (ej: "¿Tú lo sabías? Comenta SÍ o NO").
-- HASHTAGS: Usa 3 de estos (ya optimizados): {hashtags_es}
+- LÍNEA 1: UNA sola oración — afirmación o dato impactante con la palabra clave principal del tema (sin preguntas, sin CTA, sin línea de contexto aparte). Todo el gancho va en esa única oración.
+- LÍNEA 2: los hashtags, todos en una sola línea. Usa EXACTAMENTE estos (ya incluyen nicho + geo-targeting para México y la audiencia latina de Estados Unidos): {hashtags_fb_es}
 
 ### SALIDA (JSON estricto, sin markdown). Usa \\n para saltos de línea:
 {{
   "youtube_title": "...",
   "youtube_description": "...",
   "tiktok_caption": "línea gancho\\n\\nlínea contexto\\n\\nCTA\\n\\n#tag1 #tag2 #tag3",
-  "facebook_caption": "afirmación gancho\\n\\ncontexto\\n\\nCTA\\n\\n#tag1 #tag2 #tag3"
+  "facebook_caption": "una sola oración con el gancho\\n\\n#tag1 #tag2 #tag3 #Mexico #LatinosEnUSA #Hispanos"
 }}
 """
         else:
@@ -3169,17 +3173,15 @@ Generate platform-optimized copy for YouTube Shorts, TikTok, and Facebook Reels.
 - HASHTAGS: Use EXACTLY these (already optimized for the niche): {hashtags_tiktok_en}
 
 ### 4. FACEBOOK REELS CAPTION:
-- LINE 1: strongest hook — shocking statement with main keyword (no questions).
-- LINE 2: 1 natural conversational sentence adding context.
-- LINE 3: CTA — question inviting comment (e.g. "Did you know? Comment YES or NO").
-- HASHTAGS: Use 3 of these (already optimized): {hashtags_en}
+- LINE 1: ONE single sentence — the strongest hook, a shocking statement with the main keyword (no questions, no CTA, no separate context line). The entire hook lives in that one sentence.
+- LINE 2: the hashtags, all on one line. Use EXACTLY these (already include niche + geo-targeting for Mexico and the US Latino audience): {hashtags_fb_en}
 
 ### OUTPUT (strict JSON, no markdown). Use \\n for line breaks:
 {{
   "youtube_title": "...",
   "youtube_description": "...",
   "tiktok_caption": "hook line\\n\\ncontext line\\n\\nCTA\\n\\n#tag1 #tag2 #tag3",
-  "facebook_caption": "hook statement\\n\\ncontext line\\n\\nCTA\\n\\n#tag1 #tag2 #tag3"
+  "facebook_caption": "one single hook sentence\\n\\n#tag1 #tag2 #tag3 #Mexico #LatinosEnUSA #Hispanos"
 }}
 """
 
