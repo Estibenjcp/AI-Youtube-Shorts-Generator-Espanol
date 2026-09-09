@@ -160,9 +160,12 @@ def _lit_clean_narration(raw_text: str) -> str:
     text = " ".join(out)
     text = _re_mod.sub(r"\s+", " ", text).strip()
     text = text.strip('"“”«»').strip()
-    # El TTS pronuncia mal la enie; misma convencion que el resto del proyecto
-    # (anio, senior). El agente ya evita la letra, esto es la red de seguridad.
-    return text.replace("ñ", "ni").replace("Ñ", "Ni")
+    # El TTS pronuncia mal la enie y las vocales acentuadas; misma convencion
+    # que el resto del proyecto (anio, senior, habito). El agente ya evita esas
+    # letras; esto es la red de seguridad para el texto narrado.
+    text = text.replace("ñ", "ni").replace("Ñ", "Ni")
+    text = _ud.normalize("NFD", text)
+    return "".join(c for c in text if _ud.category(c) != "Mn")
 
 
 def _lit_split_sentences(text: str) -> list:
