@@ -159,7 +159,10 @@ def _lit_clean_narration(raw_text: str) -> str:
             out.append(_ff_strip_bullet(line))
     text = " ".join(out)
     text = _re_mod.sub(r"\s+", " ", text).strip()
-    return text.strip('"“”«»').strip()
+    text = text.strip('"“”«»').strip()
+    # El TTS pronuncia mal la enie; misma convencion que el resto del proyecto
+    # (anio, senior). El agente ya evita la letra, esto es la red de seguridad.
+    return text.replace("ñ", "ni").replace("Ñ", "Ni")
 
 
 def _lit_split_sentences(text: str) -> list:
