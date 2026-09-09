@@ -453,11 +453,55 @@ def _avisar_webhook_fallo(preset: dict, titulo: str, error, meta: dict):
         log(f"   ⚠️ No se pudo avisar el fallo al webhook: {e}")
 
 
+# Ajustes por video que n8n puede mandar en el cuerpo de /generar y que pisan
+# el preset SOLO para ese render. Vienen de columnas de AppFlowy (Objetivo,
+# Duracion, Tono): asi se mezcla Atencion/Confianza/Conversion sin tocar el
+# preset global del servidor.
+_OBJETIVOS_VALIDOS = ("atencion", "confianza", "conversion")
+_TONOS_VALIDOS     = ("conductual", "confrontativo", "motivador", "emotivo", "urgente")
+_DURACION_MIN, _DURACION_MAX = 15, 120
+
+
+def _normalizar_clave(v) -> str:
+    """'💰 Conversión' / 'Atención' / 'confianza ' -> 'conversion' / 'atencion' / 'confianza'."""
+    import unicodedata
+    t = unicodedata.normalize("NFD", str(v or "")).lower()
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn")
+    return "".join(c for c in t if c.isalpha())
+
+
+def ajustes_desde_body(body: dict) -> dict:
+    """Extrae {guion_objetivo, guion_tono, target_total_secs} validos del body.
+
+    Lo que no venga o venga mal se ignora (queda lo del preset), nunca falla:
+    una celda de AppFlowy mal escrita no debe tumbar el render.
+    """
+    out = {}
+    obj = _normalizar_clave(body.get("objetivo"))
+    if obj in _OBJETIVOS_VALIDOS:
+        out["guion_objetivo"] = obj
+    tono = _normalizar_clave(body.get("tono"))
+    if tono in _TONOS_VALIDOS:
+        out["guion_tono"] = tono
+    dur = body.get("duracion")
+    try:
+        dur = int(float(str(dur).strip()))
+        if _DURACION_MIN <= dur <= _DURACION_MAX:
+            out["target_total_secs"] = dur
+    except (TypeError, ValueError):
+        pass
+    return out
+
+
 def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: dict,
-                              copy: str = "", modo: str = "guion", meta: dict = None):
+                              copy: str = "", modo: str = "guion", meta: dict = None,
+                              ajustes: dict = None):
     meta = meta or {}
     preset = dict(preset)
     preset["meta"] = meta
+    if ajustes:
+        preset.update(ajustes)
+        log(f"   ⚙️ Ajustes por video: {ajustes}")
     try:
         log(f"▶ Generando (HTTP, {modo}): {titulo}")
         if modo == "tema":
@@ -546,14 +590,15 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(409, {"error": "ya hay un render en curso"})
             return
 
-        preset = cargar_preset()
+        preset  = cargar_preset()
+        ajustes = ajustes_desde_body(body)
         hilo = threading.Thread(
             target=_generar_en_segundo_plano,
-            args=(titulo, categoria, guion, preset, copy, modo, meta),
+            args=(titulo, categoria, guion, preset, copy, modo, meta, ajustes),
             daemon=True,
         )
         hilo.start()
-        self._json(202, {"aceptado": True, "titulo": titulo})
+        self._json(202, {"aceptado": True, "titulo": titulo, "ajustes": ajustes})
 
 
 def servir():

@@ -403,6 +403,7 @@ OBJETIVOS = {
         "proporcion":  "50%",
         "secs_min":    15,
         "secs_max":    30,
+        "min_secs":    15,   # piso duro del camino autorado (brain._MIN_SECS)
         "spec":        _OBJ_ATENCION,
     },
     "confianza": {
@@ -411,6 +412,7 @@ OBJETIVOS = {
         "proporcion":  "30%",
         "secs_min":    60,
         "secs_max":    90,
+        "min_secs":    38,   # guia de retencion: nunca menos de 38s en confianza
         "spec":        _OBJ_CONFIANZA,
     },
     "conversion": {
@@ -419,6 +421,7 @@ OBJETIVOS = {
         "proporcion":  "20%",
         "secs_min":    30,
         "secs_max":    45,
+        "min_secs":    30,
         "spec":        _OBJ_CONVERSION,
     },
 }

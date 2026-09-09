@@ -2202,10 +2202,15 @@ Respond ONLY with the JSON."""
         # Piso de duracion minima. El bloque de arriba permite explicitamente
         # "si no tienes con que llenar {total_palabras} palabras, entrega menos":
         # eso es correcto para no rellenar con paja, pero puede dejar el video
-        # por debajo del minimo de negocio (38s, guia de retencion). En vez de
-        # rechazar el render, se le pide al modelo 1-2 escenas MAS que
-        # profundicen (mecanismo o ejemplo) sin tocar lo que ya escribio el autor.
-        _MIN_SECS = 38
+        # por debajo del minimo de negocio. En vez de rechazar el render, se le
+        # pide al modelo 1-2 escenas MAS que profundicen (mecanismo o ejemplo)
+        # sin tocar lo que ya escribio el autor.
+        # El piso depende del OBJETIVO (personas.OBJETIVOS[*]["min_secs"]): un
+        # video de Atencion de 20s es correcto y no debe estirarse a 38s; uno
+        # de Confianza si. Nunca se estira por encima de lo que pidio el autor.
+        _MIN_SECS = float(_objetivo.get("min_secs", 38))
+        if target_secs and target_secs > 0:
+            _MIN_SECS = min(_MIN_SECS, float(target_secs))
         if target_secs and target_secs > 0:
             _dur_actual = sum(len((s.get('text') or '').split()) for s in scenes) / _WPS
             if _dur_actual < _MIN_SECS:
