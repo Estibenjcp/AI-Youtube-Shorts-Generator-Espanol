@@ -299,9 +299,16 @@ class ContentBrain:
     def _generate(self, prompt: str) -> str:
         client, provider, model = _get_client()
         if provider == "openrouter":
+            # Sin max_tokens, OpenRouter pide el tope del modelo (65536 en varios)
+            # como reserva de credito antes de generar nada. Ningun texto de este
+            # pipeline (guion, copy, titulos) necesita ni de lejos esa cantidad,
+            # y un saldo bajo hace fallar la llamada con 402 aunque el prompt en
+            # si sea corto. Encontrado en un render real: fallaba por faltar
+            # ~343 tokens de saldo para reservar 65536 completos.
             response = client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
+                max_tokens=8192,
             )
             return response.choices[0].message.content
         else:
