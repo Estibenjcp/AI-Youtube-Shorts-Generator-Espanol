@@ -701,6 +701,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 script_text = " ".join(s.get("text", "") for s in script)
 
                 payload = {
+                    "ok":                  True,
+                    "meta":                params.get("meta") or {},
                     "topic":               topic,
                     "lang":                pipeline_lang,
                     "mode":                pipeline_mode,

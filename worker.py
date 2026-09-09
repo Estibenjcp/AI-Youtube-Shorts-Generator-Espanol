@@ -428,11 +428,48 @@ _RENDER_LOCK  = threading.Lock()
 _HTTP_TOKEN   = os.getenv("WORKER_HTTP_TOKEN", "")
 _HTTP_PORT    = int(os.getenv("WORKER_HTTP_PORT", "8600"))
 
+# Claves de "meta" que n8n puede mandar en /generar y que viajan intactas hasta
+# el webhook de salida. Es lo que permite que el flujo manual de Telegram
+# recuerde a que pagina publicar y a que chat avisar cuando el render termina.
+_META_KEYS = ("target_page_id", "chat_id", "fuente", "request_id")
 
-def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: dict, copy: str = ""):
-    guion_completo = f"Titulo: {titulo}\nCategoria: {categoria}\nGuion:\n{guion}"
+
+def _avisar_webhook_fallo(preset: dict, titulo: str, error, meta: dict):
+    """pipeline.py solo llama al webhook cuando el render sale bien. Sin esto,
+    un pedido manual desde Telegram que falla deja a la persona esperando un
+    video que nunca llega."""
+    url = (preset.get("webhook_url") or "").strip()
+    if not url:
+        return
     try:
-        log(f"▶ Generando (HTTP): {titulo}")
+        import requests as _req
+        _req.post(
+            url,
+            json={"ok": False, "topic": titulo, "error": str(error)[:1000], "meta": meta or {}},
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+    except Exception as e:
+        log(f"   ⚠️ No se pudo avisar el fallo al webhook: {e}")
+
+
+def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: dict,
+                              copy: str = "", modo: str = "guion", meta: dict = None):
+    meta = meta or {}
+    preset = dict(preset)
+    preset["meta"] = meta
+    try:
+        log(f"▶ Generando (HTTP, {modo}): {titulo}")
+        if modo == "tema":
+            guion_completo = desarrollar_tema(guion, preset)
+            for linea in guion_completo.splitlines():
+                if linea.strip().lower().startswith("titulo:"):
+                    titulo = linea.split(":", 1)[1].strip() or titulo
+                    break
+        elif guion.lstrip().lower().startswith("titulo:"):
+            guion_completo = guion
+        else:
+            guion_completo = f"Titulo: {titulo}\nCategoria: {categoria}\nGuion:\n{guion}"
         ok, error, copy_data = generar_desde_guion(guion_completo, preset, copy)
         if ok:
             destino = archivar(titulo, copy_data)
@@ -440,9 +477,11 @@ def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: d
         else:
             log(f"   ❌ Fallo: {error}")
             avisar(f"AutoShorts: fallo generando \"{titulo}\".\n{error}")
+            _avisar_webhook_fallo(preset, titulo, error, meta)
     except Exception as e:
         log(f"   ❌ Excepcion inesperada: {e}")
         avisar(f"AutoShorts: excepcion generando \"{titulo}\".\n{e}")
+        _avisar_webhook_fallo(preset, titulo, e, meta)
     finally:
         _RENDER_LOCK.release()
 
@@ -485,9 +524,21 @@ class _Handler(BaseHTTPRequestHandler):
         categoria = (body.get("categoria") or "").strip()
         guion     = (body.get("guion") or "").strip()
         copy      = (body.get("copy") or "").strip()
+        modo      = (body.get("modo") or "guion").strip().lower()
         if not titulo or not guion:
             self._json(400, {"error": "faltan 'titulo' o 'guion'"})
             return
+        if modo not in ("guion", "tema"):
+            self._json(400, {"error": "modo debe ser 'guion' o 'tema'"})
+            return
+
+        meta = {}
+        meta_raw = body.get("meta")
+        if isinstance(meta_raw, dict):
+            for k in _META_KEYS:
+                v = meta_raw.get(k)
+                if isinstance(v, (str, int)) and str(v).strip():
+                    meta[k] = str(v).strip()[:64]
 
         if not _RENDER_LOCK.acquire(blocking=False):
             # No es un error: n8n debe interpretarlo como "reintenta en la
@@ -498,7 +549,7 @@ class _Handler(BaseHTTPRequestHandler):
         preset = cargar_preset()
         hilo = threading.Thread(
             target=_generar_en_segundo_plano,
-            args=(titulo, categoria, guion, preset, copy),
+            args=(titulo, categoria, guion, preset, copy, modo, meta),
             daemon=True,
         )
         hilo.start()
