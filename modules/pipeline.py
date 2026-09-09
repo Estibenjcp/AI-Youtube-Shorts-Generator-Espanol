@@ -166,13 +166,23 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             if not guion_text:
                 log_q.put("ERROR:No se proporcionó texto para el guion libre.")
                 return
-            # target_total_secs viene del slider "Duracion total del video";
-            # guion_tono del selector de tono del panel de Guion.
-            script = brain.generate_freeform_script(
-                guion_text, lang=pipeline_lang,
-                target_secs=params.get("target_total_secs", 0) or 0,
-                tono_key=params.get("guion_tono", ""),
-                objetivo_key=params.get("guion_objetivo", ""))
+            if params.get("guion_literal"):
+                # Guion FINAL escrito por el agente de guiones externo: el
+                # sistema solo parte en escenas y busca clips. Cero llamadas
+                # al modelo (ver brain.build_literal_script).
+                from modules.brain import build_literal_script as _build_lit
+                script = _build_lit(guion_text, params.get("broll") or [], lang=pipeline_lang)
+                if not script:
+                    log_q.put("ERROR:El guion literal quedo vacio tras quitar etiquetas.")
+                    return
+            else:
+                # target_total_secs viene del slider "Duracion total del video";
+                # guion_tono del selector de tono del panel de Guion.
+                script = brain.generate_freeform_script(
+                    guion_text, lang=pipeline_lang,
+                    target_secs=params.get("target_total_secs", 0) or 0,
+                    tono_key=params.get("guion_tono", ""),
+                    objetivo_key=params.get("guion_objetivo", ""))
             # Topic para copy/miniatura/nombre de archivo.
             # Si el autor puso una cabecera "Titulo:", usamos ese valor limpio;
             # si no, la primera linea no vacia (comportamiento anterior).
@@ -649,7 +659,21 @@ def run_pipeline(log_q: queue.Queue, params: dict):
         # sin avisar ni exito ni fallo (encontrado en el primer render
         # end-to-end en el servidor).
         copy_override = (params.get("copy_override") or "").strip()
-        if copy_override:
+        copy_faltante = False
+        if params.get("guion_literal") and not copy_override:
+            # En modo literal esta prohibido llamar a la IA "a escondidas": si
+            # el agente no mando Copy, se arma uno basico con el titulo y se
+            # marca copy_faltante para que n8n/Telegram avisen.
+            copy_faltante = True
+            _basic = f"{topic}\n\n#habitos #disciplina #Mexico #LatinosEnUSA #Hispanos"
+            copy_data = {
+                "youtube_title": topic,
+                "youtube_description": _basic,
+                "tiktok_caption": _basic,
+                "facebook_caption": _basic,
+            }
+            print("⚠️ Modo literal sin Copy: se usa un copy basico (sin IA).")
+        elif copy_override:
             # El autor ya escribio el copy a mano (columna "Copy" en AppFlowy):
             # se respeta tal cual, igual que ya se hace con el guion, en vez
             # de pisarlo con el generado por IA.
@@ -665,15 +689,18 @@ def run_pipeline(log_q: queue.Queue, params: dict):
             except Exception as _ce:
                 print(f"⚠️ No se pudo generar el copy ({_ce}); el video se archiva igual.")
                 copy_data = {}
-        try:
-            thumb_prompt = brain.generate_thumbnail_prompt(
-                topic, script, lang=pipeline_lang,
-                mode=pipeline_mode,
-                offer_text=params.get("job_offer_text", ""),
-            )
-        except Exception as _te:
-            print(f"⚠️ No se pudo generar el prompt de miniatura ({_te}).")
-            thumb_prompt = ""
+        if params.get("guion_literal"):
+            thumb_prompt = ""          # nada de IA en modo literal
+        else:
+            try:
+                thumb_prompt = brain.generate_thumbnail_prompt(
+                    topic, script, lang=pipeline_lang,
+                    mode=pipeline_mode,
+                    offer_text=params.get("job_offer_text", ""),
+                )
+            except Exception as _te:
+                print(f"⚠️ No se pudo generar el prompt de miniatura ({_te}).")
+                thumb_prompt = ""
 
         log_q.put(f"COPY:{__import__('json').dumps(copy_data)}")
         log_q.put(f"THUMB:{thumb_prompt}")
@@ -703,6 +730,8 @@ def run_pipeline(log_q: queue.Queue, params: dict):
                 payload = {
                     "ok":                  True,
                     "meta":                params.get("meta") or {},
+                    "literal":             bool(params.get("guion_literal")),
+                    "copy_faltante":       copy_faltante,
                     "topic":               topic,
                     "lang":                pipeline_lang,
                     "mode":                pipeline_mode,

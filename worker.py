@@ -495,13 +495,20 @@ def ajustes_desde_body(body: dict) -> dict:
 
 def _generar_en_segundo_plano(titulo: str, categoria: str, guion: str, preset: dict,
                               copy: str = "", modo: str = "guion", meta: dict = None,
-                              ajustes: dict = None):
+                              ajustes: dict = None, broll: list = None):
     meta = meta or {}
     preset = dict(preset)
     preset["meta"] = meta
     if ajustes:
         preset.update(ajustes)
         log(f"   ⚙️ Ajustes por video: {ajustes}")
+    if modo == "literal":
+        # Guion final del agente externo: sin persona, sin reescritura, sin IA.
+        preset["guion_literal"] = True
+        preset["broll"] = broll or []
+        if not copy.strip():
+            avisar(f"AutoShorts: \"{titulo}\" llego sin Copy. Se publica con una "
+                   f"descripcion basica; revisala antes de aprobar.")
     try:
         log(f"▶ Generando (HTTP, {modo}): {titulo}")
         if modo == "tema":
@@ -572,9 +579,17 @@ class _Handler(BaseHTTPRequestHandler):
         if not titulo or not guion:
             self._json(400, {"error": "faltan 'titulo' o 'guion'"})
             return
-        if modo not in ("guion", "tema"):
-            self._json(400, {"error": "modo debe ser 'guion' o 'tema'"})
+        if modo not in ("guion", "tema", "literal"):
+            self._json(400, {"error": "modo debe ser 'guion', 'tema' o 'literal'"})
             return
+
+        # B-roll (solo modo literal): lista o texto con una busqueda por linea.
+        broll_raw = body.get("broll")
+        broll = []
+        if isinstance(broll_raw, list):
+            broll = [str(x).strip()[:60] for x in broll_raw if str(x or "").strip()][:40]
+        elif isinstance(broll_raw, str) and broll_raw.strip():
+            broll = [x.strip()[:60] for x in re.split(r"[\n;]+", broll_raw) if x.strip()][:40]
 
         meta = {}
         meta_raw = body.get("meta")
@@ -594,11 +609,12 @@ class _Handler(BaseHTTPRequestHandler):
         ajustes = ajustes_desde_body(body)
         hilo = threading.Thread(
             target=_generar_en_segundo_plano,
-            args=(titulo, categoria, guion, preset, copy, modo, meta, ajustes),
+            args=(titulo, categoria, guion, preset, copy, modo, meta, ajustes, broll),
             daemon=True,
         )
         hilo.start()
-        self._json(202, {"aceptado": True, "titulo": titulo, "ajustes": ajustes})
+        self._json(202, {"aceptado": True, "titulo": titulo, "modo": modo,
+                         "ajustes": ajustes, "broll": len(broll)})
 
 
 def servir():

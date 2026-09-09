@@ -112,6 +112,152 @@ def _ff_strip_bullet(line: str) -> str:
     return _FF_BULLET_RE.sub("", line).strip()
 
 
+# ── Modo LITERAL (guion escrito por un agente externo) ───────────────────────
+# El agente de guiones (Documento Maestro) ya entrega el texto narrado final,
+# las busquedas de B-roll y el copy. Aqui NO se llama a ningun modelo: el
+# sistema de video solo parte el texto en escenas, asigna los clips de Pexels
+# y renderiza. Sin persona, sin tono, sin objetivo, sin expansion.
+#
+# Etiquetas del formato del agente que se descartan si vienen pegadas en el
+# mismo texto: [HOOK VISUAL/VERBAL], [CUERPO NARRADO], [CTA], [SUGERENCIAS
+# B-ROLL], [METADATOS]. Las dos ultimas secciones no se narran.
+_LIT_LABEL_RE = _re_mod.compile(
+    r"^\s*(?:\d+\.\s*)?\**\[?\s*(HOOK[^\]:]*|CUERPO[^\]:]*|CTA[^\]:]*|SUGERENCIAS[^\]:]*|B-?ROLL[^\]:]*|METADATOS[^\]:]*)\s*\]?\**\s*:?\s*\**",
+    _re_mod.IGNORECASE)
+_LIT_SKIP_SECTIONS = ("sugerencias", "b-roll", "broll", "metadatos")
+
+# Busquedas genericas del nicho (habitos / disciplina), en ingles, para cuando
+# el agente no manda B-roll o manda menos terminos que escenas. Sin planos
+# quemados (cama, ventana, meditacion).
+LITERAL_FALLBACK_VISUALS = [
+    "person writing planner desk", "alarm clock morning table", "running shoes doorway",
+    "messy desk smartphone", "gears mechanism close up", "fork in the road path",
+    "kitchen counter healthy food", "dumbbells home floor", "hand flipping light switch",
+    "city commute walking fast", "stacking coins table", "calendar marking days",
+    "person tying shoelaces", "laptop closing lid", "water glass filling",
+]
+
+
+def _lit_clean_narration(raw_text: str) -> str:
+    """Devuelve solo el texto que se narra, sin etiquetas del agente ni
+    secciones de B-roll/metadatos. Acepta tambien la cabecera Titulo:/Guion:."""
+    parsed = parse_freeform_input(raw_text)
+    body = parsed["guion"] if parsed["has_structure"] else (raw_text or "")
+    out, skipping = [], False
+    for line in body.splitlines():
+        m = _LIT_LABEL_RE.match(line)
+        if m:
+            label = m.group(1).lower()
+            skipping = any(k in label for k in _LIT_SKIP_SECTIONS)
+            rest = line[m.end():].strip()
+            if not skipping and rest:
+                out.append(rest)
+            continue
+        if skipping:
+            continue
+        if line.strip():
+            out.append(_ff_strip_bullet(line))
+    text = " ".join(out)
+    text = _re_mod.sub(r"\s+", " ", text).strip()
+    return text.strip('"“”«»').strip()
+
+
+def _lit_split_sentences(text: str) -> list:
+    parts = [t.strip() for t in _re_mod.split(r"(?<=[.!?…])\s+", text) if t.strip()]
+    return parts or ([text.strip()] if text.strip() else [])
+
+
+def normalize_broll(broll) -> list:
+    """Lista limpia de busquedas Pexels a partir de una lista o de texto con
+    una busqueda por linea/punto y coma. Quita vinietas, comillas y numeracion."""
+    if not broll:
+        return []
+    if isinstance(broll, str):
+        items = _re_mod.split(r"[\n;]+", broll)
+    else:
+        items = list(broll)
+    out = []
+    for it in items:
+        t = _ff_strip_bullet(str(it or "")).strip().strip('"“”«»').strip("'").strip()
+        t = _re_mod.sub(r"^\(?\d+\)?[.)-]?\s*", "", t)          # "1) ..." / "2. ..."
+        t = _re_mod.sub(r"^[\[\(]?(?:escena|scene)\s*\d+[\]\):.-]*\s*", "", t, flags=_re_mod.I)
+        t = t.strip().strip('"“”«»').strip()
+        if t and any(c.isalpha() for c in t):
+            out.append(t[:60])
+    return out[:40]
+
+
+def build_literal_script(raw_text: str, broll=None, lang: str = "es",
+                         secs_per_scene: float = 4.5, wps: float = 2.3) -> list:
+    """Parte un guion narrado FINAL en escenas sin tocar una sola palabra.
+
+    - Escenas de ~secs_per_scene segundos (~10 palabras): se agrupan oraciones
+      completas; una oracion muy larga se parte por comas/puntos y coma.
+    - visual_1/visual_2: B-roll del agente repartido a lo largo de las escenas
+      en orden (si trae menos terminos que escenas, cada termino cubre un
+      tramo; si no trae ninguno, LITERAL_FALLBACK_VISUALS).
+    - Sin ninguna llamada a IA.
+    """
+    text = _lit_clean_narration(raw_text)
+    if not text:
+        return []
+    target = max(6, int(secs_per_scene * wps))       # ~10 palabras por escena
+    hard   = target * 2
+
+    units = []
+    for sent in _lit_split_sentences(text):
+        if len(sent.split()) <= hard:
+            units.append(sent)
+            continue
+        # Oracion larguisima: partir por comas / punto y coma conservando el signo.
+        chunk, buf = [], []
+        for piece in _re_mod.split(r"(?<=[,;:])\s+", sent):
+            buf.append(piece)
+            if sum(len(x.split()) for x in buf) >= target:
+                chunk.append(" ".join(buf)); buf = []
+        if buf:
+            chunk.append(" ".join(buf))
+        units.extend(chunk)
+
+    scenes_text, cur = [], []
+    for u in units:
+        cur_words = sum(len(x.split()) for x in cur)
+        if cur and cur_words + len(u.split()) > hard:
+            scenes_text.append(" ".join(cur)); cur = []
+        cur.append(u)
+        if sum(len(x.split()) for x in cur) >= target:
+            scenes_text.append(" ".join(cur)); cur = []
+    if cur:
+        # Un resto muy corto se pega a la escena anterior para no dejar un
+        # clip de 1 segundo al final.
+        if scenes_text and sum(len(x.split()) for x in cur) < target // 2:
+            scenes_text[-1] += " " + " ".join(cur)
+        else:
+            scenes_text.append(" ".join(cur))
+
+    n = len(scenes_text)
+    visuals = normalize_broll(broll)
+    scenes = []
+    for i, t in enumerate(scenes_text):
+        if visuals and len(visuals) >= n:
+            a = visuals[i]
+            b = visuals[(i + 1) % len(visuals)]
+        elif visuals:
+            k = (i * len(visuals)) // n                 # tramo proporcional
+            a = visuals[k]
+            b = visuals[(k + 1) % len(visuals)]
+        else:
+            a = LITERAL_FALLBACK_VISUALS[i % len(LITERAL_FALLBACK_VISUALS)]
+            b = LITERAL_FALLBACK_VISUALS[(i + 1) % len(LITERAL_FALLBACK_VISUALS)]
+        scenes.append({"id": i + 1, "text": t, "visual_1": a, "visual_2": b, "mood": "calm"})
+
+    dur = sum(len(t.split()) for t in scenes_text) / wps
+    src_label = ("B-roll del agente" if visuals else "visuales genericos del nicho") if lang == "es" else \
+                ("agent B-roll" if visuals else "generic niche visuals")
+    print(f"📜 Modo literal: {n} escenas, ~{dur:.0f}s, {src_label} ({len(visuals)} terminos). Sin IA.")
+    return scenes
+
+
 def parse_freeform_input(raw_text: str) -> dict:
     """Separa la cabecera estructurada del cuerpo del guion.
 
