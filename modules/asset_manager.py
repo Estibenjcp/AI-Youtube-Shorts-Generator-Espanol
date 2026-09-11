@@ -33,6 +33,10 @@ class AssetManager:
         self.headers  = {"Authorization": self.api_key}
         self.assets_dir = os.path.join(os.getcwd(), "assets", "video_clips")
         os.makedirs(self.assets_dir, exist_ok=True)
+        # IDs de Pexels ya usados en el video actual: evita que el mismo clip
+        # aparezca dos veces (se reinicia en cada get_videos).
+        self._used_ids  = set()
+        self._used_lock = threading.Lock()
 
     # ── Search ────────────────────────────────────────────────────────────────
 
@@ -47,7 +51,7 @@ class AssetManager:
 
         params = {
             "query":       query,
-            "per_page":    8,
+            "per_page":    15,
             "orientation": "portrait",
             "size":        "medium",
         }
@@ -104,7 +108,13 @@ class AssetManager:
         if not valid:
             valid = videos
 
-        chosen     = random.choice(valid)
+        # Preferir clips que todavia no salieron en este video: con pocas
+        # busquedas distintas (modo literal) la misma query se repite en varias
+        # escenas y sin esto el espectador ve el mismo plano una y otra vez.
+        with self._used_lock:
+            fresh = [v for v in valid if v.get("id") not in self._used_ids]
+            chosen = random.choice(fresh or valid)
+            self._used_ids.add(chosen.get("id"))
         vid_files  = sorted(chosen["video_files"], key=lambda x: x["width"] * x["height"], reverse=True)
         return vid_files[0]["link"]
 
@@ -153,6 +163,8 @@ class AssetManager:
         Returns a list of tuples: (path_a, path_b) or (path_a, path_b, path_c).
         """
         print("🎥 Starting Video Download...")
+        with self._used_lock:
+            self._used_ids.clear()
 
         def _process_scene(scene):
             """Descarga los clips (A/B/C) de UNA escena. Devuelve la tupla o None."""

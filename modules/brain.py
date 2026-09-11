@@ -138,6 +138,53 @@ LITERAL_FALLBACK_VISUALS = [
 ]
 
 
+# Palabras con enie -> sinonimo pronunciable. El agente ya tiene la regla de no
+# usarlas; esto es la red de seguridad para que el TTS nunca reciba una enie
+# (ni el apanio "anio", que tambien suena raro). Frases primero, luego palabras
+# completas (con \b) para no tocar otras palabras.
+_ENIE_SINONIMOS = [
+    (r"(?:por|en) las? mañanas?", "temprano"),
+    (r"cada mañana", "cada dia al despertar"),
+    (r"mañanas", "amaneceres"),
+    (r"mañana", "el dia siguiente"),
+    (r"años", "temporadas"), (r"año", "temporada"),
+    (r"niños", "chicos"), (r"niñas", "chicas"), (r"niño", "chico"), (r"niña", "chica"),
+    (r"pequeños", "minimos"), (r"pequeñas", "minimas"), (r"pequeño", "minimo"), (r"pequeña", "minima"),
+    (r"señales", "alertas"), (r"señal", "alerta"),
+    (r"diseñados", "planeados"), (r"diseñadas", "planeadas"), (r"diseñado", "planeado"), (r"diseñada", "planeada"),
+    (r"diseñar", "planear"), (r"diseñas", "planeas"), (r"diseña", "planea"), (r"diseños", "planes"), (r"diseño", "plan"),
+    (r"enseñanzas", "lecciones"), (r"enseñanza", "leccion"),
+    (r"enseñar", "mostrar"), (r"enseñan", "muestran"), (r"enseñas", "muestras"), (r"enseña", "muestra"),
+    (r"sueños", "metas"), (r"sueño", "descanso"),
+    (r"compañeros", "colegas"), (r"compañeras", "colegas"), (r"compañero", "colega"), (r"compañera", "colega"),
+    (r"engañar", "mentir"), (r"engañan", "mienten"), (r"engañas", "mientes"), (r"engaña", "miente"),
+    (r"engaños", "mentiras"), (r"engaño", "mentira"),
+    (r"dañar", "perjudicar"), (r"dañan", "perjudican"), (r"dañas", "perjudicas"), (r"daña", "perjudica"),
+    (r"dañados", "perjudicados"), (r"dañado", "perjudicado"), (r"daños", "perjuicios"), (r"daño", "perjuicio"),
+    (r"extraños", "raros"), (r"extrañas", "raras"), (r"extraño", "raro"), (r"extraña", "rara"),
+    (r"añadir", "agregar"), (r"añaden", "agregan"), (r"añades", "agregas"), (r"añade", "agrega"),
+    (r"baño", "ducha"), (r"empeño", "esfuerzo"), (r"campaña", "iniciativa"), (r"español", "castellano"),
+    (r"cariño", "afecto"), (r"montañas", "cerros"), (r"montaña", "cerro"), (r"contraseña", "clave"),
+    (r"puño", "mano cerrada"), (r"tamaño", "medida"), (r"señor", "caballero"), (r"señora", "dama"),
+    (r"acompañar", "seguir"), (r"acompaña", "sigue"), (r"acompañan", "siguen"),
+]
+_ENIE_SINONIMOS_RE = [(_re_mod.compile(r"\b" + pat + r"\b", _re_mod.IGNORECASE), rep)
+                      for pat, rep in _ENIE_SINONIMOS]
+
+
+def _sin_enie(text: str) -> str:
+    """Reemplaza palabras con enie por sinonimos (respetando la mayuscula
+    inicial) y, como ultimo recurso, la enie suelta por 'ni'."""
+    def _sub(rep):
+        def _f(m):
+            w = m.group(0)
+            return rep[0].upper() + rep[1:] if w[0].isupper() else rep
+        return _f
+    for rx, rep in _ENIE_SINONIMOS_RE:
+        text = rx.sub(_sub(rep), text)
+    return text.replace("ñ", "ni").replace("Ñ", "Ni")
+
+
 def _lit_clean_narration(raw_text: str) -> str:
     """Devuelve solo el texto que se narra, sin etiquetas del agente ni
     secciones de B-roll/metadatos. Acepta tambien la cabecera Titulo:/Guion:."""
@@ -163,7 +210,7 @@ def _lit_clean_narration(raw_text: str) -> str:
     # El TTS pronuncia mal la enie y las vocales acentuadas; misma convencion
     # que el resto del proyecto (anio, senior, habito). El agente ya evita esas
     # letras; esto es la red de seguridad para el texto narrado.
-    text = text.replace("ñ", "ni").replace("Ñ", "Ni")
+    text = _sin_enie(text)
     text = _ud.normalize("NFD", text)
     return "".join(c for c in text if _ud.category(c) != "Mn")
 
@@ -194,11 +241,13 @@ def normalize_broll(broll) -> list:
 
 
 def build_literal_script(raw_text: str, broll=None, lang: str = "es",
-                         secs_per_scene: float = 4.5, wps: float = 2.3) -> list:
+                         secs_per_scene: float = 3.2, wps: float = 2.3) -> list:
     """Parte un guion narrado FINAL en escenas sin tocar una sola palabra.
 
-    - Escenas de ~secs_per_scene segundos (~10 palabras): se agrupan oraciones
+    - Escenas de ~secs_per_scene segundos (~7 palabras): se agrupan oraciones
       completas; una oracion muy larga se parte por comas/puntos y coma.
+      Cada escena muestra dos clips (A/B), asi que el plano cambia cada
+      ~1,6 s: ritmo de short, no de documental.
     - visual_1/visual_2: B-roll del agente repartido a lo largo de las escenas
       en orden (si trae menos terminos que escenas, cada termino cubre un
       tramo; si no trae ninguno, LITERAL_FALLBACK_VISUALS).
@@ -207,17 +256,41 @@ def build_literal_script(raw_text: str, broll=None, lang: str = "es",
     text = _lit_clean_narration(raw_text)
     if not text:
         return []
-    target = max(6, int(secs_per_scene * wps))       # ~10 palabras por escena
-    hard   = target * 2
+    target = max(5, int(secs_per_scene * wps))       # ~7 palabras por escena
+    hard   = target + 4                              # tope duro: ~11 palabras
+
+    _CONJ = {"y", "pero", "porque", "que", "cuando", "si", "para", "con", "sin",
+             "o", "aunque", "mientras", "donde", "como", "hasta", "sino"}
+
+    def _split_words(piece: str) -> list:
+        """Trozo sin comas mas largo que `hard`: cortar cada ~target palabras,
+        preferiblemente justo antes de una conjuncion (queda natural al oido)."""
+        words = piece.split()
+        out, start = [], 0
+        while len(words) - start > hard:
+            cut = start + target
+            for j in range(min(start + hard, len(words) - 1), start + max(3, target // 2), -1):
+                if words[j].lower().strip('"“”«»') in _CONJ:
+                    cut = j
+                    break
+            out.append(" ".join(words[start:cut])); start = cut
+        out.append(" ".join(words[start:]))
+        return out
 
     units = []
     for sent in _lit_split_sentences(text):
         if len(sent.split()) <= hard:
             units.append(sent)
             continue
-        # Oracion larguisima: partir por comas / punto y coma conservando el signo.
+        # Oracion larguisima: partir por comas / punto y coma conservando el
+        # signo; si un trozo sigue siendo largo (sin comas), partir por palabras.
         chunk, buf = [], []
         for piece in _re_mod.split(r"(?<=[,;:])\s+", sent):
+            if len(piece.split()) > hard:
+                if buf:
+                    chunk.append(" ".join(buf)); buf = []
+                chunk.extend(_split_words(piece))
+                continue
             buf.append(piece)
             if sum(len(x.split()) for x in buf) >= target:
                 chunk.append(" ".join(buf)); buf = []
